@@ -8,3 +8,4 @@
 **/*.keystore
 **/service-account*.json
 **/key.json
+release/
