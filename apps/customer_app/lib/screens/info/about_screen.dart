@@ -1,0 +1,264 @@
+import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
+
+import '../../state/app_state.dart';
+import '../../theme/brand.dart';
+import '../../utils/launch.dart';
+import '../../widgets/common.dart';
+
+class AboutScreen extends StatelessWidget {
+  const AboutScreen({super.key});
+
+  static const _offers = [
+    (
+      Icons.home_rounded,
+      'Home refills',
+      '6kg, 10kg composite and 11.8kg cylinders for everyday cooking.',
+    ),
+    (
+      Icons.restaurant_rounded,
+      'Commercial supply',
+      '45.4kg cylinders on a schedule for restaurants, hotels and bakeries.',
+    ),
+    (
+      Icons.factory_rounded,
+      'Bulk & industrial LPG',
+      'Volume supply and monthly billing for factories and large kitchens.',
+    ),
+    (
+      Icons.health_and_safety_rounded,
+      'Safety first',
+      'Safe cylinders, trained riders and clear safety guidance.',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AppState>().settings;
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 260,
+            foregroundColor: Colors.white,
+            backgroundColor: Brand.blueDeep,
+            systemOverlayStyle: Brand.lightStatusBar,
+            title: const Text(
+              'About us',
+              style: TextStyle(color: Colors.white),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    'assets/brand/hero_warehouse.jpg',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.centerLeft,
+                  ),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0x99000000),
+                          Color(0x00000000),
+                          Color(0xE60F2A3F),
+                        ],
+                        stops: [0, 0.4, 1],
+                      ),
+                    ),
+                  ),
+                  const Positioned(
+                    left: 20,
+                    right: 20,
+                    bottom: 18,
+                    child: Text(
+                      'Reliable LPG for homes and businesses across Lahore.',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Constrained(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'Safe cylinders, straightforward ordering, and convenient delivery when you need it.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1.45,
+                        color: Brand.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Row(
+                      children: [
+                        _Stat('4', 'cylinder\nsizes'),
+                        SizedBox(width: 10),
+                        _Stat('Same', 'day\ndelivery'),
+                        SizedBox(width: 10),
+                        _Stat('7', 'days a\nweek'),
+                      ],
+                    ),
+                    const SectionTitle('What we offer'),
+                    for (final (icon, title, body) in _offers)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(Brand.radius),
+                            boxShadow: Brand.shadow,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Brand.blueTint,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(icon, color: Brand.blueDark),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      body,
+                                      style: const TextStyle(
+                                        color: Brand.muted,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(Brand.radius),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Image.asset(
+                          'assets/brand/hero_truck.jpg',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SectionTitle('Visit or contact us'),
+                    Card(
+                      child: Column(
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.storefront_rounded),
+                            title: Text(s.shopAddress),
+                            subtitle: Text(s.openingHours),
+                            trailing: const Icon(Icons.directions_rounded),
+                            onTap: () => Launch.maps(
+                              query: 'Alpha LPG ${s.shopAddress}',
+                            ),
+                          ),
+                          const Divider(indent: 16, endIndent: 16),
+                          ListTile(
+                            leading: const Icon(
+                              Icons.chat_rounded,
+                              color: Brand.whatsapp,
+                            ),
+                            title: const Text('WhatsApp'),
+                            subtitle: Text(s.phone),
+                            onTap: () => Launch.whatsapp(s.whatsapp),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.mail_outline_rounded),
+                            title: const Text('Email'),
+                            subtitle: Text(s.email),
+                            onTap: () =>
+                                Launch.email(s.email, subject: 'Alpha LPG'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    FilledButton(
+                      onPressed: () => context.go('/'),
+                      child: const Text('Order LPG now'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat(this.value, this.label);
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Brand.navy,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Brand.flame,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 12,
+              height: 1.25,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}

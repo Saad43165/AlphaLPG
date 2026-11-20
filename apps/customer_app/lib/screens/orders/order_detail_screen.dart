@@ -1,4 +1,5 @@
 import 'package:alpha_core/alpha_core.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -81,6 +82,8 @@ class _OrderBody extends StatelessWidget {
       children: [
         _StatusHeader(o),
         const SizedBox(height: 12),
+        if (o.canBeRated) ...[_RateCard(o), const SizedBox(height: 12)],
+        if (o.rating != null) ...[_RatedCard(o), const SizedBox(height: 12)],
         if (o.status != OrderStatus.cancelled) _Timeline(o),
         if (o.riderName != null && o.status.isActive) ...[
           const SectionTitle('Your rider'),
@@ -222,7 +225,9 @@ class _OrderBody extends StatelessWidget {
       children: [
         Text(k, style: style),
         const SizedBox(width: 12),
-        Expanded(child: Text(v, style: style, textAlign: TextAlign.end)),
+        Expanded(
+          child: Text(v, style: style, textAlign: TextAlign.end),
+        ),
       ],
     );
   }
@@ -428,5 +433,142 @@ class _CancelDialogState extends State<_CancelDialog> {
         child: const Text('Cancel order'),
       ),
     ],
+  );
+}
+
+class _RateCard extends StatefulWidget {
+  const _RateCard(this.o);
+  final LpgOrder o;
+
+  @override
+  State<_RateCard> createState() => _RateCardState();
+}
+
+class _RateCardState extends State<_RateCard> {
+  int _stars = 0;
+  final _comment = TextEditingController();
+  bool _sending = false;
+
+  static const _labels = [
+    '',
+    'Poor',
+    'Not great',
+    'Okay',
+    'Good',
+    'Excellent!',
+  ];
+
+  @override
+  void dispose() {
+    _comment.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    setState(() => _sending = true);
+    try {
+      await context.read<Backend>().orders.rate(
+        widget.o.id,
+        _stars,
+        _comment.text.trim(),
+      );
+      if (mounted) showMessage(context, 'Thank you for your feedback!');
+    } catch (e) {
+      if (mounted) showMessage(context, 'Could not send rating', error: true);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(Brand.radius),
+      boxShadow: Brand.shadow,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'How was your delivery?',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            for (var i = 1; i <= 5; i++)
+              IconButton(
+                tooltip: '$i star${i == 1 ? '' : 's'}',
+                visualDensity: VisualDensity.compact,
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _stars = i);
+                },
+                icon: Icon(
+                  i <= _stars ? Icons.star_rounded : Icons.star_outline_rounded,
+                  color: i <= _stars ? Brand.flame : Brand.muted,
+                  size: 34,
+                ),
+              ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _labels[_stars],
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        if (_stars > 0) ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: _comment,
+            maxLines: 2,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              hintText: 'Anything we should know? (optional)',
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: _sending ? null : _send,
+            child: const Text('Submit rating'),
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+class _RatedCard extends StatelessWidget {
+  const _RatedCard(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    decoration: BoxDecoration(
+      color: Brand.flame.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(Brand.radius),
+    ),
+    child: Row(
+      children: [
+        for (var i = 1; i <= 5; i++)
+          Icon(
+            i <= o.rating! ? Icons.star_rounded : Icons.star_outline_rounded,
+            color: Brand.warning,
+            size: 22,
+          ),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: Text(
+            'Thanks for rating this delivery',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    ),
   );
 }

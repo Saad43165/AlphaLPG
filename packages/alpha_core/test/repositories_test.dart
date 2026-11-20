@@ -106,6 +106,13 @@ void _suite(Repos Function() make) {
       OrderStatus.delivered,
     ]);
     expect(o.timeOf(OrderStatus.assigned), isNotNull);
+    expect(o.canBeRated, isTrue);
+
+    await repo.rate(id, 5, 'Fast and polite rider');
+    o = (await repo.watchOrder(id).first)!;
+    expect(o.rating, 5);
+    expect(o.feedback, 'Fast and polite rider');
+    expect(o.canBeRated, isFalse);
   });
 
   test('customer sees only their own orders, newest first', () async {

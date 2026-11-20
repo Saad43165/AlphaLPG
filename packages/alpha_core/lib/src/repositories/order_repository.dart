@@ -19,6 +19,9 @@ abstract interface class OrderRepository {
   /// Customer cancellation (only while `placed`, enforced by rules).
   Future<void> cancelByCustomer(LpgOrder o, String reason);
 
+  /// Customer rates a delivered order (once, enforced by rules).
+  Future<void> rate(String orderId, int stars, String feedback);
+
   // Admin / rider operations (used by the upcoming apps).
   Stream<List<LpgOrder>> watchByStatus(List<OrderStatus> statuses);
   Stream<List<LpgOrder>> watchRiderOrders(String riderId);
@@ -102,6 +105,14 @@ class _FirestoreOrders implements OrderRepository {
     extra: {'cancelReason': reason},
     note: reason,
   );
+
+  @override
+  Future<void> rate(String orderId, int stars, String feedback) =>
+      _orders.doc(orderId).update({
+        'rating': stars.clamp(1, 5),
+        'feedback': feedback,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
   @override
   Stream<List<LpgOrder>> watchByStatus(List<OrderStatus> statuses) => _orders
@@ -208,6 +219,19 @@ class _MemoryOrders implements OrderRepository {
     extra: {'cancelReason': reason},
     note: reason,
   );
+
+  @override
+  Future<void> rate(String orderId, int stars, String feedback) async =>
+      _s.update(
+        _path,
+        orderId,
+        (d) => {
+          ...d,
+          'rating': stars.clamp(1, 5),
+          'feedback': feedback,
+          'updatedAt': DateTime.now(),
+        },
+      );
 
   @override
   Stream<List<LpgOrder>> watchByStatus(List<OrderStatus> statuses) {

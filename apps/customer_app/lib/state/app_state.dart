@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:alpha_core/alpha_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/backend.dart';
 
 /// Live data shared by every screen: catalogue, settings, and (when signed
 /// in) the customer's profile and saved addresses.
 class AppState extends ChangeNotifier {
-  AppState(this.backend) {
+  AppState(this.backend, {this.prefs, this.onboarded = true}) {
     _subs.add(
       backend.catalog.watchProducts().listen((p) {
         products = p;
@@ -27,6 +28,17 @@ class AppState extends ChangeNotifier {
   }
 
   final Backend backend;
+  final SharedPreferences? prefs;
+
+  /// False until the first-launch welcome slides have been completed.
+  bool onboarded;
+
+  void completeOnboarding() {
+    onboarded = true;
+    prefs?.setBool('onboarded', true);
+    notifyListeners();
+  }
+
   final _subs = <StreamSubscription<dynamic>>[];
   final _userSubs = <StreamSubscription<dynamic>>[];
 
@@ -62,7 +74,7 @@ class AppState extends ChangeNotifier {
 
   @override
   void notifyListeners() {
-    routeSignal.value = '$signedIn/$needsProfile';
+    routeSignal.value = '$onboarded/$signedIn/$needsProfile';
     super.notifyListeners();
   }
 

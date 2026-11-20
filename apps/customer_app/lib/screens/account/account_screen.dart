@@ -138,8 +138,20 @@ class AccountScreen extends StatelessWidget {
                   _tile(
                     context,
                     Icons.health_and_safety_outlined,
-                    'LPG safety tips',
+                    'LPG safety guide',
                     '/safety',
+                  ),
+                  _tile(
+                    context,
+                    Icons.help_outline_rounded,
+                    'Help & FAQs',
+                    '/help',
+                  ),
+                  _tile(
+                    context,
+                    Icons.info_outline_rounded,
+                    'About Alpha LPG',
+                    '/about',
                   ),
                 ],
               ),

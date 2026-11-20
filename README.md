@@ -37,7 +37,14 @@ and an **admin app** can share the same data model and backend.
   - Reorder in one tap.
   - WhatsApp help, with the order number filled in.
 - **Bulk / commercial quote** form for restaurants, hotels and factories.
-- **LPG safety guide**, with one-tap Rescue 1122.
+- **Welcome slides** on first launch, using Alpha LPG depot and delivery photos.
+- **Safety guide** based on Alpha LPG's "Use LPG safely" poster:
+  - Emergency steps, the 4 essentials, do's and don'ts, right vs wrong.
+  - The full poster, zoomable.
+- **About Alpha LPG** page, and **Help & FAQs**. The FAQ answers pull delivery
+  fee, areas and hours live from `config/app`.
+- **Delivery rating**: 1–5 stars and a comment after delivery.
+- **One-tap reorder** on the home screen.
 - **Demo mode**: when Firebase isn't configured, the app runs on an in-memory
   backend. In demo mode:
   - Sign-in accepts any number with OTP `123456`.

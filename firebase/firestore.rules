@@ -62,6 +62,15 @@ service cloud.firestore {
             && resource.data.status == 'placed'
             && request.resource.data.status == 'cancelled'
             && changed().hasOnly(['status', 'history', 'cancelReason', 'updatedAt']))
+        // Customer rates a delivered order once.
+        || (signedIn()
+            && resource.data.customerId == request.auth.uid
+            && resource.data.status == 'delivered'
+            && resource.data.get('rating', null) == null
+            && request.resource.data.rating is int
+            && request.resource.data.rating >= 1
+            && request.resource.data.rating <= 5
+            && changed().hasOnly(['rating', 'feedback', 'updatedAt']))
         // Assigned rider moves the order along and records cash collected.
         || (isRider()
             && resource.data.riderId == request.auth.uid

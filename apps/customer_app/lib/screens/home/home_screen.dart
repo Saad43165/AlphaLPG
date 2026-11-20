@@ -1,4 +1,5 @@
 import 'package:alpha_core/alpha_core.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -99,9 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      const _SafetyStrip(),
+                      const SizedBox(height: 24),
                       _BusinessCard(
                         isBusiness: state.profile?.isBusiness ?? false,
                       ),
+                      const SizedBox(height: 14),
+                      const _AboutBanner(),
                       const SizedBox(height: 14),
                       _HelpCard(settings: state.settings),
                       if (context.read<Backend>().isDemo) ...[
@@ -216,7 +221,7 @@ class _Header extends StatelessWidget {
                       runSpacing: 8,
                       children: [
                         _TrustChip(Icons.bolt_rounded, 'Same-day delivery'),
-                        _TrustChip(Icons.verified_rounded, 'Sealed & weighed'),
+                        _TrustChip(Icons.verified_rounded, 'Safety-checked'),
                         _TrustChip(Icons.payments_outlined, 'Cash on delivery'),
                       ],
                     ),
@@ -454,17 +459,22 @@ class _ProductCard extends StatelessWidget {
                         _RoundAdd(
                           enabled: product.inStock,
                           tooltip: 'Add ${product.name}',
-                          onTap: () =>
-                              cart.add(product.id, PurchaseType.refill),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            cart.add(product.id, PurchaseType.refill);
+                          },
                         )
                       else
                         _MiniStepper(
                           qty: qty,
-                          onChanged: (q) => cart.setQuantity(
-                            product.id,
-                            PurchaseType.refill,
-                            q,
-                          ),
+                          onChanged: (q) {
+                            HapticFeedback.selectionClick();
+                            cart.setQuantity(
+                              product.id,
+                              PurchaseType.refill,
+                              q,
+                            );
+                          },
                         ),
                     ],
                   ),
@@ -904,23 +914,234 @@ class _HelpCard extends StatelessWidget {
           ],
         ),
         const Divider(height: 28),
-        InkWell(
+        _LinkRow(
+          icon: Icons.help_outline_rounded,
+          color: Brand.blueDark,
+          label: 'Help & FAQs',
+          onTap: () => context.push('/help'),
+        ),
+        const SizedBox(height: 14),
+        _LinkRow(
+          icon: Icons.health_and_safety_rounded,
+          color: Brand.cylinderRed,
+          label: 'Smell gas? What to do',
           onTap: () => context.push('/safety'),
-          child: const Row(
-            children: [
-              Icon(Icons.health_and_safety_rounded, color: Brand.cylinderRed),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Smell gas? Read our safety guide',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: Brand.muted),
-            ],
-          ),
         ),
       ],
+    ),
+  );
+}
+
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: Row(
+      children: [
+        Icon(icon, color: color),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        const Icon(Icons.chevron_right_rounded, color: Brand.muted),
+      ],
+    ),
+  );
+}
+
+/// Horizontal carousel of the four safety essentials from the poster.
+class _SafetyStrip extends StatelessWidget {
+  const _SafetyStrip();
+
+  static const _tips = [
+    ('essential_upright', 'Keep it upright'),
+    ('essential_ventilated', 'Keep it ventilated'),
+    ('essential_connections', 'Check connections'),
+    ('essential_turn_off', 'Turn it off after use'),
+  ];
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Use LPG safely',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+          TextButton(
+            onPressed: () => context.push('/safety'),
+            child: const Text('See guide'),
+          ),
+        ],
+      ),
+      const SizedBox(height: 6),
+      SizedBox(
+        height: 168,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.none,
+          itemCount: _tips.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 12),
+          itemBuilder: (context, i) {
+            final (image, title) = _tips[i];
+            return GestureDetector(
+              onTap: () => context.push('/safety'),
+              child: Container(
+                width: 150,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(Brand.radius),
+                  boxShadow: Brand.shadow,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            'assets/safety/$image.jpg',
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned(
+                            left: 8,
+                            top: 8,
+                            child: _NumberBadge(i + 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                      child: Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    ],
+  );
+}
+
+/// Photo banner of the Alpha LPG depot linking to the About page.
+class _AboutBanner extends StatelessWidget {
+  const _AboutBanner();
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: () => context.push('/about'),
+    child: Container(
+      height: 170,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Brand.radius),
+        boxShadow: Brand.shadow,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/brand/hero_warehouse.jpg',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x000F2A3F), Color(0xE60F2A3F)],
+                stops: [0.3, 1],
+              ),
+            ),
+          ),
+          const Positioned(
+            left: 16,
+            right: 16,
+            bottom: 14,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'TRUSTED ACROSS LAHORE',
+                        style: TextStyle(
+                          color: Brand.flame,
+                          fontSize: 11,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'From our depot to your door',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_rounded, color: Colors.white),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _NumberBadge extends StatelessWidget {
+  const _NumberBadge(this.n);
+  final int n;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: Brand.blueDark,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      n.toString().padLeft(2, '0'),
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w800,
+        fontSize: 13,
+      ),
     ),
   );
 }

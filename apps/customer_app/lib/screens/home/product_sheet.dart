@@ -1,4 +1,5 @@
 import 'package:alpha_core/alpha_core.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -122,6 +123,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                   child: FilledButton(
                     onPressed: p.inStock
                         ? () {
+                            HapticFeedback.mediumImpact();
                             context.read<Cart>().add(p.id, _type, _qty);
                             Navigator.pop(context);
                           }

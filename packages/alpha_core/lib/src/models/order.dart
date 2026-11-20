@@ -94,6 +94,8 @@ class LpgOrder {
     this.riderName,
     this.riderPhone,
     this.cancelReason = '',
+    this.rating,
+    this.feedback = '',
     this.createdAt,
     this.updatedAt,
   });
@@ -122,8 +124,14 @@ class LpgOrder {
   final String? riderName;
   final String? riderPhone;
   final String cancelReason;
+
+  /// 1–5 stars left by the customer after delivery.
+  final int? rating;
+  final String feedback;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  bool get canBeRated => status == OrderStatus.delivered && rating == null;
 
   int get cylinderCount => items.fold(0, (n, i) => n + i.quantity);
 
@@ -175,6 +183,8 @@ class LpgOrder {
     riderName: m['riderName'] as String?,
     riderPhone: m['riderPhone'] as String?,
     cancelReason: m['cancelReason'] as String? ?? '',
+    rating: (m['rating'] as num?)?.toInt(),
+    feedback: m['feedback'] as String? ?? '',
     createdAt: readDate(m['createdAt']),
     updatedAt: readDate(m['updatedAt']),
   );
@@ -201,6 +211,8 @@ class LpgOrder {
     'riderName': riderName,
     'riderPhone': riderPhone,
     'cancelReason': cancelReason,
+    'rating': rating,
+    'feedback': feedback,
     'cylinderCount': cylinderCount,
     'emptiesToCollect': emptiesToCollect,
   };

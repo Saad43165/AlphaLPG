@@ -13,5 +13,11 @@ Future<void> main() async {
   } catch (_) {
     // Cart simply won't persist between launches.
   }
-  runApp(AlphaApp(backend: backend, prefs: prefs));
+  runApp(
+    AlphaApp(
+      backend: backend,
+      prefs: prefs,
+      showOnboarding: !(prefs?.getBool('onboarded') ?? false),
+    ),
+  );
 }

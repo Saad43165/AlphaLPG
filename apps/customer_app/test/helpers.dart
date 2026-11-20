@@ -6,11 +6,17 @@ import 'package:material_ui/material_ui.dart';
 /// In-memory backend without the demo dispatcher (no background timers).
 Backend testBackend() => Backend.memory();
 
-Future<void> pumpApp(WidgetTester tester, Backend backend) async {
+Future<void> pumpApp(
+  WidgetTester tester,
+  Backend backend, {
+  bool showOnboarding = false,
+}) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 2.6;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(AlphaApp(backend: backend));
+  await tester.pumpWidget(
+    AlphaApp(backend: backend, showOnboarding: showOnboarding),
+  );
   await tester.pumpAndSettle();
 }
 

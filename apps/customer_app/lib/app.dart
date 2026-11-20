@@ -10,16 +10,26 @@ import 'state/cart.dart';
 import 'theme/brand.dart';
 
 class AlphaApp extends StatefulWidget {
-  const AlphaApp({super.key, required this.backend, this.prefs});
+  const AlphaApp({
+    super.key,
+    required this.backend,
+    this.prefs,
+    this.showOnboarding = false,
+  });
   final Backend backend;
   final SharedPreferences? prefs;
+  final bool showOnboarding;
 
   @override
   State<AlphaApp> createState() => _AlphaAppState();
 }
 
 class _AlphaAppState extends State<AlphaApp> {
-  late final AppState _state = AppState(widget.backend);
+  late final AppState _state = AppState(
+    widget.backend,
+    prefs: widget.prefs,
+    onboarded: !widget.showOnboarding,
+  );
   late final Cart _cart = Cart(prefs: widget.prefs);
   late final GoRouter _router = buildRouter(_state);
 

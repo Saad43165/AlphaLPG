@@ -12,7 +12,10 @@ import 'screens/cart/cart_screen.dart';
 import 'screens/cart/checkout_screen.dart';
 import 'screens/cart/order_placed_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/info/about_screen.dart';
+import 'screens/info/help_screen.dart';
 import 'screens/info/safety_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/orders/order_detail_screen.dart';
 import 'screens/orders/orders_screen.dart';
 import 'state/app_state.dart';
@@ -24,6 +27,8 @@ GoRouter buildRouter(AppState state) => GoRouter(
   refreshListenable: state.routeSignal,
   redirect: (context, s) {
     final path = s.uri.path;
+    if (!state.onboarded) return path == '/welcome' ? null : '/welcome';
+    if (path == '/welcome') return '/';
     final needsAuth = _protected.any(path.startsWith);
     if (needsAuth && !state.signedIn) {
       return '/login?from=${Uri.encodeComponent(s.uri.toString())}';
@@ -89,6 +94,13 @@ GoRouter buildRouter(AppState state) => GoRouter(
     ),
     GoRoute(path: '/bulk-quote', builder: (_, _) => const BulkQuoteScreen()),
     GoRoute(path: '/safety', builder: (_, _) => const SafetyScreen()),
+    GoRoute(
+      path: '/safety/poster',
+      builder: (_, _) => const SafetyPosterScreen(),
+    ),
+    GoRoute(path: '/about', builder: (_, _) => const AboutScreen()),
+    GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
+    GoRoute(path: '/welcome', builder: (_, _) => const OnboardingScreen()),
   ],
 );
 
