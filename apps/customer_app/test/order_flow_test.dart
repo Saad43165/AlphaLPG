@@ -29,11 +29,12 @@ void main() {
     await tapText(tester, 'Add · Rs. 6,592');
     expect(find.text('2 cylinders · Rs. 6,592'), findsOneWidget);
 
-    // Cart: free delivery above Rs. 6,000.
+    // Cart: free delivery above Rs. 6,000, refill reminder, swipe-to-remove.
     await tapText(tester, 'View cart');
-    expect(find.text('FREE'), findsOneWidget);
+    expect(find.text('You get FREE delivery on this order'), findsOneWidget);
+    expect(find.text('FREE', skipOffstage: false), findsOneWidget);
     expect(find.textContaining('keep 2 empty cylinders'), findsOneWidget);
-    await tapText(tester, 'Checkout · Rs. 6,592');
+    await tapText(tester, 'Checkout');
 
     // Checkout requires sign-in.
     expect(find.text('Sign in with your mobile'), findsOneWidget);
@@ -46,12 +47,18 @@ void main() {
     await tester.enterText(find.byType(TextField), '123456');
     await tapText(tester, 'Verify & continue');
 
-    // First sign-in → profile setup (business customer).
-    expect(find.text('Welcome to Alpha LPG'), findsOneWidget);
+    // First sign-in → 3-step setup.
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(find.text('0300 1234567 verified'), findsOneWidget);
+    await tapText(tester, 'Continue');
+    expect(find.text('Please enter your name'), findsOneWidget);
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Your name'),
+      find.widgetWithText(TextFormField, 'Full name'),
       'Bilal Ahmed',
     );
+    await tapText(tester, 'Continue');
+
+    expect(find.text('Step 2 of 3'), findsOneWidget);
     await tapText(tester, 'My business');
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Business name'),
@@ -59,34 +66,50 @@ void main() {
     );
     await tapText(tester, 'Continue');
 
-    // Back at checkout with the cart intact → add an address.
-    expect(find.text('Checkout'), findsOneWidget);
-    await tapText(tester, 'Add a delivery address');
+    expect(find.text('Step 3 of 3'), findsOneWidget);
     await tester.enterText(
       find.widgetWithText(TextFormField, 'House / shop no., street, block'),
       'Shop 3, MM Alam Road',
     );
-    final chip = find.widgetWithText(ActionChip, 'Gulberg');
-    await tester.ensureVisible(chip);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Area / society'),
+      'Gulb',
+    );
     await tester.pumpAndSettle();
-    await tester.tap(chip);
+    // Typing filters the Lahore area shortcuts; tap the match.
+    await tester.tap(find.widgetWithText(ActionChip, 'Gulberg'));
     await tester.pumpAndSettle();
-    await tapText(tester, 'Save address');
+    await tapText(tester, 'Save & finish');
+
+    // Straight back to checkout, cart intact, new address selected.
+    expect(find.text('Checkout'), findsOneWidget);
     expect(
       find.textContaining('Shop 3, MM Alam Road, Gulberg'),
       findsOneWidget,
     );
+    expect(find.textContaining('Bilal Ahmed'), findsOneWidget);
 
-    await tapText(tester, 'Place order · Rs. 6,592');
+    // Pay by JazzCash with a transaction ID.
+    await tapText(tester, 'JazzCash');
+    expect(find.text('Send Rs. 6,592 via JazzCash'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Transaction ID (optional)'),
+      'TX12345',
+    );
+    await tapText(tester, 'Place order');
     expect(find.text('Order placed!'), findsOneWidget);
+    expect(find.text('Transaction ID TX12345'), findsOneWidget);
+    expect(find.text('Keep 2 empty cylinders ready'), findsOneWidget);
 
     // The stored order is shown on the tracking screen.
     await tapText(tester, 'Track my order');
     expect(find.text('We have received your order'), findsOneWidget);
     expect(find.text('Rs. 6,592'), findsWidgets);
     expect(find.text('FREE'), findsOneWidget);
-    expect(find.textContaining('Keep 2 empty cylinders ready'), findsOneWidget);
-    expect(find.text('Cancel order', skipOffstage: false), findsOneWidget);
+    await scrollTo(tester, find.text('AWAITING PAYMENT'));
+    expect(find.text('Transaction ID: TX12345'), findsOneWidget);
+    await scrollTo(tester, find.text('Cancel order'));
+    expect(find.text('Cancel order'), findsOneWidget);
   });
 
   testWidgets('customer can cancel a placed order with a reason', (
@@ -135,7 +158,10 @@ void main() {
     await tapText(tester, 'Need a different size');
     await tester.tap(find.widgetWithText(FilledButton, 'Cancel order'));
     await tester.pumpAndSettle();
-    expect(find.text('Reason: Need a different size'), findsOneWidget);
+    expect(
+      find.text('Reason: Need a different size', skipOffstage: false),
+      findsOneWidget,
+    );
     final cancelled = await tester.runAsync(
       () => backend.orders.watchOrder(id).first,
     );

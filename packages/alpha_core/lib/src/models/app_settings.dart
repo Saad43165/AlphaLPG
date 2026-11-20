@@ -15,6 +15,9 @@ class AppSettings {
     this.openingHours = '9:00 am – 9:00 pm, every day',
     this.serviceAreas = const [],
     this.bankDetails = '',
+    this.accountTitle = '',
+    this.jazzCashAccount = '',
+    this.easyPaisaAccount = '',
   });
 
   final bool acceptingOrders;
@@ -35,7 +38,14 @@ class AppSettings {
 
   /// Areas of Lahore served. Empty means "all of Lahore".
   final List<String> serviceAreas;
+
+  /// Bank name, account number / IBAN (multi-line text).
   final String bankDetails;
+
+  /// Name on Alpha LPG's bank and wallet accounts.
+  final String accountTitle;
+  final String jazzCashAccount;
+  final String easyPaisaAccount;
 
   factory AppSettings.fromMap(Map<String, dynamic> m) {
     const d = AppSettings();
@@ -58,6 +68,9 @@ class AppSettings {
         for (final a in (m['serviceAreas'] as List? ?? const [])) '$a',
       ],
       bankDetails: m['bankDetails'] as String? ?? d.bankDetails,
+      accountTitle: m['accountTitle'] as String? ?? d.accountTitle,
+      jazzCashAccount: m['jazzCashAccount'] as String? ?? d.jazzCashAccount,
+      easyPaisaAccount: m['easyPaisaAccount'] as String? ?? d.easyPaisaAccount,
     );
   }
 
@@ -75,5 +88,8 @@ class AppSettings {
     'openingHours': openingHours,
     'serviceAreas': serviceAreas,
     'bankDetails': bankDetails,
+    'accountTitle': accountTitle,
+    'jazzCashAccount': jazzCashAccount,
+    'easyPaisaAccount': easyPaisaAccount,
   };
 }

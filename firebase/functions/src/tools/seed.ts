@@ -36,7 +36,12 @@ async function main() {
     openingHours: "9:00 am – 9:00 pm, every day",
     serviceAreas: ["Cantt", "Clifton Colony", "DHA", "Garden Town", "Gulberg", "Johar Town",
       "Model Town", "Cavalry Ground", "Askari", "Faisal Town", "Bahria Town", "Wapda Town"],
+    // Fill these in to show account details at checkout (left empty, the app
+    // tells customers the details will be sent on WhatsApp).
     bankDetails: "",
+    accountTitle: "",
+    jazzCashAccount: "",
+    easyPaisaAccount: "",
   }, { merge: true });
   await batch.commit();
   console.log(`Seeded ${products.length} products and config/app`);

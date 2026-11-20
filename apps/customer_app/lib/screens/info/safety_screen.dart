@@ -8,6 +8,7 @@ import '../../utils/launch.dart';
 import '../../widgets/common.dart';
 
 /// Content follows Alpha LPG's "Use LPG safely. Every single day." poster.
+/// Illustrations are vector icons so they stay sharp on every screen.
 class SafetyScreen extends StatefulWidget {
   const SafetyScreen({super.key});
 
@@ -15,75 +16,79 @@ class SafetyScreen extends StatefulWidget {
   State<SafetyScreen> createState() => _SafetyScreenState();
 }
 
-typedef _Tip = (String image, String title, String body);
-typedef _Step = (IconData icon, String title, String body);
+typedef SafetyTip = (IconData icon, String title, String body);
+
+/// The four essentials from the poster (also used on the home screen).
+const safetyEssentials = <SafetyTip>[
+  (
+    Icons.propane_tank_rounded,
+    'Keep it upright',
+    'Always keep the cylinder upright on a stable, level surface.',
+  ),
+  (
+    Icons.air_rounded,
+    'Keep it ventilated',
+    'Never keep LPG in a closed or poorly ventilated space.',
+  ),
+  (
+    Icons.plumbing_rounded,
+    'Check connections',
+    'Regularly check the regulator, hose and connections for any damage.',
+  ),
+  (
+    Icons.power_settings_new_rounded,
+    'Turn it off',
+    'Close the cylinder and regulator when LPG is not being used.',
+  ),
+];
 
 class _SafetyScreenState extends State<SafetyScreen> {
   bool _showDos = true;
 
-  static const _essentials = <_Tip>[
+  static const _dos = <SafetyTip>[
     (
-      'essential_upright',
-      'Keep it upright',
-      'Always keep the cylinder upright on a stable, level surface.',
+      Icons.propane_tank_rounded,
+      'Keep cylinders upright',
+      'On a stable, level surface.',
     ),
     (
-      'essential_ventilated',
-      'Keep it ventilated',
-      'Never keep LPG in a closed or poorly ventilated space.',
-    ),
-    (
-      'essential_connections',
-      'Check connections',
-      'Regularly check the regulator, hose and connections for any signs of damage.',
-    ),
-    (
-      'essential_turn_off',
-      'Turn it off',
-      'Close the cylinder and regulator when LPG is not being used.',
-    ),
-  ];
-
-  static const _dos = <_Tip>[
-    ('do_upright', 'Keep cylinders upright', 'On a stable, level surface.'),
-    (
-      'do_condition',
+      Icons.build_circle_rounded,
       'Keep everything in good condition',
       'Cylinder, regulator and hose. Replace anything damaged.',
     ),
     (
-      'do_heat',
+      Icons.local_fire_department_rounded,
       'Keep away from heat',
       'Away from excessive heat and ignition sources.',
     ),
   ];
 
-  static const _donts = <_Tip>[
+  static const _donts = <SafetyTip>[
     (
-      'dont_enclosed',
+      Icons.door_sliding_rounded,
       "Don't store in enclosed spaces",
       'Not in cabinets, cupboards or basements.',
     ),
     (
-      'dont_flame',
+      Icons.whatshot_rounded,
       "Don't use a flame to check for leaks",
       'Use soapy water instead. Bubbles mean a leak.',
     ),
     (
-      'dont_spares',
+      Icons.inventory_2_rounded,
       "Don't keep spares next to it",
-      'Do not keep spare cylinders directly next to the cylinder in use.',
+      'Not directly next to the cylinder in use.',
     ),
   ];
 
-  static const _emergency = <_Step>[
+  static const _emergency = <SafetyTip>[
     (
       Icons.power_settings_new_rounded,
       'Turn off the gas supply',
       'If it is safe to do so, close the cylinder valve and regulator.',
     ),
     (
-      Icons.local_fire_department_rounded,
+      Icons.fire_extinguisher_rounded,
       'Extinguish flames',
       'Put out all flames and turn off ignition sources (stoves, candles, etc).',
     ),
@@ -104,176 +109,225 @@ class _SafetyScreenState extends State<SafetyScreen> {
     ),
   ];
 
-  static const _rightWrong = <(String, bool, String)>[
-    ('right_ventilated', true, 'Upright, ventilated and on a stable surface'),
-    ('wrong_cabinet', false, 'Kept inside an enclosed cabinet'),
-    ('right_regulator', true, 'Proper regulator and secure connection'),
-    ('wrong_hose', false, 'Damaged or cracked hose'),
+  static const _leakTest = <SafetyTip>[
+    (
+      Icons.water_drop_rounded,
+      'Mix soapy water',
+      'A little dish soap in a cup of water.',
+    ),
+    (
+      Icons.brush_rounded,
+      'Apply to joints',
+      'Brush it on the valve, regulator and hose ends.',
+    ),
+    (
+      Icons.bubble_chart_rounded,
+      'Watch for bubbles',
+      'Bubbles mean a leak: turn off the gas and call us.',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>().settings;
-    final text = Theme.of(context).textTheme;
+    final wide = MediaQuery.sizeOf(context).width > 640;
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 250,
-            backgroundColor: Brand.surface,
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.parallax,
-              background: Stack(
-                fit: StackFit.expand,
+      appBar: AppBar(title: const Text('Safety guide')),
+      body: Constrained(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+          children: [
+            const _Hero(),
+            const SizedBox(height: 18),
+            _EmergencyCard(steps: _emergency, phone: s.phone),
+            const _Kicker('THE ESSENTIALS', '4 things to always remember'),
+            GridView.count(
+              crossAxisCount: wide ? 4 : 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.82,
+              children: [
+                for (final (i, t) in safetyEssentials.indexed)
+                  _EssentialCard(number: i + 1, tip: t),
+              ],
+            ),
+            const _Kicker('SAFE HABITS', "Do's and don'ts"),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: true,
+                  icon: Icon(Icons.check_circle_rounded),
+                  label: Text('Do'),
+                ),
+                ButtonSegment(
+                  value: false,
+                  icon: Icon(Icons.cancel_rounded),
+                  label: Text("Don't"),
+                ),
+              ],
+              selected: {_showDos},
+              onSelectionChanged: (v) => setState(() => _showDos = v.first),
+            ),
+            const SizedBox(height: 12),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Column(
+                key: ValueKey(_showDos),
                 children: [
-                  Image.asset(
-                    'assets/safety/kitchen_hero.jpg',
-                    fit: BoxFit.cover,
-                  ),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x00F4F7FA),
-                          Color(0xCCF4F7FA),
-                          Brand.surface,
-                        ],
-                        stops: [0.25, 0.7, 1],
-                      ),
+                  for (final t in _showDos ? _dos : _donts)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _HabitRow(tip: t, good: _showDos),
                     ),
-                  ),
-                  Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 14,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Use LPG safely.',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            height: 1.05,
-                            letterSpacing: -0.8,
-                            color: Brand.navy,
-                          ),
-                        ),
-                        Text(
-                          'Every single day.',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            height: 1.1,
-                            letterSpacing: -0.8,
-                            color: Brand.muted.withValues(alpha: 0.9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Constrained(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Simple precautions make LPG safer to store, handle and use at home.',
-                      style: text.bodyLarge?.copyWith(color: Brand.muted),
-                    ),
-                    const SizedBox(height: 18),
-                    _EmergencyCard(steps: _emergency, phone: s.phone),
-                    const _Kicker(
-                      'THE ESSENTIALS',
-                      '4 things to always remember',
-                    ),
-                    GridView.count(
-                      crossAxisCount: MediaQuery.sizeOf(context).width > 640
-                          ? 4
-                          : 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 0.74,
-                      children: [
-                        for (final (i, t) in _essentials.indexed)
-                          _EssentialCard(number: i + 1, tip: t),
-                      ],
-                    ),
-                    const _Kicker('SAFE HABITS', "Do's and don'ts"),
-                    SegmentedButton<bool>(
-                      segments: const [
-                        ButtonSegment(
-                          value: true,
-                          icon: Icon(Icons.check_circle_rounded),
-                          label: Text('Do'),
-                        ),
-                        ButtonSegment(
-                          value: false,
-                          icon: Icon(Icons.cancel_rounded),
-                          label: Text("Don't"),
-                        ),
-                      ],
-                      selected: {_showDos},
-                      onSelectionChanged: (v) =>
-                          setState(() => _showDos = v.first),
-                    ),
-                    const SizedBox(height: 12),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
+            const _Kicker('CHECK FOR LEAKS', 'The safe soap-water test'),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(Brand.radius),
+                boxShadow: Brand.shadow,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final (i, (icon, title, body)) in _leakTest.indexed) ...[
+                    if (i > 0) const SizedBox(width: 10),
+                    Expanded(
                       child: Column(
-                        key: ValueKey(_showDos),
                         children: [
-                          for (final t in _showDos ? _dos : _donts)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _HabitCard(tip: t, good: _showDos),
+                          _IconBubble(icon, color: Brand.blueDark, size: 52),
+                          const SizedBox(height: 8),
+                          Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
                             ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            body,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Brand.muted,
+                              fontSize: 12,
+                              height: 1.3,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const _Kicker(
-                      'RIGHT VS WRONG',
-                      'A safer home starts with better habits',
-                    ),
-                    SizedBox(
-                      height: 214,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        clipBehavior: Clip.none,
-                        itemCount: _rightWrong.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 12),
-                        itemBuilder: (_, i) =>
-                            _RightWrongCard(item: _rightWrong[i]),
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    OutlinedButton.icon(
-                      onPressed: () => context.push('/safety/poster'),
-                      icon: const Icon(Icons.image_outlined),
-                      label: const Text('View the full safety poster'),
-                    ),
-                    const SizedBox(height: 22),
-                    _OrderSafelyCard(whatsapp: s.whatsapp),
                   ],
-                ),
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 22),
+            OutlinedButton.icon(
+              onPressed: () => context.push('/safety/poster'),
+              icon: const Icon(Icons.zoom_in_rounded),
+              label: const Text('View the full safety poster'),
+            ),
+            const SizedBox(height: 22),
+            _OrderSafelyCard(whatsapp: s.whatsapp),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _Hero extends StatelessWidget {
+  const _Hero();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    constraints: const BoxConstraints(minHeight: 190),
+    decoration: BoxDecoration(
+      gradient: Brand.headerGradient,
+      borderRadius: BorderRadius.circular(24),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: Stack(
+      children: [
+        Positioned(
+          right: -6,
+          bottom: -14,
+          child: Image.asset('assets/products/11_8kg.png', height: 190),
+        ),
+        const Positioned(
+          right: 92,
+          top: 18,
+          child: CircleAvatar(
+            radius: 18,
+            backgroundColor: Colors.white,
+            child: Icon(Icons.check_rounded, color: Brand.success),
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 22, 150, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Use LPG safely.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                  letterSpacing: -0.6,
+                ),
+              ),
+              Text(
+                'Every single day.',
+                style: TextStyle(
+                  color: Color(0xCCFFFFFF),
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  height: 1.15,
+                  letterSpacing: -0.6,
+                ),
+              ),
+              SizedBox(height: 18),
+              Text(
+                'Simple precautions make LPG safer to store, handle and use at home.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _IconBubble extends StatelessWidget {
+  const _IconBubble(this.icon, {required this.color, this.size = 46});
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(size * 0.32),
+    ),
+    child: Icon(icon, color: color, size: size * 0.52),
+  );
 }
 
 class _Kicker extends StatelessWidget {
@@ -312,7 +366,7 @@ class _Kicker extends StatelessWidget {
 
 class _EmergencyCard extends StatelessWidget {
   const _EmergencyCard({required this.steps, required this.phone});
-  final List<_Step> steps;
+  final List<SafetyTip> steps;
   final String phone;
 
   @override
@@ -357,8 +411,8 @@ class _EmergencyCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -428,79 +482,49 @@ class _EmergencyCard extends StatelessWidget {
 class _EssentialCard extends StatelessWidget {
   const _EssentialCard({required this.number, required this.tip});
   final int number;
-  final _Tip tip;
+  final SafetyTip tip;
 
   @override
   Widget build(BuildContext context) {
-    final (image, title, body) = tip;
+    final (icon, title, body) = tip;
     return Container(
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(Brand.radius),
         boxShadow: Brand.shadow,
       ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 5,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset('assets/safety/$image.jpg', fit: BoxFit.cover),
-                Positioned(
-                  left: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Brand.blueDark,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      number.toString().padLeft(2, '0'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
+          Row(
+            children: [
+              _IconBubble(icon, color: Brand.blueDark),
+              const Spacer(),
+              Text(
+                number.toString().padLeft(2, '0'),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Brand.blueLight,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+          ),
+          const SizedBox(height: 4),
           Expanded(
-            flex: 4,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Expanded(
-                    child: Text(
-                      body,
-                      overflow: TextOverflow.fade,
-                      style: const TextStyle(
-                        color: Brand.muted,
-                        fontSize: 12.5,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ],
+            child: Text(
+              body,
+              overflow: TextOverflow.fade,
+              style: const TextStyle(
+                color: Brand.muted,
+                fontSize: 12.5,
+                height: 1.35,
               ),
             ),
           ),
@@ -510,123 +534,78 @@ class _EssentialCard extends StatelessWidget {
   }
 }
 
-class _HabitCard extends StatelessWidget {
-  const _HabitCard({required this.tip, required this.good});
-  final _Tip tip;
+class _HabitRow extends StatelessWidget {
+  const _HabitRow({required this.tip, required this.good});
+  final SafetyTip tip;
   final bool good;
 
   @override
   Widget build(BuildContext context) {
-    final (image, title, body) = tip;
-    final color = good ? Brand.blueDark : Brand.cylinderRed;
+    final (icon, title, body) = tip;
+    final color = good ? Brand.success : Brand.cylinderRed;
     return Container(
-      height: 112,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(Brand.radius),
         boxShadow: Brand.shadow,
       ),
-      clipBehavior: Clip.antiAlias,
       child: Row(
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _IconBubble(
+                icon,
+                color: good ? Brand.blueDark : Brand.cylinderRed,
+                size: 52,
+              ),
+              Positioned(
+                right: -4,
+                bottom: -4,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
                     good ? Icons.check_circle_rounded : Icons.cancel_rounded,
                     color: color,
-                    size: 26,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          good ? 'DO' : "DON'T",
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Expanded(
-                          child: Text(
-                            body,
-                            overflow: TextOverflow.fade,
-                            style: const TextStyle(
-                              color: Brand.muted,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 112,
-            height: double.infinity,
-            child: Image.asset('assets/safety/$image.jpg', fit: BoxFit.cover),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RightWrongCard extends StatelessWidget {
-  const _RightWrongCard({required this.item});
-  final (String, bool, String) item;
-
-  @override
-  Widget build(BuildContext context) {
-    final (image, right, caption) = item;
-    return SizedBox(
-      width: 170,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              height: 120,
-              width: 170,
-              child: Image.asset('assets/safety/$image.jpg', fit: BoxFit.cover),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: right ? 'Right: ' : 'Wrong: ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: right ? Brand.success : Brand.cylinderRed,
+                    size: 22,
                   ),
                 ),
-                TextSpan(text: caption),
+              ),
+            ],
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  good ? 'DO' : "DON'T",
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  body,
+                  style: const TextStyle(color: Brand.muted, fontSize: 13),
+                ),
               ],
             ),
-            style: const TextStyle(fontSize: 13, height: 1.3),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -713,7 +692,12 @@ class SafetyPosterScreen extends StatelessWidget {
     body: InteractiveViewer(
       minScale: 1,
       maxScale: 5,
-      child: Center(child: Image.asset('assets/safety/poster.jpg')),
+      child: Center(
+        child: Image.asset(
+          'assets/safety/poster.jpg',
+          filterQuality: FilterQuality.high,
+        ),
+      ),
     ),
   );
 }

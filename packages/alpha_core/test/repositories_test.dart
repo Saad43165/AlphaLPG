@@ -108,6 +108,10 @@ void _suite(Repos Function() make) {
     expect(o.timeOf(OrderStatus.assigned), isNotNull);
     expect(o.canBeRated, isTrue);
 
+    await repo.submitPaymentReference(id, ' 0123456789 ');
+    o = (await repo.watchOrder(id).first)!;
+    expect(o.paymentReference, '0123456789');
+
     await repo.rate(id, 5, 'Fast and polite rider');
     o = (await repo.watchOrder(id).first)!;
     expect(o.rating, 5);

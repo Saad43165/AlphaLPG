@@ -53,7 +53,8 @@ service cloud.firestore {
         && request.resource.data.items.size() <= 10
         && request.resource.data.total is int
         && request.resource.data.riderId == null
-        && request.resource.data.paymentStatus == 'pending';
+        && request.resource.data.paymentStatus == 'pending'
+        && request.resource.data.paymentMethod in ['cashOnDelivery', 'jazzCash', 'easyPaisa', 'bankTransfer'];
 
       allow update: if isAdmin()
         // Customer may cancel while the order is still "placed".
@@ -62,6 +63,14 @@ service cloud.firestore {
             && resource.data.status == 'placed'
             && request.resource.data.status == 'cancelled'
             && changed().hasOnly(['status', 'history', 'cancelReason', 'updatedAt']))
+        // Customer adds the transaction ID of a prepaid order.
+        || (signedIn()
+            && resource.data.customerId == request.auth.uid
+            && resource.data.paymentStatus == 'pending'
+            && resource.data.paymentMethod != 'cashOnDelivery'
+            && request.resource.data.paymentReference is string
+            && request.resource.data.paymentReference.size() <= 40
+            && changed().hasOnly(['paymentReference', 'updatedAt']))
         // Customer rates a delivered order once.
         || (signedIn()
             && resource.data.customerId == request.auth.uid

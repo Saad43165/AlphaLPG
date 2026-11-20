@@ -115,6 +115,7 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
               const SizedBox(height: 20),
               _field(_business, 'Business name', Icons.business_outlined),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: _type,
                 decoration: const InputDecoration(
                   labelText: 'Type of business',

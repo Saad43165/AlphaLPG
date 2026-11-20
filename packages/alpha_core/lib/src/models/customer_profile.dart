@@ -8,6 +8,7 @@ class CustomerProfile {
     required this.phone,
     this.type = CustomerSegment.home,
     this.businessName = '',
+    this.businessType = '',
     this.email = '',
     this.createdAt,
   });
@@ -19,6 +20,9 @@ class CustomerProfile {
   /// [CustomerSegment.home] or [CustomerSegment.business].
   final CustomerSegment type;
   final String businessName;
+
+  /// Restaurant / Café, Hotel, Factory … (see QuoteRequest.businessTypes).
+  final String businessType;
   final String email;
   final DateTime? createdAt;
 
@@ -31,6 +35,7 @@ class CustomerProfile {
     String? name,
     CustomerSegment? type,
     String? businessName,
+    String? businessType,
     String? email,
   }) => CustomerProfile(
     uid: uid,
@@ -38,6 +43,7 @@ class CustomerProfile {
     phone: phone,
     type: type ?? this.type,
     businessName: businessName ?? this.businessName,
+    businessType: businessType ?? this.businessType,
     email: email ?? this.email,
     createdAt: createdAt,
   );
@@ -49,6 +55,7 @@ class CustomerProfile {
         phone: m['phone'] as String? ?? '',
         type: CustomerSegment.parse(m['type'] as String?),
         businessName: m['businessName'] as String? ?? '',
+        businessType: m['businessType'] as String? ?? '',
         email: m['email'] as String? ?? '',
         createdAt: readDate(m['createdAt']),
       );
@@ -58,6 +65,7 @@ class CustomerProfile {
     'phone': phone,
     'type': type.name,
     'businessName': businessName,
+    'businessType': businessType,
     'email': email,
   };
 }

@@ -37,6 +37,26 @@ and an **admin app** can share the same data model and backend.
   - Reorder in one tap.
   - WhatsApp help, with the order number filled in.
 - **Bulk / commercial quote** form for restaurants, hotels and factories.
+- **First-time setup**, 3 steps after sign-in:
+  1. Name and optional email.
+  2. Home or business. Businesses add their business name and type.
+  3. A delivery address, which can be skipped.
+
+  Data is saved to `customers/{uid}` and `customers/{uid}/addresses/{id}`.
+- **Payments**: cash on delivery, JazzCash, Easypaisa and bank transfer.
+  - Wallet and bank payments are manual transfers to Alpha LPG's accounts
+    (`config/app`: accountTitle, jazzCashAccount, easyPaisaAccount, bankDetails).
+  - The customer can add the transaction ID at checkout or later.
+  - The admin marks the order paid.
+  - Automatic payment confirmation needs JazzCash/Easypaisa merchant accounts.
+- **PDF invoices** for every order:
+  - Logo, bill-to and deliver-to, items, totals, and the payment method and status.
+  - Preview, share and print in the app.
+- **Cart**:
+  - A free-delivery progress bar.
+  - Swipe to remove, with undo.
+  - "Add more" suggestions and a clear bill.
+  - A sticky checkout bar.
 - **Welcome slides** on first launch, using Alpha LPG depot and delivery photos.
 - **Safety guide** based on Alpha LPG's "Use LPG safely" poster:
   - Emergency steps, the 4 essentials, do's and don'ts, right vs wrong.

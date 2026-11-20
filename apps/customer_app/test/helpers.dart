@@ -29,3 +29,18 @@ Future<void> tapText(WidgetTester tester, String text) async {
   await tester.tap(f);
   await tester.pumpAndSettle();
 }
+
+/// Scrolls the visible vertical list until [finder] is built and on screen.
+Future<void> scrollTo(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    250,
+    scrollable: find
+        .byWidgetPredicate(
+          (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+        )
+        .hitTestable()
+        .first,
+  );
+  await tester.pumpAndSettle();
+}

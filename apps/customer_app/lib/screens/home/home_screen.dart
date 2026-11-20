@@ -12,6 +12,7 @@ import '../../utils/launch.dart';
 import '../../widgets/address_picker.dart';
 import '../../widgets/common.dart';
 import '../../widgets/live.dart';
+import '../info/safety_screen.dart';
 import 'product_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -968,13 +969,6 @@ class _LinkRow extends StatelessWidget {
 class _SafetyStrip extends StatelessWidget {
   const _SafetyStrip();
 
-  static const _tips = [
-    ('essential_upright', 'Keep it upright'),
-    ('essential_ventilated', 'Keep it ventilated'),
-    ('essential_connections', 'Check connections'),
-    ('essential_turn_off', 'Turn it off after use'),
-  ];
-
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -995,49 +989,46 @@ class _SafetyStrip extends StatelessWidget {
       ),
       const SizedBox(height: 6),
       SizedBox(
-        height: 168,
+        height: 136,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
-          itemCount: _tips.length,
+          itemCount: safetyEssentials.length,
           separatorBuilder: (_, _) => const SizedBox(width: 12),
           itemBuilder: (context, i) {
-            final (image, title) = _tips[i];
+            final (icon, title, _) = safetyEssentials[i];
             return GestureDetector(
               onTap: () => context.push('/safety'),
               child: Container(
-                width: 150,
+                width: 148,
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(Brand.radius),
                   boxShadow: Brand.shadow,
                 ),
-                clipBehavior: Clip.antiAlias,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.asset(
-                            'assets/safety/$image.jpg',
-                            fit: BoxFit.cover,
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Brand.blueTint,
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          Positioned(
-                            left: 8,
-                            top: 8,
-                            child: _NumberBadge(i + 1),
-                          ),
-                        ],
-                      ),
+                          child: Icon(icon, color: Brand.blueDark),
+                        ),
+                        const Spacer(),
+                        _NumberBadge(i + 1),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                      child: Text(
-                        title,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
+                    const Spacer(),
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -1068,7 +1059,7 @@ class _AboutBanner extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/brand/hero_warehouse.jpg',
+            'assets/brand/photo_depot.jpg',
             fit: BoxFit.cover,
             alignment: Alignment.center,
           ),

@@ -40,9 +40,12 @@ enum PaymentMethod {
   const PaymentMethod(this.label);
   final String label;
 
-  /// Methods the customer app currently offers. The others are planned and
-  /// already understood by the admin app and Cloud Functions.
-  static const available = [cashOnDelivery, bankTransfer];
+  /// Methods offered at checkout. Wallet and bank payments are manual
+  /// transfers to Alpha LPG's accounts (see [AppSettings]); the customer can
+  /// add the transaction ID and the admin marks the order paid.
+  static const available = [cashOnDelivery, jazzCash, easyPaisa, bankTransfer];
+
+  bool get isPrepaid => this != cashOnDelivery;
 
   static PaymentMethod parse(String? v) =>
       values.firstWhere((e) => e.name == v, orElse: () => cashOnDelivery);

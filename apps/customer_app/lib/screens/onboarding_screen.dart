@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -13,31 +14,47 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
+typedef _Slide = (String image, IconData icon, String title, String body);
+
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pages = PageController();
   int _index = 0;
 
-  static const _slides = [
+  static const _slides = <_Slide>[
     (
-      'assets/brand/hero_truck.jpg',
-      'LPG at your door',
-      'Order 6kg to 45.4kg cylinders in a few taps. Delivered across Lahore, usually the same day.',
+      'assets/brand/photo_depot.jpg',
+      Icons.local_fire_department_rounded,
+      'LPG for every kitchen in Lahore',
+      'From 6kg home cylinders to 45.4kg commercial supply, straight from the Alpha LPG depot.',
     ),
     (
-      'assets/brand/hero_stock.jpg',
-      'Safe cylinders, every time',
-      'Safety-checked Alpha LPG cylinders, plus simple tips to keep your home and family safe.',
+      'assets/brand/photo_truck.jpg',
+      Icons.local_shipping_rounded,
+      'Delivered to your door',
+      'Order in a few taps and track your rider live. Same-day delivery across Lahore.',
     ),
     (
-      'assets/brand/hero_warehouse.jpg',
-      'Track every delivery',
-      'Follow your order live, from confirmation to your doorstep. Pay cash on delivery.',
+      'assets/brand/photo_check.jpg',
+      Icons.verified_user_rounded,
+      'Checked before it leaves',
+      'Every cylinder is safety-checked by our team. Pay cash on delivery or by JazzCash, Easypaisa or bank.',
     ),
   ];
 
   bool get _last => _index == _slides.length - 1;
 
-  void _finish() => context.read<AppState>().completeOnboarding();
+  void _finish() {
+    HapticFeedback.lightImpact();
+    context.read<AppState>().completeOnboarding();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    for (final s in _slides) {
+      precacheImage(AssetImage(s.$1), context);
+    }
+  }
 
   @override
   void dispose() {
@@ -48,132 +65,153 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
-      value: Brand.lightStatusBar,
+      value: Brand.darkStatusBar,
       child: Scaffold(
-        backgroundColor: Brand.navy,
-        body: Stack(
-          children: [
-            PageView.builder(
-              controller: _pages,
-              itemCount: _slides.length,
-              onPageChanged: (i) => setState(() => _index = i),
-              itemBuilder: (_, i) => Image.asset(
-                _slides[i].$1,
-                fit: BoxFit.cover,
-                height: double.infinity,
-                width: double.infinity,
-              ),
-            ),
-            const IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0x880F2A3F),
-                      Color(0x000F2A3F),
-                      Color(0xF20F2A3F),
-                      Brand.navy,
-                    ],
-                    stops: [0, 0.3, 0.62, 1],
-                  ),
-                ),
-                child: SizedBox.expand(),
-              ),
-            ),
-            SafeArea(
-              child: Constrained(
-                maxWidth: 520,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Constrained(
+            maxWidth: 520,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 8, 0),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          const BrandLogo(height: 40, white: true),
-                          const Spacer(),
-                          if (!_last)
-                            TextButton(
-                              onPressed: _finish,
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Skip'),
-                            ),
-                        ],
-                      ),
+                      const BrandLogo(height: 38),
                       const Spacer(),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        child: Column(
-                          key: ValueKey(_index),
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _slides[_index].$2,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.8,
-                                height: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              _slides[_index].$3,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.85),
-                                fontSize: 16,
-                                height: 1.45,
-                              ),
-                            ),
-                          ],
+                      AnimatedOpacity(
+                        opacity: _last ? 0 : 1,
+                        duration: const Duration(milliseconds: 200),
+                        child: TextButton(
+                          onPressed: _last ? null : _finish,
+                          child: const Text('Skip'),
                         ),
                       ),
-                      const SizedBox(height: 28),
-                      Row(
-                        children: [
-                          for (var i = 0; i < _slides.length; i++)
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 250),
-                              margin: const EdgeInsets.only(right: 6),
-                              width: i == _index ? 24 : 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: i == _index
-                                    ? Brand.flame
-                                    : Colors.white.withValues(alpha: 0.35),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                          const Spacer(),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Brand.flame,
-                              foregroundColor: Brand.navy,
-                              minimumSize: const Size(150, 54),
-                            ),
-                            onPressed: _last
-                                ? _finish
-                                : () => _pages.nextPage(
-                                    duration: const Duration(milliseconds: 350),
-                                    curve: Curves.easeOutCubic,
-                                  ),
-                            child: Text(_last ? 'Get started' : 'Next'),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pages,
+                    itemCount: _slides.length,
+                    onPageChanged: (i) => setState(() => _index = i),
+                    itemBuilder: (_, i) => _SlideView(_slides[i]),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < _slides.length; i++)
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          margin: const EdgeInsets.only(right: 6),
+                          width: i == _index ? 26 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: i == _index ? Brand.blueDark : Brand.line,
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                        ],
+                        ),
+                      const Spacer(),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(150, 54),
+                        ),
+                        onPressed: _last
+                            ? _finish
+                            : () => _pages.nextPage(
+                                duration: const Duration(milliseconds: 350),
+                                curve: Curves.easeOutCubic,
+                              ),
+                        iconAlignment: IconAlignment.end,
+                        icon: Icon(
+                          _last
+                              ? Icons.check_rounded
+                              : Icons.arrow_forward_rounded,
+                        ),
+                        label: Text(_last ? 'Get started' : 'Next'),
                       ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _SlideView extends StatelessWidget {
+  const _SlideView(this.slide);
+  final _Slide slide;
+
+  @override
+  Widget build(BuildContext context) {
+    final (image, icon, title, body) = slide;
+    return LayoutBuilder(
+      builder: (context, c) {
+        // Keep the photo close to its native size so it stays sharp.
+        final imageHeight = (c.maxHeight * 0.56).clamp(220.0, 420.0);
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: imageHeight,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Brand.navy.withValues(alpha: 0.18),
+                      blurRadius: 30,
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  image,
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+              const SizedBox(height: 28),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Brand.blueTint,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: Brand.blueDark),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.8,
+                  height: 1.12,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                body,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.45,
+                  color: Brand.muted,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

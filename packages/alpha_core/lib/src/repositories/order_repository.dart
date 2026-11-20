@@ -19,6 +19,9 @@ abstract interface class OrderRepository {
   /// Customer cancellation (only while `placed`, enforced by rules).
   Future<void> cancelByCustomer(LpgOrder o, String reason);
 
+  /// Customer adds / corrects the transaction ID of a prepaid order.
+  Future<void> submitPaymentReference(String orderId, String reference);
+
   /// Customer rates a delivered order (once, enforced by rules).
   Future<void> rate(String orderId, int stars, String feedback);
 
@@ -105,6 +108,13 @@ class _FirestoreOrders implements OrderRepository {
     extra: {'cancelReason': reason},
     note: reason,
   );
+
+  @override
+  Future<void> submitPaymentReference(String orderId, String reference) =>
+      _orders.doc(orderId).update({
+        'paymentReference': reference.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
   @override
   Future<void> rate(String orderId, int stars, String feedback) =>
@@ -219,6 +229,18 @@ class _MemoryOrders implements OrderRepository {
     extra: {'cancelReason': reason},
     note: reason,
   );
+
+  @override
+  Future<void> submitPaymentReference(String orderId, String reference) async =>
+      _s.update(
+        _path,
+        orderId,
+        (d) => {
+          ...d,
+          'paymentReference': reference.trim(),
+          'updatedAt': DateTime.now(),
+        },
+      );
 
   @override
   Future<void> rate(String orderId, int stars, String feedback) async =>

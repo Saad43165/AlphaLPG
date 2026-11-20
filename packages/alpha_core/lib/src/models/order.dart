@@ -86,6 +86,7 @@ class LpgOrder {
     required this.address,
     this.paymentMethod = PaymentMethod.cashOnDelivery,
     this.paymentStatus = PaymentStatus.pending,
+    this.paymentReference = '',
     this.status = OrderStatus.placed,
     this.history = const [],
     this.scheduledFor,
@@ -114,6 +115,9 @@ class LpgOrder {
   final Address address;
   final PaymentMethod paymentMethod;
   final PaymentStatus paymentStatus;
+
+  /// Transaction ID for JazzCash / Easypaisa / bank transfers.
+  final String paymentReference;
   final OrderStatus status;
   final List<StatusEvent> history;
 
@@ -172,6 +176,7 @@ class LpgOrder {
     ),
     paymentMethod: PaymentMethod.parse(m['paymentMethod'] as String?),
     paymentStatus: PaymentStatus.parse(m['paymentStatus'] as String?),
+    paymentReference: m['paymentReference'] as String? ?? '',
     status: OrderStatus.parse(m['status'] as String?),
     history: [
       for (final e in (m['history'] as List? ?? const []))
@@ -203,6 +208,7 @@ class LpgOrder {
     'address': address.toMap(),
     'paymentMethod': paymentMethod.name,
     'paymentStatus': paymentStatus.name,
+    'paymentReference': paymentReference,
     'status': status.name,
     'history': [for (final e in history) e.toMap()],
     'scheduledFor': scheduledFor,

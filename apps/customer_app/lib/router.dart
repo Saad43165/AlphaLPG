@@ -7,6 +7,7 @@ import 'screens/account/address_form_screen.dart';
 import 'screens/account/addresses_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
+import 'screens/auth/setup_screen.dart';
 import 'screens/business/bulk_quote_screen.dart';
 import 'screens/cart/cart_screen.dart';
 import 'screens/cart/checkout_screen.dart';
@@ -16,12 +17,19 @@ import 'screens/info/about_screen.dart';
 import 'screens/info/help_screen.dart';
 import 'screens/info/safety_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/orders/invoice_screen.dart';
 import 'screens/orders/order_detail_screen.dart';
 import 'screens/orders/orders_screen.dart';
 import 'state/app_state.dart';
 
 /// Paths that need a signed-in customer.
-const _protected = ['/checkout', '/orders/', '/account/', '/order-placed'];
+const _protected = [
+  '/checkout',
+  '/orders/',
+  '/account/',
+  '/order-placed',
+  '/invoice',
+];
 
 GoRouter buildRouter(AppState state) => GoRouter(
   refreshListenable: state.routeSignal,
@@ -36,7 +44,7 @@ GoRouter buildRouter(AppState state) => GoRouter(
     if (state.signedIn && path == '/login') {
       return s.uri.queryParameters['from'] ?? '/';
     }
-    if (state.needsProfile && path != '/profile-setup') return '/profile-setup';
+    if (state.needsProfile && path != '/setup') return '/setup';
     return null;
   },
   routes: [
@@ -62,10 +70,7 @@ GoRouter buildRouter(AppState state) => GoRouter(
       path: '/login',
       builder: (_, s) => LoginScreen(from: s.uri.queryParameters['from']),
     ),
-    GoRoute(
-      path: '/profile-setup',
-      builder: (_, _) => const ProfileSetupScreen(),
-    ),
+    GoRoute(path: '/setup', builder: (_, _) => const SetupScreen()),
     GoRoute(path: '/cart', builder: (_, _) => const CartScreen()),
     GoRoute(path: '/checkout', builder: (_, _) => const CheckoutScreen()),
     GoRoute(
@@ -99,6 +104,10 @@ GoRouter buildRouter(AppState state) => GoRouter(
       builder: (_, _) => const SafetyPosterScreen(),
     ),
     GoRoute(path: '/about', builder: (_, _) => const AboutScreen()),
+    GoRoute(
+      path: '/invoice',
+      builder: (_, s) => InvoiceScreen(order: s.extra! as LpgOrder),
+    ),
     GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
     GoRoute(path: '/welcome', builder: (_, _) => const OnboardingScreen()),
   ],

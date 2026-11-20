@@ -2,6 +2,8 @@ import 'package:alpha_core/alpha_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'package:alpha_customer/screens/info/safety_screen.dart';
+
 import 'helpers.dart';
 
 void main() {
@@ -9,11 +11,11 @@ void main() {
     tester,
   ) async {
     await pumpApp(tester, testBackend(), showOnboarding: true);
-    expect(find.text('LPG at your door'), findsOneWidget);
+    expect(find.text('LPG for every kitchen in Lahore'), findsOneWidget);
     await tapText(tester, 'Next');
-    expect(find.text('Safe cylinders, every time'), findsOneWidget);
+    expect(find.text('Delivered to your door'), findsOneWidget);
     await tapText(tester, 'Next');
-    expect(find.text('Track every delivery'), findsOneWidget);
+    expect(find.text('Checked before it leaves'), findsOneWidget);
     await tapText(tester, 'Get started');
     expect(find.text('Need LPG today?'), findsOneWidget);
   });
@@ -26,6 +28,16 @@ void main() {
     expect(find.text('1. Turn off the gas supply'), findsOneWidget);
     expect(find.text('Keep it ventilated', skipOffstage: false), findsWidgets);
 
+    await tester.scrollUntilVisible(
+      find.text("Don't"),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(SafetyScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     await tapText(tester, "Don't");
     expect(
       find.text("Don't use a flame to check for leaks", skipOffstage: false),

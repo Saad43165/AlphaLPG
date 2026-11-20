@@ -39,55 +39,54 @@ class AboutScreen extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 260,
-            foregroundColor: Colors.white,
-            backgroundColor: Brand.blueDeep,
-            systemOverlayStyle: Brand.lightStatusBar,
-            title: const Text(
-              'About us',
-              style: TextStyle(color: Colors.white),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    'assets/brand/hero_warehouse.jpg',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.centerLeft,
+          const SliverAppBar(pinned: true, title: Text('About us')),
+          SliverToBoxAdapter(
+            child: Constrained(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: Container(
+                  height: 240,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: Brand.shadow,
                   ),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x99000000),
-                          Color(0x00000000),
-                          Color(0xE60F2A3F),
-                        ],
-                        stops: [0, 0.4, 1],
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        'assets/brand/photo_depot.jpg',
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.high,
                       ),
-                    ),
-                  ),
-                  const Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 18,
-                    child: Text(
-                      'Reliable LPG for homes and businesses across Lahore.',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        height: 1.2,
-                        letterSpacing: -0.4,
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0x000F2A3F), Color(0xE60F2A3F)],
+                            stops: [0.35, 1],
+                          ),
+                        ),
                       ),
-                    ),
+                      const Positioned(
+                        left: 18,
+                        right: 18,
+                        bottom: 16,
+                        child: Text(
+                          'Reliable LPG for homes and businesses across Lahore.',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                            height: 1.2,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -171,7 +170,7 @@ class AboutScreen extends StatelessWidget {
                       child: AspectRatio(
                         aspectRatio: 16 / 9,
                         child: Image.asset(
-                          'assets/brand/hero_truck.jpg',
+                          'assets/brand/photo_truck.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),

@@ -12,6 +12,7 @@ import '../../utils/format.dart';
 import '../../utils/launch.dart';
 import '../../widgets/common.dart';
 import '../../widgets/live.dart';
+import '../../widgets/payment.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key, required this.orderId});
@@ -28,6 +29,14 @@ class OrderDetailScreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: Text(o == null ? 'Order' : 'Order ${o.displayNumber}'),
+            actions: [
+              if (o != null && o.status != OrderStatus.cancelled)
+                TextButton.icon(
+                  onPressed: () => context.push('/invoice', extra: o),
+                  icon: const Icon(Icons.receipt_long_rounded),
+                  label: const Text('Invoice'),
+                ),
+            ],
           ),
           body: switch (snap) {
             AsyncSnapshot(hasError: true) => EmptyState(
@@ -139,15 +148,12 @@ class _OrderBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 _kv('Total', formatRupees(o.total), bold: true),
-                const SizedBox(height: 4),
-                _kv(
-                  'Payment',
-                  '${o.paymentMethod.label} · ${o.paymentStatus.name}',
-                ),
               ],
             ),
           ),
         ),
+        const SectionTitle('Payment'),
+        _PaymentCard(o),
         const SectionTitle('Delivery'),
         Card(
           child: Column(
@@ -571,4 +577,144 @@ class _RatedCard extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _PaymentCard extends StatelessWidget {
+  const _PaymentCard(this.o);
+  final LpgOrder o;
+
+  Future<void> _addReference(BuildContext context) async {
+    final controller = TextEditingController(text: o.paymentReference);
+    final ref = await showDialog<String>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Transaction ID'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(
+            hintText: 'From your ${o.paymentMethod.label} receipt',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (ref == null || ref.trim().isEmpty || !context.mounted) return;
+    try {
+      await context.read<Backend>().orders.submitPaymentReference(o.id, ref);
+      if (context.mounted) {
+        showMessage(context, 'Transaction ID saved. We will confirm shortly.');
+      }
+    } catch (_) {
+      if (context.mounted) {
+        showMessage(
+          context,
+          'Could not save. Please send it on WhatsApp.',
+          error: true,
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<AppState>().settings;
+    final paid = o.paymentStatus == PaymentStatus.paid;
+    final needsTransfer =
+        o.paymentMethod.isPrepaid && !paid && o.status != OrderStatus.cancelled;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(Brand.radius),
+        boxShadow: Brand.shadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: o.paymentMethod.color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(o.paymentMethod.icon, color: o.paymentMethod.color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      o.paymentMethod.label,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      formatRupees(o.total),
+                      style: const TextStyle(color: Brand.muted),
+                    ),
+                  ],
+                ),
+              ),
+              Tag(
+                paid
+                    ? 'PAID'
+                    : (o.paymentMethod.isPrepaid
+                          ? 'AWAITING PAYMENT'
+                          : 'PAY ON DELIVERY'),
+                color: paid ? Brand.success : Brand.flame,
+                dark: !paid,
+              ),
+            ],
+          ),
+          if (o.paymentReference.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Transaction ID: ${o.paymentReference}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+          if (needsTransfer) ...[
+            const SizedBox(height: 12),
+            if (o.paymentReference.isEmpty)
+              PaymentInstructions(
+                method: o.paymentMethod,
+                settings: settings,
+                total: o.total,
+              ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => _addReference(context),
+              icon: const Icon(Icons.tag_rounded),
+              label: Text(
+                o.paymentReference.isEmpty
+                    ? 'Add transaction ID'
+                    : 'Change transaction ID',
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          if (o.status != OrderStatus.cancelled)
+            TextButton.icon(
+              onPressed: () => context.push('/invoice', extra: o),
+              icon: const Icon(Icons.download_rounded),
+              label: const Text('View / share invoice (PDF)'),
+            ),
+        ],
+      ),
+    );
+  }
 }

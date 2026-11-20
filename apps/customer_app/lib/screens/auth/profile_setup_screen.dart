@@ -58,6 +58,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         businessName: _type == CustomerSegment.business
             ? _business.text.trim()
             : '',
+        businessType: _type == CustomerSegment.business
+            ? (state.profile?.businessType ?? '')
+            : '',
         email: _email.text.trim(),
       );
       await backend.profiles.saveProfile(profile, isNew: state.profile == null);
