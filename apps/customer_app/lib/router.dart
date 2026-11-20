@@ -1,0 +1,125 @@
+import 'package:alpha_core/alpha_core.dart';
+import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'screens/account/account_screen.dart';
+import 'screens/account/address_form_screen.dart';
+import 'screens/account/addresses_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/profile_setup_screen.dart';
+import 'screens/business/bulk_quote_screen.dart';
+import 'screens/cart/cart_screen.dart';
+import 'screens/cart/checkout_screen.dart';
+import 'screens/cart/order_placed_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/info/safety_screen.dart';
+import 'screens/orders/order_detail_screen.dart';
+import 'screens/orders/orders_screen.dart';
+import 'state/app_state.dart';
+
+/// Paths that need a signed-in customer.
+const _protected = ['/checkout', '/orders/', '/account/', '/order-placed'];
+
+GoRouter buildRouter(AppState state) => GoRouter(
+  refreshListenable: state.routeSignal,
+  redirect: (context, s) {
+    final path = s.uri.path;
+    final needsAuth = _protected.any(path.startsWith);
+    if (needsAuth && !state.signedIn) {
+      return '/login?from=${Uri.encodeComponent(s.uri.toString())}';
+    }
+    if (state.signedIn && path == '/login') {
+      return s.uri.queryParameters['from'] ?? '/';
+    }
+    if (state.needsProfile && path != '/profile-setup') return '/profile-setup';
+    return null;
+  },
+  routes: [
+    StatefulShellRoute.indexedStack(
+      builder: (context, s, shell) => _Shell(shell),
+      branches: [
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/', builder: (_, _) => const HomeScreen())],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/orders', builder: (_, _) => const OrdersScreen()),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/account', builder: (_, _) => const AccountScreen()),
+          ],
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (_, s) => LoginScreen(from: s.uri.queryParameters['from']),
+    ),
+    GoRoute(
+      path: '/profile-setup',
+      builder: (_, _) => const ProfileSetupScreen(),
+    ),
+    GoRoute(path: '/cart', builder: (_, _) => const CartScreen()),
+    GoRoute(path: '/checkout', builder: (_, _) => const CheckoutScreen()),
+    GoRoute(
+      path: '/order-placed/:id',
+      builder: (_, s) => OrderPlacedScreen(orderId: s.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/orders/:id',
+      builder: (_, s) => OrderDetailScreen(orderId: s.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/account/edit',
+      builder: (_, _) => const ProfileSetupScreen(editing: true),
+    ),
+    GoRoute(
+      path: '/account/addresses',
+      builder: (_, _) => const AddressesScreen(),
+    ),
+    GoRoute(
+      path: '/account/addresses/new',
+      builder: (_, _) => const AddressFormScreen(),
+    ),
+    GoRoute(
+      path: '/account/addresses/edit',
+      builder: (_, s) => AddressFormScreen(initial: s.extra as Address?),
+    ),
+    GoRoute(path: '/bulk-quote', builder: (_, _) => const BulkQuoteScreen()),
+    GoRoute(path: '/safety', builder: (_, _) => const SafetyScreen()),
+  ],
+);
+
+class _Shell extends StatelessWidget {
+  const _Shell(this.shell);
+  final StatefulNavigationShell shell;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: shell,
+    bottomNavigationBar: NavigationBar(
+      selectedIndex: shell.currentIndex,
+      onDestinationSelected: (i) =>
+          shell.goBranch(i, initialLocation: i == shell.currentIndex),
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.local_fire_department_outlined),
+          selectedIcon: Icon(Icons.local_fire_department),
+          label: 'Order',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.receipt_long_outlined),
+          selectedIcon: Icon(Icons.receipt_long),
+          label: 'My orders',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.person_outline),
+          selectedIcon: Icon(Icons.person),
+          label: 'Account',
+        ),
+      ],
+    ),
+  );
+}

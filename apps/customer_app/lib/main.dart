@@ -1,0 +1,17 @@
+import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'app.dart';
+import 'services/backend.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final backend = await Backend.init();
+  SharedPreferences? prefs;
+  try {
+    prefs = await SharedPreferences.getInstance();
+  } catch (_) {
+    // Cart simply won't persist between launches.
+  }
+  runApp(AlphaApp(backend: backend, prefs: prefs));
+}

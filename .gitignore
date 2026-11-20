@@ -1,0 +1,10 @@
+.DS_Store
+.idea/
+.vscode/
+*.iml
+# secrets
+**/key.properties
+**/*.jks
+**/*.keystore
+**/service-account*.json
+**/key.json

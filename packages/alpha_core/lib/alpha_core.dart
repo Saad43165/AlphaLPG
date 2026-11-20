@@ -1,0 +1,19 @@
+/// Shared code for every Alpha LPG app (customer, rider, admin).
+library;
+
+export 'src/dates.dart';
+export 'src/firestore_paths.dart';
+export 'src/models/address.dart';
+export 'src/models/app_settings.dart';
+export 'src/models/customer_profile.dart';
+export 'src/models/order.dart';
+export 'src/models/order_status.dart';
+export 'src/models/product.dart';
+export 'src/models/quote_request.dart';
+export 'src/pricing.dart';
+export 'src/repositories/catalog_repository.dart';
+export 'src/repositories/memory_store.dart';
+export 'src/repositories/order_repository.dart';
+export 'src/repositories/profile_repository.dart';
+export 'src/repositories/quote_repository.dart';
+export 'src/seed_data.dart';

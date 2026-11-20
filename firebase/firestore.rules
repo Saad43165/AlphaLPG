@@ -1,0 +1,97 @@
+rules_version = '2';
+
+// Alpha LPG — security rules shared by the customer, rider and admin apps.
+// Roles come from Firebase Auth custom claims: { admin: true } or { rider: true }
+// (set with the Admin SDK, see README).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    function isRider() { return signedIn() && request.auth.token.rider == true; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Catalogue and business settings: public read, admin write.
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Customer profiles and saved addresses.
+    match /customers/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create, update: if isSelf(uid)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 1
+        && request.resource.data.name.size() < 80
+        && request.resource.data.type in ['home', 'business'];
+      allow delete: if isAdmin();
+
+      match /addresses/{id} {
+        allow read, write: if isSelf(uid) || isAdmin();
+      }
+    }
+
+    // Orders.
+    match /orders/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.customerId == request.auth.uid)
+        || (isRider() && resource.data.riderId == request.auth.uid);
+
+      // Customers create their own orders, always as "placed". Totals are
+      // re-calculated server-side by the onOrderCreated function.
+      allow create: if signedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.status == 'placed'
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 10
+        && request.resource.data.total is int
+        && request.resource.data.riderId == null
+        && request.resource.data.paymentStatus == 'pending';
+
+      allow update: if isAdmin()
+        // Customer may cancel while the order is still "placed".
+        || (signedIn()
+            && resource.data.customerId == request.auth.uid
+            && resource.data.status == 'placed'
+            && request.resource.data.status == 'cancelled'
+            && changed().hasOnly(['status', 'history', 'cancelReason', 'updatedAt']))
+        // Assigned rider moves the order along and records cash collected.
+        || (isRider()
+            && resource.data.riderId == request.auth.uid
+            && request.resource.data.status in ['outForDelivery', 'delivered']
+            && changed().hasOnly(['status', 'history', 'paymentStatus', 'updatedAt']));
+
+      allow delete: if false;
+    }
+
+    // Bulk / commercial quote requests (guests may submit too).
+    match /quoteRequests/{id} {
+      allow create: if request.resource.data.status == 'new'
+        && request.resource.data.phone is string
+        && request.resource.data.businessName is string
+        && (request.resource.data.customerId == ''
+            || (signedIn() && request.resource.data.customerId == request.auth.uid));
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.customerId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // Riders directory (admin managed, riders can read their own).
+    match /riders/{uid} {
+      allow read: if isAdmin() || isSelf(uid);
+      allow write: if isAdmin();
+    }
+
+    // Server-only counters (order numbers).
+    match /counters/{doc} {
+      allow read, write: if false;
+    }
+  }
+}
