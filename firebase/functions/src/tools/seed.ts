@@ -42,6 +42,7 @@ async function main() {
     accountTitle: "",
     jazzCashAccount: "",
     easyPaisaAccount: "",
+    raastId: "",
   }, { merge: true });
   await batch.commit();
   console.log(`Seeded ${products.length} products and config/app`);

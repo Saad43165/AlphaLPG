@@ -18,6 +18,7 @@ class AppSettings {
     this.accountTitle = '',
     this.jazzCashAccount = '',
     this.easyPaisaAccount = '',
+    this.raastId = '',
   });
 
   final bool acceptingOrders;
@@ -47,6 +48,9 @@ class AppSettings {
   final String jazzCashAccount;
   final String easyPaisaAccount;
 
+  /// Raast ID (usually a mobile number) for instant bank transfers.
+  final String raastId;
+
   factory AppSettings.fromMap(Map<String, dynamic> m) {
     const d = AppSettings();
     return AppSettings(
@@ -71,6 +75,7 @@ class AppSettings {
       accountTitle: m['accountTitle'] as String? ?? d.accountTitle,
       jazzCashAccount: m['jazzCashAccount'] as String? ?? d.jazzCashAccount,
       easyPaisaAccount: m['easyPaisaAccount'] as String? ?? d.easyPaisaAccount,
+      raastId: m['raastId'] as String? ?? d.raastId,
     );
   }
 
@@ -91,5 +96,6 @@ class AppSettings {
     'accountTitle': accountTitle,
     'jazzCashAccount': jazzCashAccount,
     'easyPaisaAccount': easyPaisaAccount,
+    'raastId': raastId,
   };
 }

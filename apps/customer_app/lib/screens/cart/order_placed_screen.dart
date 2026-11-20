@@ -128,10 +128,11 @@ class OrderPlacedScreen extends StatelessWidget {
                     if (o.paymentMethod.isPrepaid &&
                         o.paymentReference.isEmpty) ...[
                       const SizedBox(height: 14),
-                      PaymentInstructions(
+                      PaymentSteps(
                         method: o.paymentMethod,
                         settings: settings,
                         total: o.total,
+                        orderNumber: o.displayNumber,
                       ),
                     ],
                   ],

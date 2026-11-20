@@ -76,6 +76,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
+    if (_payment.isPrepaid) {
+      final tidProblem = validateTransactionId(_reference.text);
+      if (tidProblem != null) {
+        showMessage(context, tidProblem, error: true);
+        return;
+      }
+    }
     HapticFeedback.mediumImpact();
     setState(() => _placing = true);
     try {

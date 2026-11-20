@@ -49,6 +49,10 @@ and an **admin app** can share the same data model and backend.
   - The customer can add the transaction ID at checkout or later.
   - The admin marks the order paid.
   - Automatic payment confirmation needs JazzCash/Easypaisa merchant accounts.
+- **Payment logos**: put the official JazzCash / Easypaisa / bank / cash
+  logos at `apps/customer_app/assets/payments/{jazzCash,easyPaisa,bankTransfer,cashOnDelivery}.png`
+  and add `- assets/payments/` to `pubspec.yaml`. Until then, a badge in each
+  brand's colours is shown.
 - **PDF invoices** for every order:
   - Logo, bill-to and deliver-to, items, totals, and the payment method and status.
   - Preview, share and print in the app.

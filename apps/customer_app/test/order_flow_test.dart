@@ -91,9 +91,9 @@ void main() {
 
     // Pay by JazzCash with a transaction ID.
     await tapText(tester, 'JazzCash');
-    expect(find.text('Send Rs. 6,592 via JazzCash'), findsOneWidget);
+    expect(find.text('How to pay Rs. 6,592'), findsOneWidget);
     await tester.enterText(
-      find.widgetWithText(TextField, 'Transaction ID (optional)'),
+      find.widgetWithText(TextField, 'Transaction ID (TID)'),
       'TX12345',
     );
     await tapText(tester, 'Place order');

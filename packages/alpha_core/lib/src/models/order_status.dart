@@ -35,7 +35,7 @@ enum PaymentMethod {
   cashOnDelivery('Cash on delivery'),
   jazzCash('JazzCash'),
   easyPaisa('Easypaisa'),
-  bankTransfer('Bank transfer');
+  bankTransfer('Bank transfer / Raast');
 
   const PaymentMethod(this.label);
   final String label;

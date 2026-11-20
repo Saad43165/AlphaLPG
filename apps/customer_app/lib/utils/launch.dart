@@ -21,6 +21,12 @@ abstract final class Launch {
     ),
   );
 
+  /// Opens an app's Play Store page (shows "Open" if it is installed).
+  static Future<bool> store(String appId) => launchUrl(
+    Uri.https('play.google.com', '/store/apps/details', {'id': appId}),
+    mode: LaunchMode.externalApplication,
+  );
+
   static Future<bool> maps({String? query, double? lat, double? lng}) =>
       launchUrl(
         Uri.https('www.google.com', '/maps/search/', {
