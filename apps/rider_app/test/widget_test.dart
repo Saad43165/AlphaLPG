@@ -45,8 +45,12 @@ class FakeTracker extends LocationTracker {
 
   @override
   String? get orderId => _id;
+  DateTime? shared;
+  String? error;
   @override
-  DateTime? get lastShared => null;
+  DateTime? get lastShared => shared;
+  @override
+  String? get lastError => error;
   @override
   Future<TrackerAccess> ensureAccess() async => access;
   @override
@@ -237,10 +241,7 @@ void main() {
       // Start: status changes and location sharing begins.
       await tapText(tester, 'Start delivery');
       expect(rig.tracker!.orderId, id);
-      expect(
-        find.text('Sharing your location with the customer'),
-        findsOneWidget,
-      );
+      expect(find.text('Finding your position…'), findsOneWidget);
       o = await orderOf(tester, rig, id);
       expect(o.status, OrderStatus.outForDelivery);
 
@@ -337,11 +338,39 @@ void main() {
     await pumpRider(tester, rig);
     await signIn(tester);
     expect(rig.tracker!.orderId, id);
-    expect(
-      find.text('Sharing your location with the customer'),
-      findsOneWidget,
-    );
+    expect(find.text('Finding your position…'), findsOneWidget);
   });
+
+  testWidgets(
+    'the banner tells the truth: working, or failing with the reason',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      final id = await placeOrder(tester, rig);
+      await tester.runAsync(() async {
+        await rig.backend.orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran Khan',
+          phone: '0300',
+        );
+        await rig.backend.orders.startDelivery(id, 'r1');
+      });
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      rig.tracker!.error =
+          'The server refused the location. Ask the shop to check the rules.';
+      rig.tracker!.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.textContaining('server refused'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+      rig.tracker!.error = null;
+      rig.tracker!.shared = DateTime.now();
+      rig.tracker!.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Sharing live location'), findsOneWidget);
+    },
+  );
 
   testWidgets('prepaid orders are not shown as cash to collect', (
     tester,

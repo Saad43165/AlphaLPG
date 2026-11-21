@@ -65,6 +65,13 @@ abstract interface class OrderRepository {
   /// The rider has picked up the cylinders and is on the way.
   Future<void> startDelivery(String orderId, String riderId);
 
+  /// The rider is at the customer's door.
+  Future<void> markArrived(String orderId, String riderId);
+
+  /// The rider cannot do an assigned job: it goes back to the shop (confirmed,
+  /// no rider) so another rider can take it.
+  Future<void> releaseJob(String orderId, String riderId);
+
   /// Delivered: records the cash taken at the door and empties collected.
   /// Cash marks a cash-on-delivery order as paid.
   Future<void> completeDelivery(
@@ -276,6 +283,22 @@ class _FirestoreOrders implements OrderRepository {
   @override
   Future<void> startDelivery(String orderId, String riderId) =>
       _setStatus(orderId, OrderStatus.outForDelivery, riderId);
+
+  @override
+  Future<void> markArrived(String orderId, String riderId) =>
+      _orders.doc(orderId).update({
+        'arrivedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  @override
+  Future<void> releaseJob(String orderId, String riderId) => _setStatus(
+    orderId,
+    OrderStatus.confirmed,
+    riderId,
+    note: 'Rider handed the job back',
+    extra: {'riderId': null, 'riderName': null, 'riderPhone': null},
+  );
 
   @override
   Future<void> completeDelivery(
@@ -511,6 +534,23 @@ class _MemoryOrders implements OrderRepository {
   @override
   Future<void> startDelivery(String orderId, String riderId) async =>
       _setStatus(orderId, OrderStatus.outForDelivery, riderId);
+
+  @override
+  Future<void> markArrived(String orderId, String riderId) async =>
+      _s.update(
+        _path,
+        orderId,
+        (d) => {...d, 'arrivedAt': DateTime.now(), 'updatedAt': DateTime.now()},
+      );
+
+  @override
+  Future<void> releaseJob(String orderId, String riderId) async => _setStatus(
+    orderId,
+    OrderStatus.confirmed,
+    riderId,
+    note: 'Rider handed the job back',
+    extra: {'riderId': null, 'riderName': null, 'riderPhone': null},
+  );
 
   @override
   Future<void> completeDelivery(

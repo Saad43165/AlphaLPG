@@ -79,34 +79,31 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
       builder: (context, snap) {
         final loc = snap.data;
         final fresh = loc != null && loc.isFresh();
-        if (!fresh) {
+        if (o.arrivedAt != null) {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: pal.card,
+              color: Brand.success.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(Brand.radius),
-              border: Border.all(color: pal.line),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                MediaQuery.disableAnimationsOf(context)
-                    ? const Icon(Icons.two_wheeler_rounded, size: 22)
-                    : const SizedBox.square(
-                        dimension: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5),
-                      ),
-                const SizedBox(width: 14),
+                Icon(Icons.pin_drop_rounded, color: Brand.success, size: 28),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    loc == null
-                        ? 'Your rider is on the way. Waiting for their location…'
-                        : 'Location paused. Your rider is still on the way.',
-                    style: TextStyle(color: pal.muted, height: 1.35),
+                    'Your rider is at your door. Please keep your empty cylinders ready.',
+                    style: TextStyle(fontWeight: FontWeight.w700, height: 1.35),
                   ),
                 ),
               ],
             ),
           );
+        }
+        if (!fresh) {
+          // No endless spinner: show the delivery spot on the map and say
+          // honestly what is going on.
+          return _WaitingMap(order: o, paused: loc != null);
         }
         final hasPin = o.address.hasLocation;
         final metres = hasPin ? metresBetween(loc, o.address) : null;
@@ -248,6 +245,98 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Before the rider's first position arrives (or when it goes quiet).
+class _WaitingMap extends StatelessWidget {
+  const _WaitingMap({required this.order, required this.paused});
+  final LpgOrder order;
+  final bool paused;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    final svc = context.read<LocationService>();
+    final a = order.address;
+    return Container(
+      decoration: BoxDecoration(
+        color: pal.card,
+        borderRadius: BorderRadius.circular(Brand.radius),
+        boxShadow: pal.shadow,
+        border: pal.isDark ? Border.all(color: pal.line) : null,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          if (svc.hasMap && a.hasLocation)
+            SizedBox(
+              height: 170,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: LatLng(a.lat!, a.lng!),
+                  initialZoom: 15.5,
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.none,
+                  ),
+                  backgroundColor: const Color(0xFFE6ECF2),
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: svc.tiles(dark: false).urlTemplate,
+                    fallbackUrl:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'pk.alphalpg.customer',
+                    retinaMode: MediaQuery.devicePixelRatioOf(context) > 1.5,
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: LatLng(a.lat!, a.lng!),
+                        width: 44,
+                        height: 54,
+                        alignment: Alignment.topCenter,
+                        child: const Icon(
+                          Icons.location_on_rounded,
+                          color: Brand.cylinderRed,
+                          size: 44,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SimpleAttributionWidget(
+                    source: Text(svc.attribution),
+                    backgroundColor: const Color(0xB3FFFFFF),
+                    alignment: Alignment.bottomLeft,
+                  ),
+                ],
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Icon(
+                  paused
+                      ? Icons.location_searching_rounded
+                      : Icons.two_wheeler_rounded,
+                  color: Brand.blueDark,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    paused
+                        ? 'Your rider\'s location is paused. They are still on the way: call them if you need.'
+                        : 'Your rider is on the way. Their live position appears here as soon as their phone shares it. You can call them below.',
+                    style: TextStyle(color: pal.muted, height: 1.35),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

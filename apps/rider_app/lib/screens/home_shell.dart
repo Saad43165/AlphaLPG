@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session.dart';
+import '../utils/launch.dart';
 import '../widgets/common.dart';
 import 'account_screen.dart';
 import 'available_screen.dart';
@@ -208,25 +209,47 @@ class _LocationBanner extends StatelessWidget {
         ),
       );
     }
-    if (session.tracker.isTracking) {
+    final t = session.tracker;
+    if (t.isTracking) {
+      final err = t.lastError;
+      final sent = t.lastShared;
+      // Honest status: waiting, working, or failing (with the reason).
+      final (color, icon, text) = err != null
+          ? (Brand.danger, Icons.location_off_rounded, err)
+          : sent == null
+          ? (
+              const Color(0xFF8A6D00),
+              Icons.location_searching_rounded,
+              'Finding your position…',
+            )
+          : (
+              Brand.success,
+              Icons.my_location_rounded,
+              'Sharing live location · updated ${timeAgo(sent)}',
+            );
       return Container(
         width: double.infinity,
-        color: Brand.success.withValues(alpha: 0.14),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: const Row(
+        color: color.withValues(alpha: 0.14),
+        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+        child: Row(
           children: [
-            Icon(Icons.my_location_rounded, color: Brand.success, size: 20),
-            SizedBox(width: 10),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Sharing your location with the customer',
+                text,
                 style: TextStyle(
-                  color: Brand.success,
+                  color: color,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
               ),
             ),
+            if (err != null)
+              TextButton(
+                onPressed: session.retryTracking,
+                child: const Text('Retry'),
+              ),
           ],
         ),
       );

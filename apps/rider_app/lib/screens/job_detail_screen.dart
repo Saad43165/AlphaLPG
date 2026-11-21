@@ -356,13 +356,90 @@ class JobDetailScreen extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 22),
-            if (mine && o.status == OrderStatus.assigned)
+            if (mine && o.status == OrderStatus.assigned) ...[
               FilledButton.icon(
                 onPressed: () => startDeliveryFlow(context, s, o),
                 icon: const Icon(Icons.two_wheeler_rounded),
                 label: const Text('Start delivery'),
               ),
-            if (mine && o.status == OrderStatus.outForDelivery)
+              const SizedBox(height: 8),
+              TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: Brand.danger),
+                onPressed: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (c) => AlertDialog(
+                      title: const Text('Hand this job back?'),
+                      content: const Text(
+                        'It goes back to Alpha LPG so another rider can take it. Do this only if you cannot deliver it.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(c, false),
+                          child: const Text('Keep the job'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(c, true),
+                          child: const Text('Hand back'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok != true || !context.mounted) return;
+                  final done = await s.release(o);
+                  if (!context.mounted) return;
+                  if (done) {
+                    Navigator.pop(context);
+                    showMessage(context, 'Job handed back.');
+                  } else {
+                    showMessage(
+                      context,
+                      'Could not hand it back. Check your internet.',
+                      error: true,
+                    );
+                  }
+                },
+                icon: const Icon(Icons.undo_rounded),
+                label: const Text('I cannot do this job'),
+              ),
+            ],
+            if (mine && o.status == OrderStatus.outForDelivery) ...[
+              if (o.arrivedAt == null)
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final ok = await s.arrived(o);
+                    if (context.mounted) {
+                      showMessage(
+                        context,
+                        ok
+                            ? 'The customer knows you are at the door.'
+                            : 'Could not send. Check your internet.',
+                        error: !ok,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.pin_drop_rounded),
+                  label: const Text('I have arrived'),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Brand.success.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.check_circle_rounded, color: Brand.success),
+                      SizedBox(width: 10),
+                      Text(
+                        'Customer told you are at the door',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 10),
               FilledButton.icon(
                 style: FilledButton.styleFrom(backgroundColor: Brand.success),
                 onPressed: () async {
@@ -372,6 +449,7 @@ class JobDetailScreen extends StatelessWidget {
                 icon: const Icon(Icons.check_circle_rounded),
                 label: const Text('Mark delivered'),
               ),
+            ],
             if (!mine && s.available.any((a) => a.id == o.id))
               FilledButton.icon(
                 onPressed: () async {

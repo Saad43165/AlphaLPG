@@ -60,7 +60,18 @@ class OrderDetailScreen extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 extension _Tracking on LpgOrder {
-  String get headline => switch (status) {
+  /// Shown under the headline; "at your door" once the rider has arrived.
+  String get statusLine =>
+      status == OrderStatus.outForDelivery && arrivedAt != null
+      ? 'Your rider is at your door'
+      : status.description;
+
+  String get headline =>
+      status == OrderStatus.outForDelivery && arrivedAt != null
+      ? 'Rider has arrived'
+      : _headline;
+
+  String get _headline => switch (status) {
     OrderStatus.placed => 'Order received',
     OrderStatus.confirmed => 'Order confirmed',
     OrderStatus.assigned => 'Rider assigned',
@@ -375,7 +386,7 @@ class _Hero extends StatelessWidget {
                             o.status == OrderStatus.cancelled &&
                                     o.cancelReason.isNotEmpty
                                 ? 'Reason: ${o.cancelReason}'
-                                : o.status.description,
+                                : o.statusLine,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 15,
@@ -1179,6 +1190,10 @@ class _PaymentCard extends StatelessWidget {
               ),
             ],
           ),
+          if (o.status != OrderStatus.cancelled) ...[
+            const SizedBox(height: 12),
+            _PayStatus(o),
+          ],
           if (o.paymentReference.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(
@@ -1523,4 +1538,68 @@ class _ProblemButton extends StatelessWidget {
     icon: const Icon(Icons.flag_outlined),
     label: const Text('Something wrong with this order?'),
   );
+}
+
+/// Says plainly where this payment stands and who marks it paid.
+class _PayStatus extends StatelessWidget {
+  const _PayStatus(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) {
+    final paid = o.paymentStatus == PaymentStatus.paid;
+    final cod = o.paymentMethod == PaymentMethod.cashOnDelivery;
+    final total = formatRupees(o.total);
+    final (IconData icon, Color color, String text) = paid
+        ? (
+            Icons.verified_rounded,
+            Brand.success,
+            cod
+                ? 'Paid in cash${o.cashCollected != null && o.cashCollected! > 0 ? ' · ${formatRupees(o.cashCollected!)} collected by ${o.riderName ?? 'the rider'}' : ''}.'
+                : 'Payment confirmed by Alpha LPG.',
+          )
+        : cod
+        ? o.status == OrderStatus.delivered
+              ? (
+                  Icons.hourglass_bottom_rounded,
+                  const Color(0xFF8A6D00),
+                  'Delivered. Alpha LPG will confirm your cash payment here.',
+                )
+              : (
+                  Icons.payments_rounded,
+                  Brand.blueDark,
+                  'Pay $total in cash to the rider at the door. The rider records it and this order then shows Paid.',
+                )
+        : o.paymentReference.isEmpty
+        ? (
+            Icons.account_balance_wallet_rounded,
+            const Color(0xFF8A6D00),
+            'Send $total, then add your transaction ID so we can match it.',
+          )
+        : (
+            Icons.hourglass_top_rounded,
+            Brand.blueDark,
+            'Thanks! We are checking transaction ${o.paymentReference}. This changes to Paid as soon as Alpha LPG confirms it.',
+          );
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(height: 1.4, fontSize: 13.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -83,12 +83,36 @@ Future<RiderBackend> buildDemoBackend() async {
       ),
     ),
   );
-  await job('Ali Raza', '+923001234567', 'Gulberg III', 'House 12-B, Main Boulevard',
-      31.5204, 74.3587, item('cyl-11-8kg', '11.8kg Gas Cylinder', 11.8, 3296, 2), PaymentMethod.cashOnDelivery);
-  await job('Sara Café', '+923211234567', 'DHA Phase 5', 'Shop 4, Y Block Market',
-      31.4697, 74.4094, item('cyl-45-4kg', '45.4kg Gas Cylinder', 45.4, 12682, 1), PaymentMethod.jazzCash);
-  await job('Bilal Ahmed', '+923331234567', 'Johar Town', 'Street 7, Block E',
-      31.4697, 74.2728, item('cyl-6kg', '6kg Gas Cylinder', 6, 1676, 1), PaymentMethod.cashOnDelivery);
+  await job(
+    'Ali Raza',
+    '+923001234567',
+    'Gulberg III',
+    'House 12-B, Main Boulevard',
+    31.5204,
+    74.3587,
+    item('cyl-11-8kg', '11.8kg Gas Cylinder', 11.8, 3296, 2),
+    PaymentMethod.cashOnDelivery,
+  );
+  await job(
+    'Sara Café',
+    '+923211234567',
+    'DHA Phase 5',
+    'Shop 4, Y Block Market',
+    31.4697,
+    74.4094,
+    item('cyl-45-4kg', '45.4kg Gas Cylinder', 45.4, 12682, 1),
+    PaymentMethod.jazzCash,
+  );
+  await job(
+    'Bilal Ahmed',
+    '+923331234567',
+    'Johar Town',
+    'Street 7, Block E',
+    31.4697,
+    74.2728,
+    item('cyl-6kg', '6kg Gas Cylinder', 6, 1676, 1),
+    PaymentMethod.cashOnDelivery,
+  );
 
   return RiderBackend(
     auth: _DemoAuth(),

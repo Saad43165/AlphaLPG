@@ -95,7 +95,7 @@ void main() {
     'no location yet → honest waiting message, no made-up arrival time',
     (tester) async {
       await openTracking(tester);
-      expect(find.textContaining('Waiting for their location'), findsOneWidget);
+      expect(find.textContaining('live position appears here'), findsOneWidget);
       expect(find.textContaining('min away'), findsNothing);
       expect(find.textContaining('Arriving by'), findsNothing);
     },
@@ -106,6 +106,6 @@ void main() {
   ) async {
     await openTracking(tester, status: OrderStatus.placed);
     expect(find.textContaining('Arriving by'), findsNothing);
-    expect(find.textContaining('Waiting for their location'), findsNothing);
+    expect(find.textContaining('live position appears here'), findsNothing);
   });
 }

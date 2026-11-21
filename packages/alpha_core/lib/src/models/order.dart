@@ -98,6 +98,7 @@ class LpgOrder {
     this.rating,
     this.feedback = '',
     this.cashCollected,
+    this.arrivedAt,
     this.emptiesCollected,
     this.createdAt,
     this.updatedAt,
@@ -137,6 +138,9 @@ class LpgOrder {
 
   /// Cash the rider took at the door (set when delivered).
   final int? cashCollected;
+
+  /// When the rider tapped "I've arrived" at the door.
+  final DateTime? arrivedAt;
 
   /// Empty cylinders the rider took back.
   final int? emptiesCollected;
@@ -199,6 +203,7 @@ class LpgOrder {
     rating: (m['rating'] as num?)?.toInt(),
     feedback: m['feedback'] as String? ?? '',
     cashCollected: (m['cashCollected'] as num?)?.round(),
+    arrivedAt: readDate(m['arrivedAt']),
     emptiesCollected: (m['emptiesCollected'] as num?)?.toInt(),
     createdAt: readDate(m['createdAt']),
     updatedAt: readDate(m['updatedAt']),
@@ -230,6 +235,8 @@ class LpgOrder {
     'rating': rating,
     'feedback': feedback,
     'cashCollected': cashCollected,
+    // Only written once the rider arrives (never when an order is created).
+    if (arrivedAt != null) 'arrivedAt': arrivedAt,
     'emptiesCollected': emptiesCollected,
     'cylinderCount': cylinderCount,
     'emptiesToCollect': emptiesToCollect,

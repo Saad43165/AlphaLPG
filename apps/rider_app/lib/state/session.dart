@@ -182,8 +182,11 @@ class RiderSession extends ChangeNotifier {
     await tracker.start(onTheWay.id, backend.orders);
   }
 
-  /// Re-checks location access after the rider fixes it in settings.
-  Future<void> retryTracking() => _syncTracking();
+  /// Re-checks location access and restarts sharing from scratch.
+  Future<void> retryTracking() async {
+    await tracker.stop();
+    await _syncTracking();
+  }
 
   // ---- Actions ---------------------------------------------------------------
 
@@ -230,6 +233,30 @@ class RiderSession extends ChangeNotifier {
       return StartResult.ok;
     } catch (_) {
       return StartResult.error;
+    }
+  }
+
+  /// "I've arrived": the customer sees their rider is at the door.
+  Future<bool> arrived(LpgOrder order) async {
+    final id = _uid;
+    if (id == null) return false;
+    try {
+      await backend.orders.markArrived(order.id, id);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Hands an assigned job back to the shop so another rider can take it.
+  Future<bool> release(LpgOrder order) async {
+    final id = _uid;
+    if (id == null) return false;
+    try {
+      await backend.orders.releaseJob(order.id, id);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

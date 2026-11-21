@@ -227,6 +227,72 @@ describe('rider workflow', () => {
   });
 });
 
+describe('arrival and handing a job back', () => {
+  it('the delivering rider marks arrival once; others and customers cannot', async () => {
+    await seedOrder({ riderId: 'r1', riderName: 'Imran Khan', status: 'outForDelivery' });
+    await assertFails(updateDoc(doc(staff('r2'), 'orders/o1'), { arrivedAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(customer(), 'orders/o1'), { arrivedAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(staff('r1'), 'orders/o1'), { arrivedAt: new Date(), updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(staff('r1'), 'orders/o1'), { arrivedAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(staff('r1'), 'orders/o1'), { arrivedAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+  });
+  it('arrival is only possible while the order is on the way', async () => {
+    await seedOrder({ riderId: 'r1', status: 'assigned' });
+    await assertFails(updateDoc(doc(staff('r1'), 'orders/o1'), { arrivedAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+  });
+  it('a rider can hand back an assigned job, which becomes open again', async () => {
+    await seedOrder({ riderId: 'r1', riderName: 'Imran Khan', riderPhone: '+923005550001', status: 'assigned' });
+    const back = { status: 'confirmed', riderId: null, riderName: null, riderPhone: null, history: ev('confirmed', 'r1'), updatedAt: serverTimestamp() };
+    await assertFails(updateDoc(doc(staff('r2'), 'orders/o1'), back));
+    await assertSucceeds(updateDoc(doc(staff('r1'), 'orders/o1'), back));
+    // Another online rider can now take it.
+    await assertSucceeds(updateDoc(doc(staff('r2'), 'orders/o1'), {
+      riderId: 'r2', riderName: 'Bilal', riderPhone: '+923005550002', status: 'assigned', history: ev('assigned', 'r2'), updatedAt: serverTimestamp(),
+    }));
+  });
+  it('a job that is already on the way cannot be handed back', async () => {
+    await seedOrder({ riderId: 'r1', status: 'outForDelivery' });
+    await assertFails(updateDoc(doc(staff('r1'), 'orders/o1'), { status: 'confirmed', riderId: null, riderName: null, riderPhone: null, history: ev('confirmed', 'r1'), updatedAt: serverTimestamp() }));
+  });
+});
+
+describe('the whole journey across the three apps', () => {
+  it('customer orders → admin confirms and assigns → rider delivers and is paid → customer rates', async () => {
+    // Customer app places the order.
+    await assertSucceeds(setDoc(doc(customer(), 'orders/j1'), order()));
+    const mine = await getDocs(query(collection(customer(), 'orders'), where('customerId', '==', 'u1')));
+    assert.equal(mine.size, 1);
+    // Admin app sees it, confirms, assigns a rider.
+    await assertSucceeds(getDoc(doc(staff('boss'), 'orders/j1')));
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'orders/j1'), { status: 'confirmed', history: ev('confirmed', 'boss'), updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'orders/j1'), { riderId: 'r1', riderName: 'Imran Khan', riderPhone: '+923005550001', status: 'assigned', history: ev('assigned', 'boss'), updatedAt: serverTimestamp() }));
+    // Rider app: sees the job, starts, shares location.
+    await assertSucceeds(getDoc(doc(staff('r1'), 'orders/j1')));
+    await assertSucceeds(updateDoc(doc(staff('r1'), 'orders/j1'), { status: 'outForDelivery', history: ev('outForDelivery', 'r1'), updatedAt: serverTimestamp() }));
+    await assertSucceeds(setDoc(doc(staff('r1'), 'orders/j1/live/rider'), { lat: 31.51, lng: 74.34, heading: 0, speedKmh: 0, accuracy: 12, updatedAt: serverTimestamp() }));
+    // Customer app and admin app both see the rider.
+    const live = await assertSucceeds(getDoc(doc(customer(), 'orders/j1/live/rider')));
+    assert.equal(live.data().lat, 31.51);
+    await assertSucceeds(getDoc(doc(staff('boss'), 'orders/j1/live/rider')));
+    // Rider arrives, collects cash (cash on delivery → paid).
+    await assertSucceeds(updateDoc(doc(staff('r1'), 'orders/j1'), { arrivedAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(staff('r1'), 'orders/j1'), { status: 'delivered', cashCollected: 3446, emptiesCollected: 1, paymentStatus: 'paid', history: ev('delivered', 'r1'), updatedAt: serverTimestamp() }));
+    // Customer sees it paid and rates it.
+    const done = await getDoc(doc(customer(), 'orders/j1'));
+    assert.equal(done.data().status, 'delivered');
+    assert.equal(done.data().paymentStatus, 'paid');
+    assert.ok(done.data().arrivedAt);
+    await assertSucceeds(updateDoc(doc(customer(), 'orders/j1'), { rating: 5, feedback: 'Fast', updatedAt: serverTimestamp() }));
+  });
+  it('wallet payment: the customer adds the transaction ID, the admin marks it paid', async () => {
+    await assertSucceeds(setDoc(doc(customer(), 'orders/j2'), order({ paymentMethod: 'jazzCash' })));
+    await assertSucceeds(updateDoc(doc(customer(), 'orders/j2'), { paymentReference: 'TX1234567', updatedAt: serverTimestamp() }));
+    // The customer cannot mark it paid; the admin can.
+    await assertFails(updateDoc(doc(customer(), 'orders/j2'), { paymentStatus: 'paid', updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'orders/j2'), { paymentStatus: 'paid', updatedAt: serverTimestamp() }));
+  });
+});
+
 describe('live location', () => {
   const pos = { lat: 31.51, lng: 74.34, heading: 90, speedKmh: 20, accuracy: 8, updatedAt: serverTimestamp() };
   it('the delivering rider writes, the customer reads, strangers cannot', async () => {

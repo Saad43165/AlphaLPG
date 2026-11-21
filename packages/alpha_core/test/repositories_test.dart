@@ -278,6 +278,28 @@ void _suite(Repos Function() make) {
     },
   );
 
+  test('rider arrives at the door, or hands a job back to the shop', () async {
+    final orders = r.orders;
+    final id = await orders.place(sampleOrder('u1'));
+    await orders.acceptOrder(id, riderId: 'r1', name: 'Imran', phone: '0300');
+    // Hand it back: open again, nobody assigned, another rider can take it.
+    await orders.releaseJob(id, 'r1');
+    var o = (await orders.watchOrder(id).first)!;
+    expect(o.status, OrderStatus.confirmed);
+    expect(o.riderId, isNull);
+    expect((await orders.watchAvailable().first).map((x) => x.id), contains(id));
+    expect(
+      await orders.acceptOrder(id, riderId: 'r2', name: 'Bilal', phone: '0301'),
+      isTrue,
+    );
+    await orders.startDelivery(id, 'r2');
+    expect((await orders.watchOrder(id).first)!.arrivedAt, isNull);
+    await orders.markArrived(id, 'r2');
+    o = (await orders.watchOrder(id).first)!;
+    expect(o.arrivedAt, isNotNull);
+    expect(o.status, OrderStatus.outForDelivery);
+  });
+
   test('riders: a cancelled order cannot be accepted', () async {
     final id = await r.orders.place(sampleOrder('u1'));
     await r.orders.updateStatus(id, OrderStatus.cancelled, 'u1');

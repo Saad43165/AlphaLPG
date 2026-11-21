@@ -229,6 +229,23 @@ service cloud.firestore {
             && request.resource.data.status == 'outForDelivery'
             && historyGrowsByOne()
             && changed().hasOnly(['status', 'history', 'updatedAt']))
+        // The rider taps "I've arrived" once the order is on the way.
+        || (isRider()
+            && resource.data.riderId == request.auth.uid
+            && resource.data.status == 'outForDelivery'
+            && resource.data.get('arrivedAt', null) == null
+            && request.resource.data.arrivedAt == request.time
+            && changed().hasOnly(['arrivedAt', 'updatedAt']))
+        // A rider who cannot do an assigned job hands it back to the shop.
+        || (isRider()
+            && resource.data.riderId == request.auth.uid
+            && resource.data.status == 'assigned'
+            && request.resource.data.status == 'confirmed'
+            && request.resource.data.riderId == null
+            && request.resource.data.riderName == null
+            && request.resource.data.riderPhone == null
+            && historyGrowsByOne()
+            && changed().hasOnly(['riderId', 'riderName', 'riderPhone', 'status', 'history', 'updatedAt']))
         // ... and completes it, recording cash taken and empties collected.
         // Cash can only mark a cash-on-delivery order as paid.
         || (isRider()
