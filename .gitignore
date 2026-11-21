@@ -12,3 +12,6 @@ release/
 
 # API keys (never commit)
 apps/customer_app/config/keys.json
+
+# emulator logs
+*-debug.log
