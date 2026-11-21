@@ -143,7 +143,7 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                           interactionOptions: const InteractionOptions(
                             flags: InteractiveFlag.none,
                           ),
-                          backgroundColor: pal.tint,
+                          backgroundColor: const Color(0xFFE6ECF2),
                           onMapReady: () {
                             _ready = true;
                             _fit(loc);
@@ -151,19 +151,12 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                         ),
                         children: [
                           TileLayer(
-                            urlTemplate: svc
-                                .tiles(dark: pal.isDark)
-                                .urlTemplate,
+                            urlTemplate: svc.tiles(dark: false).urlTemplate,
                             // If the paid-style tiles fail (bad key, restriction, outage), show OpenStreetMap instead of a blank map.
                             fallbackUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                             userAgentPackageName: 'pk.alphalpg.customer',
                             retinaMode:
                                 MediaQuery.devicePixelRatioOf(context) > 1.5,
-                            tileBuilder:
-                                pal.isDark &&
-                                    !svc.tiles(dark: true).darkIsNative
-                                ? darkModeTileBuilder
-                                : null,
                           ),
                           MarkerLayer(
                             markers: [

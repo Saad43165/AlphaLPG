@@ -8,6 +8,7 @@ import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
 import '../widgets/common.dart';
+import '../widgets/job_map.dart';
 import 'job_actions.dart';
 
 class JobDetailScreen extends StatelessWidget {
@@ -100,6 +101,10 @@ class JobDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (o.address.hasLocation) ...[
+                    JobMap(address: o.address),
+                    const SizedBox(height: 12),
+                  ],
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

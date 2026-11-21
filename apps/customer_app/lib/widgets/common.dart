@@ -202,40 +202,54 @@ class QuantityStepper extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      border: Border.all(color: const Color(0xFFCBD6E2)),
-      borderRadius: BorderRadius.circular(12),
-      color: Colors.white,
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          tooltip: 'Decrease',
-          onPressed: value > min ? () => onChanged(value - 1) : null,
-          icon: Icon(
-            value <= 1 && min == 0 ? Icons.delete_outline : Icons.remove,
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    // Readable in both themes: card colour, theme ink for icons and number.
+    final ink = pal.ink;
+    final off = pal.muted.withValues(alpha: 0.45);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: pal.isDark ? pal.muted : pal.line),
+        borderRadius: BorderRadius.circular(12),
+        color: pal.isDark ? pal.tint : Colors.white,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Decrease',
+            color: ink,
+            disabledColor: off,
+            onPressed: value > min ? () => onChanged(value - 1) : null,
+            icon: Icon(
+              value <= 1 && min == 0 ? Icons.delete_outline : Icons.remove,
+            ),
           ),
-        ),
-        SizedBox(
-          width: 28,
-          child: Text(
-            '$value',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$value',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: ink,
+              ),
+            ),
           ),
-        ),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          tooltip: 'Increase',
-          onPressed: value < max ? () => onChanged(value + 1) : null,
-          icon: const Icon(Icons.add),
-        ),
-      ],
-    ),
-  );
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Increase',
+            color: ink,
+            disabledColor: off,
+            onPressed: value < max ? () => onChanged(value + 1) : null,
+            icon: const Icon(Icons.add),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class StatusPill extends StatelessWidget {

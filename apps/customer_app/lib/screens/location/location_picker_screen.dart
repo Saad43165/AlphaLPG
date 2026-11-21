@@ -276,7 +276,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 ],
               ),
             ),
-            _buildSheet(pal),
+            // While searching, the map and results use the whole screen so
+            // the results are never hidden behind the sheet or keyboard.
+            if (!_searchOpen) _buildSheet(pal),
           ],
         ),
       ),
@@ -285,7 +287,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   Widget _buildMap(LocationService svc, AppPalette pal) {
     if (!svc.hasMap) return _MapPlaceholder(dark: pal.isDark);
-    final tiles = svc.tiles(dark: pal.isDark);
+    // Always the bright map, even in dark mode: it is far easier to read.
+    final tiles = svc.tiles(dark: false);
     return FlutterMap(
       mapController: _map,
       options: MapOptions(
@@ -293,9 +296,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         initialZoom: widget.initial?.hasLocation == true ? 17 : 13.5,
         minZoom: 10,
         maxZoom: 19,
-        backgroundColor: pal.isDark
-            ? const Color(0xFF0F1D2A)
-            : const Color(0xFFE6ECF2),
+        backgroundColor: const Color(0xFFE6ECF2),
         interactionOptions: const InteractionOptions(
           flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
         ),
@@ -313,9 +314,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           userAgentPackageName: 'pk.alphalpg.customer',
           maxNativeZoom: 19,
           retinaMode: MediaQuery.devicePixelRatioOf(context) > 1.5,
-          tileBuilder: pal.isDark && !tiles.darkIsNative
-              ? darkModeTileBuilder
-              : null,
         ),
         SimpleAttributionWidget(
           source: Text(svc.attribution),

@@ -290,7 +290,11 @@ class _MethodTile extends StatelessWidget {
                         ),
                         if (recommended) ...[
                           const SizedBox(width: 6),
-                          Tag('Popular', color: context.pal.tint),
+                          Tag(
+                            'Popular',
+                            color: context.pal.tint,
+                            dark: !context.pal.isDark,
+                          ),
                         ],
                       ],
                     ),

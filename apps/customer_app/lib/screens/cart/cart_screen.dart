@@ -412,7 +412,11 @@ class _CartLineTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Tag(line.type.label, color: context.pal.tint),
+                      Tag(
+                        line.type.label,
+                        color: context.pal.tint,
+                        dark: !context.pal.isDark,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         '${formatRupees(unit)} each',
