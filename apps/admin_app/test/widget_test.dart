@@ -12,7 +12,8 @@ import 'dart:convert';
 import 'package:alpha_admin/utils/photo.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart' show Switch, Size;
+import 'package:material_ui/material_ui.dart'
+    show Switch, Size, Scrollable, TextField;
 
 class FakeAuth extends AdminAuth {
   @override
@@ -111,6 +112,54 @@ void main() {
           .paymentStatus,
       PaymentStatus.paid,
     );
+  });
+
+  testWidgets('owner sends payment details and flags a receipt problem', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    late String id;
+    await tester.runAsync(() async {
+      id = await b.orders.place(_order());
+    });
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ali Raza'));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Send payment details to customer'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Send payment details to customer'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Account number'),
+      '03001234567',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Send to customer'));
+    await tester.pumpAndSettle();
+
+    await tester.runAsync(() async {
+      final o = (await b.orders.watchOrder(id).first)!;
+      expect(o.paymentRequest!.account, '03001234567');
+      expect(o.paymentRequest!.method, PaymentMethod.jazzCash);
+      expect(o.paymentRequest!.amount, 6592);
+      await b.orders.addReceipt(
+        id,
+        uid: 'c1',
+        data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      );
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('Receipt from customer'), findsOneWidget);
+    expect(find.text('Receipt problem'), findsOneWidget);
   });
 
   testWidgets('a non-admin account is told how to become one', (tester) async {

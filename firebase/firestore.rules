@@ -200,6 +200,15 @@ service cloud.firestore {
             && resource.data.status != 'cancelled'
             && isText(request.resource.data.paymentReference, 40)
             && changed().hasOnly(['paymentReference', 'updatedAt']))
+        // Customer uploads a payment receipt for a prepaid, unpaid order.
+        || (signedIn()
+            && resource.data.customerId == request.auth.uid
+            && resource.data.paymentStatus == 'pending'
+            && resource.data.paymentMethod != 'cashOnDelivery'
+            && resource.data.status != 'cancelled'
+            && request.resource.data.receiptAt == request.time
+            && request.resource.data.get('paymentIssue', '') == ''
+            && changed().hasOnly(['receiptAt', 'paymentIssue', 'updatedAt']))
         // Customer rates a delivered order once.
         || (signedIn()
             && resource.data.customerId == request.auth.uid
@@ -286,6 +295,26 @@ service cloud.firestore {
             || (request.resource.data.role == 'rider' && isRider() && orderDoc().riderId == request.auth.uid)
             || (request.resource.data.role == 'admin' && isAdmin())
           );
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+
+      // Payment receipts (photos) the customer sends for the shop to check.
+      match /receipts/{rid} {
+        function orderDoc() {
+          return get(/databases/$(database)/documents/orders/$(id)).data;
+        }
+        allow read: if isAdmin()
+          || (signedIn() && orderDoc().customerId == request.auth.uid);
+        allow create: if signedIn()
+          && orderDoc().customerId == request.auth.uid
+          && request.resource.data.keys().hasOnly(['uid', 'data', 'note', 'createdAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.data is string
+          && request.resource.data.data.size() > 100
+          && request.resource.data.data.size() <= 450000
+          && isText(request.resource.data.get('note', ''), 200)
+          && request.resource.data.createdAt == request.time;
         allow update: if false;
         allow delete: if isAdmin();
       }

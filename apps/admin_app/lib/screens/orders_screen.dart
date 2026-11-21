@@ -373,6 +373,8 @@ class OrderTile extends StatelessWidget {
                           ? 'Paid'
                           : o.paymentMethod == PaymentMethod.cashOnDelivery
                           ? 'Cash'
+                          : o.receiptAt != null
+                          ? 'Receipt'
                           : 'Verify',
                       color: paid ? Brand.success : const Color(0xFF8A6D00),
                     ),

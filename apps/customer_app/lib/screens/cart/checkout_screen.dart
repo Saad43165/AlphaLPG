@@ -221,71 +221,140 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ChoiceTile(
-                          icon: Icons.bolt_rounded,
-                          title: 'Now',
-                          subtitle: 'Usually 1–3 hours',
-                          selected: _asap,
-                          onTap: () => setState(() => _asap = true),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _WhenTile(
+                            icon: Icons.bolt_rounded,
+                            title: 'As soon as possible',
+                            subtitle:
+                                'We confirm your order, then send a rider',
+                            selected: _asap,
+                            onTap: () => setState(() => _asap = true),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _ChoiceTile(
-                          icon: Icons.event_rounded,
-                          title: 'Schedule',
-                          subtitle: 'Pick a day & slot',
-                          selected: !_asap,
-                          onTap: () => setState(() => _asap = false),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _WhenTile(
+                            icon: Icons.event_available_rounded,
+                            title: 'Schedule',
+                            subtitle: 'Choose a day and a time slot',
+                            selected: !_asap,
+                            onTap: () => setState(() => _asap = false),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  if (!_asap) ...[
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      height: 40,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          for (final d in days)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: ChoiceChip(
-                                label: Text(
-                                  _isSameDay(d, today) ? 'Today' : formatDay(d),
-                                ),
-                                selected: _isSameDay(d, _day),
-                                showCheckmark: false,
-                                onSelected: (_) => setState(() => _day = d),
-                              ),
-                            ),
-                        ],
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    if (slots.isEmpty)
-                      const Text(
-                        'No slots left today. Please pick another day.',
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final s in slots)
-                            ChoiceChip(
-                              label: Text('${s.label} ${s.range}'),
-                              selected: _slot == s,
-                              showCheckmark: false,
-                              onSelected: (_) => setState(() => _slot = s),
+                  ),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
+                    alignment: Alignment.topCenter,
+                    child: _asap
+                        ? const SizedBox(width: double.infinity)
+                        : Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Day',
+                                  style: TextStyle(
+                                    color: context.pal.muted,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  height: 72,
+                                  child: ListView(
+                                    scrollDirection: Axis.horizontal,
+                                    children: [
+                                      for (final d in days)
+                                        _DayCard(
+                                          day: d,
+                                          isToday: _isSameDay(d, today),
+                                          selected: _isSameDay(d, _day),
+                                          onTap: () => setState(() => _day = d),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Text(
+                                  'Time',
+                                  style: TextStyle(
+                                    color: context.pal.muted,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                if (slots.isEmpty)
+                                  const Text(
+                                    'No time slots left today. Please pick another day.',
+                                  )
+                                else
+                                  Row(
+                                    children: [
+                                      for (final sl in DeliverySlot.values)
+                                        Expanded(
+                                          child: Padding(
+                                            padding: EdgeInsets.only(
+                                              right:
+                                                  sl == DeliverySlot.values.last
+                                                  ? 0
+                                                  : 8,
+                                            ),
+                                            child: _SlotTile(
+                                              slot: sl,
+                                              enabled: slots.contains(sl),
+                                              selected: _slot == sl,
+                                              onTap: () =>
+                                                  setState(() => _slot = sl),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                const SizedBox(height: 14),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Brand.blueDark.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.event_available_rounded,
+                                        color: Brand.blueDark,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          slots.isEmpty
+                                              ? 'Pick another day'
+                                              : 'Delivery on ${_isSameDay(_day, today) ? 'today' : formatDay(_day)}, ${_slot.label.toLowerCase()} ${_slot.range}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                        ],
-                      ),
-                  ],
+                          ),
+                  ),
                 ],
               ),
             ),
@@ -443,8 +512,9 @@ class _Section extends StatelessWidget {
   );
 }
 
-class _ChoiceTile extends StatelessWidget {
-  const _ChoiceTile({
+/// "As soon as possible" / "Schedule": two equal cards with a clear tick.
+class _WhenTile extends StatelessWidget {
+  const _WhenTile({
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -459,44 +529,204 @@ class _ChoiceTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: selected ? context.pal.tint : context.pal.card,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(14),
-      side: BorderSide(
-        color: selected ? Brand.blueDark : context.pal.line,
-        width: selected ? 1.5 : 1,
-      ),
-    ),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(icon, color: selected ? Brand.blueDark : context.pal.muted),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: Material(
+        color: selected ? Brand.blueDark.withValues(alpha: 0.1) : pal.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: selected ? Brand.blueDark : pal.line,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: selected ? Brand.blueDark : pal.tint,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 21,
+                        color: selected ? Colors.white : pal.muted,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      selected
+                          ? Icons.check_circle_rounded
+                          : Icons.circle_outlined,
+                      size: 22,
+                      color: selected ? Brand.blueDark : pal.line,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14.5,
                   ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(color: context.pal.muted, fontSize: 12),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: pal.muted, fontSize: 12, height: 1.3),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+/// One day in the scrolling day picker: "Sun" over "22".
+class _DayCard extends StatelessWidget {
+  const _DayCard({
+    required this.day,
+    required this.isToday,
+    required this.selected,
+    required this.onTap,
+  });
+  final DateTime day;
+  final bool isToday;
+  final bool selected;
+  final VoidCallback onTap;
+
+  static const _names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: selected ? Brand.blueDark : pal.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: selected ? Brand.blueDark : pal.line),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: SizedBox(
+            width: 64,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  isToday ? 'Today' : _names[day.weekday - 1],
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? Colors.white70 : pal.muted,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${day.day}',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: selected ? Colors.white : pal.ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Morning / Afternoon / Evening, three equal tiles (greyed out when passed).
+class _SlotTile extends StatelessWidget {
+  const _SlotTile({
+    required this.slot,
+    required this.enabled,
+    required this.selected,
+    required this.onTap,
+  });
+  final DeliverySlot slot;
+  final bool enabled;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    final icon = switch (slot) {
+      DeliverySlot.morning => Icons.wb_twilight_rounded,
+      DeliverySlot.afternoon => Icons.wb_sunny_rounded,
+      DeliverySlot.evening => Icons.nights_stay_rounded,
+    };
+    final fg = !enabled
+        ? pal.muted.withValues(alpha: 0.5)
+        : (selected ? Brand.blueDark : pal.ink);
+    return Opacity(
+      opacity: enabled ? 1 : 0.55,
+      child: Material(
+        color: selected ? Brand.blueDark.withValues(alpha: 0.1) : pal.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: selected ? Brand.blueDark : pal.line,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: enabled ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            child: Column(
+              children: [
+                Icon(icon, size: 22, color: fg),
+                const SizedBox(height: 6),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    slot.label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                      color: fg,
+                    ),
+                  ),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    slot.range,
+                    style: TextStyle(color: pal.muted, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Sticky bottom bar: the total, and a slide-to-order control.

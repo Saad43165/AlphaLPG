@@ -32,7 +32,13 @@ void main() {
     final rider = ChatInbox(orders, MessageRole.rider)..follow([id]);
     await settle();
 
-    await orders.sendMessage(id, uid: 'r1', role: MessageRole.rider, name: 'Imran', text: 'I am outside');
+    await orders.sendMessage(
+      id,
+      uid: 'r1',
+      role: MessageRole.rider,
+      name: 'Imran',
+      text: 'I am outside',
+    );
     await settle();
     expect(customer.unread(id), 1);
     expect(customer.last(id)!.text, 'I am outside');
@@ -44,7 +50,13 @@ void main() {
     await customer.markRead(id);
     await settle();
     expect(customer.unread(id), 0);
-    await orders.sendMessage(id, uid: 'u1', role: MessageRole.customer, name: 'Ali', text: 'Coming down');
+    await orders.sendMessage(
+      id,
+      uid: 'u1',
+      role: MessageRole.customer,
+      name: 'Ali',
+      text: 'Coming down',
+    );
     await settle();
     expect(rider.unread(id), 1);
     final mine = rider.last(id)!.createdAt!;
@@ -62,4 +74,35 @@ void main() {
     rider.dispose();
     customer.dispose();
   });
+
+  test('a chat that cannot be loaded says why, and can be retried', () async {
+    final repo = _Denied();
+    final inbox = ChatInbox(repo, MessageRole.customer)..follow(['o1']);
+    await settle();
+    expect(inbox.error('o1'), isNotNull);
+    expect(ChatInbox.explain(inbox.error('o1')!), contains('database rules'));
+    repo.allow = true;
+    inbox.retry('o1');
+    await settle();
+    expect(inbox.error('o1'), isNull);
+    expect(inbox.messages('o1'), isEmpty);
+    inbox.dispose();
+  });
+}
+
+/// Pretends the database refuses to show messages (rules not published).
+class _Denied implements OrderRepository {
+  bool allow = false;
+
+  @override
+  Stream<List<OrderMessage>> watchMessages(String orderId) => allow
+      ? Stream.value(const <OrderMessage>[])
+      : Stream.error(Exception('[cloud_firestore/permission-denied] no'));
+
+  @override
+  Stream<Map<MessageRole, DateTime>> watchChatReads(String orderId) =>
+      Stream.value(const {});
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

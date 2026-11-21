@@ -3,8 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:alpha_ui/alpha_ui.dart' show Alerts;
-
 import 'router.dart';
 import 'screens/splash_screen.dart';
 import 'services/backend.dart';

@@ -171,7 +171,9 @@ class _MemoryRiders implements RiderRepository {
     (docs) => docs.values
         .where(
           (d) =>
-              d['active'] != false && d['online'] == true && _fresh(d['lastSeen']),
+              d['active'] != false &&
+              d['online'] == true &&
+              _fresh(d['lastSeen']),
         )
         .length,
   );

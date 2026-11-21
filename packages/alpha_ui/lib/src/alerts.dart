@@ -39,8 +39,8 @@ abstract final class Alerts {
     } catch (_) {}
   }
 
-  static AndroidFlutterLocalNotificationsPlugin? get _android =>
-      _plugin.resolvePlatformSpecificImplementation<
+  static AndroidFlutterLocalNotificationsPlugin? get _android => _plugin
+      .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin
       >();
 

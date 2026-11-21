@@ -5,6 +5,7 @@ import '../firestore_paths.dart';
 import '../models/order.dart';
 import '../models/order_message.dart';
 import '../models/order_status.dart';
+import '../models/payment_request.dart';
 import '../models/rider.dart';
 import 'memory_store.dart';
 
@@ -36,6 +37,25 @@ abstract interface class OrderRepository {
 
   /// Admin: a wallet / bank payment has arrived (or cash was handed in).
   Future<void> markPaid(String orderId, String by);
+
+  /// Admin: sends payment instructions (method, account, amount) straight to
+  /// the customer's order screen. Clears any earlier payment problem.
+  Future<void> sendPaymentRequest(String orderId, PaymentRequest request);
+
+  /// Admin: tells the customer what is wrong ("receipt is not clear"), or
+  /// clears it with an empty string.
+  Future<void> setPaymentIssue(String orderId, String issue);
+
+  /// Customer: attaches a photo of the payment receipt (base64 image).
+  Future<void> addReceipt(
+    String orderId, {
+    required String uid,
+    required String data,
+    String note = '',
+  });
+
+  /// The receipts on an order, newest last (customer and admin).
+  Stream<List<PaymentReceipt>> watchReceipts(String orderId);
   Stream<List<LpgOrder>> watchRiderOrders(String riderId);
   Future<void> assignRider(
     String orderId,
@@ -155,9 +175,8 @@ class _FirestoreOrders implements OrderRepository {
   /// An order whose server time has not arrived yet counts as the newest.
   List<LpgOrder> _newestFirst(QuerySnapshot<Map<String, dynamic>> s) {
     final now = DateTime.now();
-    return _list(s)..sort(
-      (a, b) => (b.createdAt ?? now).compareTo(a.createdAt ?? now),
-    );
+    return _list(s)
+      ..sort((a, b) => (b.createdAt ?? now).compareTo(a.createdAt ?? now));
   }
 
   @override
@@ -222,10 +241,59 @@ class _FirestoreOrders implements OrderRepository {
       .map(_list);
 
   @override
-  Future<void> markPaid(String orderId, String by) => _orders.doc(orderId).update({
-    'paymentStatus': PaymentStatus.paid.name,
-    'updatedAt': FieldValue.serverTimestamp(),
-  });
+  Future<void> sendPaymentRequest(String orderId, PaymentRequest r) =>
+      _orders.doc(orderId).update({
+        'paymentRequest': {...r.toMap(), 'sentAt': FieldValue.serverTimestamp()},
+        'paymentIssue': '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  @override
+  Future<void> setPaymentIssue(String orderId, String issue) =>
+      _orders.doc(orderId).update({
+        'paymentIssue': issue.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  @override
+  Future<void> addReceipt(
+    String orderId, {
+    required String uid,
+    required String data,
+    String note = '',
+  }) async {
+    final batch = _db.batch();
+    batch.set(_db.collection(FirestorePaths.receipts(orderId)).doc(), {
+      'uid': uid,
+      'data': data,
+      'note': note,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(_orders.doc(orderId), {
+      'receiptAt': FieldValue.serverTimestamp(),
+      'paymentIssue': '',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+  }
+
+  @override
+  Stream<List<PaymentReceipt>> watchReceipts(String orderId) => _db
+      .collection(FirestorePaths.receipts(orderId))
+      .orderBy('createdAt')
+      .snapshots()
+      .map(
+        (s) => [
+          for (final d in s.docs) PaymentReceipt.fromMap(d.id, d.data()),
+        ],
+      );
+
+  @override
+  Future<void> markPaid(String orderId, String by) =>
+      _orders.doc(orderId).update({
+        'paymentStatus': PaymentStatus.paid.name,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
   @override
   Stream<List<LpgOrder>> watchRiderOrders(String riderId) => _orders
@@ -389,16 +457,12 @@ class _FirestoreOrders implements OrderRepository {
       .orderBy('createdAt')
       .snapshots()
       .map(
-        (s) => [
-          for (final d in s.docs) OrderMessage.fromMap(d.id, d.data()),
-        ],
+        (s) => [for (final d in s.docs) OrderMessage.fromMap(d.id, d.data())],
       );
 
   @override
-  Stream<Map<MessageRole, DateTime>> watchChatReads(String orderId) => _db
-      .collection(FirestorePaths.chatReads(orderId))
-      .snapshots()
-      .map((s) {
+  Stream<Map<MessageRole, DateTime>> watchChatReads(String orderId) =>
+      _db.collection(FirestorePaths.chatReads(orderId)).snapshots().map((s) {
         final out = <MessageRole, DateTime>{};
         for (final d in s.docs) {
           final at = readDate(d.data()['at']);
@@ -534,6 +598,65 @@ class _MemoryOrders implements OrderRepository {
       _s.watch(_path, (docs) => _sorted(docs.entries).take(limit).toList());
 
   @override
+  Future<void> sendPaymentRequest(String orderId, PaymentRequest r) async =>
+      _s.update(
+        _path,
+        orderId,
+        (d) => {
+          ...d,
+          'paymentRequest': {...r.toMap(), 'sentAt': DateTime.now()},
+          'paymentIssue': '',
+          'updatedAt': DateTime.now(),
+        },
+      );
+
+  @override
+  Future<void> setPaymentIssue(String orderId, String issue) async =>
+      _s.update(
+        _path,
+        orderId,
+        (d) => {...d, 'paymentIssue': issue.trim(), 'updatedAt': DateTime.now()},
+      );
+
+  @override
+  Future<void> addReceipt(
+    String orderId, {
+    required String uid,
+    required String data,
+    String note = '',
+  }) async {
+    _s.set(FirestorePaths.receipts(orderId), _s.newId(), {
+      'uid': uid,
+      'data': data,
+      'note': note,
+      'createdAt': DateTime.now(),
+    });
+    _s.update(
+      _path,
+      orderId,
+      (d) => {
+        ...d,
+        'receiptAt': DateTime.now(),
+        'paymentIssue': '',
+        'updatedAt': DateTime.now(),
+      },
+    );
+  }
+
+  @override
+  Stream<List<PaymentReceipt>> watchReceipts(String orderId) =>
+      _s.watch(FirestorePaths.receipts(orderId), (docs) {
+        final list = [
+          for (final e in docs.entries) PaymentReceipt.fromMap(e.key, e.value),
+        ]..sort(
+            (a, b) => (a.createdAt ?? DateTime(0)).compareTo(
+              b.createdAt ?? DateTime(0),
+            ),
+          );
+        return list;
+      });
+
+  @override
   Future<void> markPaid(String orderId, String by) async => _s.update(
     _path,
     orderId,
@@ -626,12 +749,11 @@ class _MemoryOrders implements OrderRepository {
       _setStatus(orderId, OrderStatus.outForDelivery, riderId);
 
   @override
-  Future<void> markArrived(String orderId, String riderId) async =>
-      _s.update(
-        _path,
-        orderId,
-        (d) => {...d, 'arrivedAt': DateTime.now(), 'updatedAt': DateTime.now()},
-      );
+  Future<void> markArrived(String orderId, String riderId) async => _s.update(
+    _path,
+    orderId,
+    (d) => {...d, 'arrivedAt': DateTime.now(), 'updatedAt': DateTime.now()},
+  );
 
   @override
   Future<void> releaseJob(String orderId, String riderId) async => _setStatus(
@@ -690,13 +812,13 @@ class _MemoryOrders implements OrderRepository {
   @override
   Stream<List<OrderMessage>> watchMessages(String orderId) =>
       _s.watch(FirestorePaths.messages(orderId), (docs) {
-        final list = [
-          for (final e in docs.entries) OrderMessage.fromMap(e.key, e.value),
-        ]..sort(
-            (a, b) => (a.createdAt ?? DateTime(0)).compareTo(
-              b.createdAt ?? DateTime(0),
-            ),
-          );
+        final list =
+            [for (final e in docs.entries) OrderMessage.fromMap(e.key, e.value)]
+              ..sort(
+                (a, b) => (a.createdAt ?? DateTime(0)).compareTo(
+                  b.createdAt ?? DateTime(0),
+                ),
+              );
         return list;
       });
 
@@ -712,10 +834,11 @@ class _MemoryOrders implements OrderRepository {
       });
 
   @override
-  Future<void> markChatRead(String orderId, MessageRole role) async =>
-      _s.set(FirestorePaths.chatReads(orderId), role.name, {
-        'at': DateTime.now(),
-      });
+  Future<void> markChatRead(String orderId, MessageRole role) async => _s.set(
+    FirestorePaths.chatReads(orderId),
+    role.name,
+    {'at': DateTime.now()},
+  );
 
   @override
   Future<void> sendMessage(

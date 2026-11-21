@@ -47,7 +47,13 @@ class OrderWatcher {
 
   void _onOrders(List<LpgOrder> list) {
     for (final o in list) {
-      final now = _Seen(o.status, o.arrivedAt != null, o.paymentStatus);
+      final now = _Seen(
+        o.status,
+        o.arrivedAt != null,
+        o.paymentStatus,
+        o.paymentRequest != null,
+        o.paymentIssue,
+      );
       final before = _last[o.id];
       if (!_first && before != null) _announce(o, before, now);
       _last[o.id] = now;
@@ -122,6 +128,12 @@ class OrderWatcher {
         case OrderStatus.placed:
           break;
       }
+    } else if (now.requested && !before.requested) {
+      title = 'Payment details from Alpha LPG';
+      body = 'Tap to see where to send ${formatRupees(o.total)}.';
+    } else if (now.issue.isNotEmpty && now.issue != before.issue) {
+      title = 'Payment needs attention';
+      body = now.issue;
     } else if (now.arrived && !before.arrived) {
       title = 'Your rider has arrived';
       body = 'Please keep your empty cylinders ready.';
@@ -163,8 +175,16 @@ class OrderWatcher {
 }
 
 class _Seen {
-  const _Seen(this.status, this.arrived, this.payment);
+  const _Seen(
+    this.status,
+    this.arrived,
+    this.payment,
+    this.requested,
+    this.issue,
+  );
   final OrderStatus status;
   final bool arrived;
   final PaymentStatus payment;
+  final bool requested;
+  final String issue;
 }

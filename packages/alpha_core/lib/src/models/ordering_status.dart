@@ -32,11 +32,7 @@ class OrderingStatus {
 
   /// [liveRiders] null means "not known (yet)": riders are then not used to
   /// block orders.
-  static OrderingStatus of(
-    AppSettings s, {
-    DateTime? now,
-    int? liveRiders,
-  }) {
+  static OrderingStatus of(AppSettings s, {DateTime? now, int? liveRiders}) {
     final t = now ?? DateTime.now();
     if (!s.acceptingOrders) {
       return OrderingStatus(
@@ -64,7 +60,9 @@ class OrderingStatus {
     return OrderingStatus(
       OrderingState.open,
       'Open for orders',
-      s.autoHours ? 'Delivering until ${clock(s.closesAt)}' : 'Delivering today',
+      s.autoHours
+          ? 'Delivering until ${clock(s.closesAt)}'
+          : 'Delivering today',
     );
   }
 }

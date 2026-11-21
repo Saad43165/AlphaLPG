@@ -1,6 +1,7 @@
 import '../dates.dart';
 import 'address.dart';
 import 'order_status.dart';
+import 'payment_request.dart';
 import 'product.dart';
 
 class OrderItem {
@@ -100,6 +101,9 @@ class LpgOrder {
     this.cashCollected,
     this.arrivedAt,
     this.emptiesCollected,
+    this.paymentRequest,
+    this.receiptAt,
+    this.paymentIssue = '',
     this.createdAt,
     this.updatedAt,
   });
@@ -144,6 +148,16 @@ class LpgOrder {
 
   /// Empty cylinders the rider took back.
   final int? emptiesCollected;
+
+  /// Payment instructions the shop sent to the customer's screen.
+  final PaymentRequest? paymentRequest;
+
+  /// When the customer last uploaded a payment receipt.
+  final DateTime? receiptAt;
+
+  /// What is wrong with the payment or receipt, said by the shop
+  /// ("The receipt is not clear"). Empty when fine.
+  final String paymentIssue;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -203,6 +217,13 @@ class LpgOrder {
     rating: (m['rating'] as num?)?.toInt(),
     feedback: m['feedback'] as String? ?? '',
     cashCollected: (m['cashCollected'] as num?)?.round(),
+    paymentRequest: m['paymentRequest'] is Map
+        ? PaymentRequest.fromMap(
+            Map<String, dynamic>.from(m['paymentRequest'] as Map),
+          )
+        : null,
+    receiptAt: readDate(m['receiptAt']),
+    paymentIssue: m['paymentIssue'] as String? ?? '',
     arrivedAt: readDate(m['arrivedAt']),
     emptiesCollected: (m['emptiesCollected'] as num?)?.toInt(),
     createdAt: readDate(m['createdAt']),
@@ -235,6 +256,10 @@ class LpgOrder {
     'rating': rating,
     'feedback': feedback,
     'cashCollected': cashCollected,
+    // Only written later by the shop / customer, never when an order is created.
+    if (paymentRequest != null) 'paymentRequest': paymentRequest!.toMap(),
+    if (receiptAt != null) 'receiptAt': receiptAt,
+    if (paymentIssue.isNotEmpty) 'paymentIssue': paymentIssue,
     // Only written once the rider arrives (never when an order is created).
     if (arrivedAt != null) 'arrivedAt': arrivedAt,
     'emptiesCollected': emptiesCollected,

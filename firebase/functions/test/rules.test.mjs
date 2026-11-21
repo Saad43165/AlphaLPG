@@ -378,6 +378,47 @@ describe('chat read receipts', () => {
   });
 });
 
+describe('payment request and receipts', () => {
+  const req = { method: 'easyPaisa', account: '03001234567', accountTitle: 'Alpha LPG', note: '', amount: 3446, sentAt: serverTimestamp() };
+  const receipt = (over = {}) => ({ uid: 'u1', data: 'x'.repeat(200), note: '', createdAt: serverTimestamp(), ...over });
+  it('the shop sends payment instructions; the customer cannot write them', async () => {
+    await seedOrder({ paymentMethod: 'jazzCash' });
+    await assertFails(updateDoc(doc(customer(), 'orders/o1'), { paymentRequest: req, updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'orders/o1'), { paymentRequest: req, paymentIssue: '', updatedAt: serverTimestamp() }));
+    const o = await getDoc(doc(customer(), 'orders/o1'));
+    assert.equal(o.data().paymentRequest.account, '03001234567');
+  });
+  it('the customer uploads a receipt for a prepaid unpaid order, and the order is flagged', async () => {
+    await seedOrder({ paymentMethod: 'jazzCash', paymentIssue: 'Receipt not clear' });
+    await assertSucceeds(addDoc(collection(customer(), 'orders/o1/receipts'), receipt()));
+    await assertSucceeds(updateDoc(doc(customer(), 'orders/o1'), { receiptAt: serverTimestamp(), paymentIssue: '', updatedAt: serverTimestamp() }));
+    // ... but cannot touch anything else, mark it paid, or keep the issue text.
+    await assertFails(updateDoc(doc(customer(), 'orders/o1'), { receiptAt: serverTimestamp(), paymentStatus: 'paid', updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(customer(), 'orders/o1'), { receiptAt: serverTimestamp(), paymentIssue: 'fake', updatedAt: serverTimestamp() }));
+  });
+  it('receipts: only that customer and the shop can see them; size and fields are limited', async () => {
+    await seedOrder({ paymentMethod: 'jazzCash' });
+    const ref = await addDoc(collection(customer(), 'orders/o1/receipts'), receipt());
+    await assertSucceeds(getDoc(doc(customer(), ref.path)));
+    await assertSucceeds(getDoc(doc(staff('boss'), ref.path)));
+    await assertFails(getDoc(doc(customer('u2', '+923111111111'), ref.path)));
+    await assertFails(getDoc(doc(staff('r1'), ref.path)));
+    await assertFails(addDoc(collection(customer('u2', '+923111111111'), 'orders/o1/receipts'), receipt({ uid: 'u2' })));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/receipts'), receipt({ data: 'x'.repeat(460000) })));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/receipts'), receipt({ data: 'tiny' })));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/receipts'), receipt({ extra: 1 })));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/receipts'), receipt({ createdAt: new Date() })));
+    await assertFails(updateDoc(doc(customer(), ref.path), { note: 'edit' }));
+    await assertSucceeds(deleteDoc(doc(staff('boss'), ref.path)));
+  });
+  it('no receipt upload for cash orders or paid ones', async () => {
+    await seedOrder({ paymentMethod: 'cashOnDelivery' });
+    await assertFails(updateDoc(doc(customer(), 'orders/o1'), { receiptAt: serverTimestamp(), paymentIssue: '', updatedAt: serverTimestamp() }));
+    await seedOrder({ paymentMethod: 'jazzCash', paymentStatus: 'paid' }, 'o2');
+    await assertFails(updateDoc(doc(customer(), 'orders/o2'), { receiptAt: serverTimestamp(), paymentIssue: '', updatedAt: serverTimestamp() }));
+  });
+});
+
 describe('live location', () => {
   const pos = { lat: 31.51, lng: 74.34, heading: 90, speedKmh: 20, accuracy: 8, updatedAt: serverTimestamp() };
   it('the delivering rider writes, the customer reads, strangers cannot', async () => {

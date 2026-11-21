@@ -8,6 +8,7 @@ import 'package:alpha_core/alpha_core.dart' show LpgOrder;
 import 'screens/chat_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
+import 'screens/order_detail_screen.dart';
 import 'screens/status_screens.dart';
 import 'services/backend.dart';
 import 'state/session.dart';
@@ -33,8 +34,9 @@ class _AdminAppState extends State<AdminApp> {
     super.initState();
     // Tapping a message notification opens that order's chat.
     Alerts.onTap = (payload) {
-      if (!payload.startsWith('chat:')) return;
-      final id = payload.substring(5);
+      final isOrder = payload.startsWith('order:');
+      if (!isOrder && !payload.startsWith('chat:')) return;
+      final id = payload.substring(isOrder ? 6 : 5);
       LpgOrder? order;
       for (final o in _session.orders) {
         if (o.id == id) order = o;
@@ -45,7 +47,9 @@ class _AdminAppState extends State<AdminApp> {
           MaterialPageRoute<void>(
             builder: (_) => ChangeNotifierProvider.value(
               value: _session,
-              child: OrderChatScreen(order: target),
+              child: isOrder
+                  ? OrderDetailScreen(orderId: target.id)
+                  : OrderChatScreen(order: target),
             ),
           ),
         );

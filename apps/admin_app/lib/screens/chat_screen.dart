@@ -64,6 +64,10 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
           'We will call you shortly',
           'Thank you for ordering from Alpha LPG',
         ],
+        loadError: _chat.error(order.id) == null
+            ? null
+            : ChatInbox.explain(_chat.error(order.id)!),
+        onRetry: () => _chat.retry(order.id),
         onOpened: () => _chat.markRead(order.id),
         onSend: (text) => s.backend.orders.sendMessage(
           order.id,

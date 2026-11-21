@@ -153,6 +153,13 @@ class AdminSession extends ChangeNotifier {
   Future<String?> markPaid(LpgOrder o) =>
       _run(() => backend.orders.markPaid(o.id, uid!));
 
+  Future<String?> sendPaymentRequest(LpgOrder o, PaymentRequest r) =>
+      _run(() => backend.orders.sendPaymentRequest(o.id, r));
+
+  /// Tell the customer what is wrong with their payment ('' clears it).
+  Future<String?> setPaymentIssue(LpgOrder o, String issue) =>
+      _run(() => backend.orders.setPaymentIssue(o.id, issue));
+
   Future<String?> saveProduct(Product p) =>
       _run(() => backend.catalog.saveProduct(p));
 
@@ -299,6 +306,7 @@ class AdminSession extends ChangeNotifier {
 
   // ---- Customer and rider messages on orders in progress -------------------
 
+  final _receiptSeen = <String, DateTime>{};
   final _chatSubs = <String, StreamSubscription<List<OrderMessage>>>{};
   final _chatSeen = <String, int>{};
 
@@ -367,6 +375,28 @@ class AdminSession extends ChangeNotifier {
             );
           }
         }
+      }
+      if (ordersLoaded) {
+        for (final o in v) {
+          final at = o.receiptAt;
+          final before = _receiptSeen[o.id];
+          if (at != null &&
+              o.paymentStatus != PaymentStatus.paid &&
+              (before == null
+                  ? !_knownIds.contains(o.id)
+                  : at.isAfter(before))) {
+            Alerts.show(
+              id: 400000 + (o.id.hashCode & 0xffff),
+              title: 'Payment receipt received',
+              body: '${o.customerName} · ${o.displayNumber} · ${rs(o.total)}',
+              payload: 'order:${o.id}',
+            );
+          }
+        }
+      }
+      for (final o in v) {
+        final at = o.receiptAt;
+        if (at != null) _receiptSeen[o.id] = at;
       }
       _watchChats(v);
       _knownIds

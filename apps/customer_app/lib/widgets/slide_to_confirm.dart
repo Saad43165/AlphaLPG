@@ -174,19 +174,21 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.only(
-                            left: _thumb + 6,
-                            right: 14,
+                            left: _thumb + 10,
+                            right: 12,
                           ),
                           child: Opacity(
                             opacity: (1 - p * 1.8).clamp(0.0, 1.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Text(
+                            // Shrinks the label a little rather than cutting it.
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
                                     widget.label,
                                     maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w800,
                                       fontSize: 16,
@@ -194,15 +196,10 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                                       color: enabled ? Colors.white : pal.muted,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                // Three chevrons light up in turn.
-                                for (var i = 0; i < 3; i++)
-                                  Padding(
-                                    padding: EdgeInsets.only(
-                                      left: i == 0 ? 0 : 0,
-                                    ),
-                                    child: Icon(
+                                  const SizedBox(width: 4),
+                                  // Three chevrons light up in turn.
+                                  for (var i = 0; i < 3; i++)
+                                    Icon(
                                       Icons.chevron_right_rounded,
                                       size: 20,
                                       color:
@@ -218,8 +215,8 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                                                     : 0.5,
                                               ),
                                     ),
-                                  ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),

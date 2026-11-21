@@ -54,6 +54,7 @@ class Product {
     }
     return best.$2;
   }
+
   final CustomerSegment segment;
   final bool active;
   final bool inStock;

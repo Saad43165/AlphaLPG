@@ -14,6 +14,7 @@ import '../../widgets/common.dart';
 import '../../widgets/live.dart';
 import '../../widgets/live_rider_map.dart';
 import '../../widgets/payment.dart';
+import '../../widgets/payment_request_card.dart';
 import '../../utils/haptics.dart';
 
 /// Live order tracking: status header with ETA and route, step tracker,
@@ -1217,7 +1218,11 @@ class _PaymentCard extends StatelessWidget {
           ],
           if (needsTransfer) ...[
             const SizedBox(height: 12),
-            if (o.paymentReference.isEmpty)
+            if (o.paymentRequest != null) ...[
+              PaymentRequestCard(o.paymentRequest!),
+              const SizedBox(height: 12),
+            ],
+            if (o.paymentReference.isEmpty && o.paymentRequest == null)
               PaymentSteps(
                 method: o.paymentMethod,
                 settings: settings,
@@ -1225,6 +1230,8 @@ class _PaymentCard extends StatelessWidget {
                 orderNumber: o.displayNumber,
               ),
             const SizedBox(height: 10),
+            ReceiptSection(o),
+            const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => _addReference(context),
               icon: const Icon(Icons.tag_rounded),
@@ -1584,6 +1591,24 @@ class _PayStatus extends StatelessWidget {
                   Brand.blueDark,
                   'Pay $total in cash to the rider at the door. The rider records it and this order then shows Paid.',
                 )
+        : o.paymentIssue.isNotEmpty
+        ? (
+            Icons.error_outline_rounded,
+            Brand.danger,
+            'We could not confirm your payment. See the note below and send a new receipt.',
+          )
+        : o.receiptAt != null
+        ? (
+            Icons.hourglass_top_rounded,
+            Brand.blueDark,
+            'Receipt received. Alpha LPG is checking it and this changes to Paid once confirmed.',
+          )
+        : o.paymentRequest != null && o.paymentReference.isEmpty
+        ? (
+            Icons.account_balance_wallet_rounded,
+            const Color(0xFF8A6D00),
+            'Pay $total using the details above, then add your receipt.',
+          )
         : o.paymentReference.isEmpty
         ? (
             Icons.account_balance_wallet_rounded,

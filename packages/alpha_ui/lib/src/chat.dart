@@ -31,6 +31,8 @@ class ChatPage extends StatefulWidget {
     required this.onSend,
     this.quickReplies = const [],
     this.onOpened,
+    this.loadError,
+    this.onRetry,
   });
 
   final String title;
@@ -42,6 +44,11 @@ class ChatPage extends StatefulWidget {
   /// Called when the page opens and whenever new messages arrive while it is
   /// open (the apps use it to mark messages as read).
   final VoidCallback? onOpened;
+
+  /// Set when the messages could not be loaded: shown instead of the
+  /// "no messages" text, with a Try again button.
+  final String? loadError;
+  final VoidCallback? onRetry;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -71,9 +78,13 @@ class _ChatPageState extends State<ChatPage> {
     try {
       await widget.onSend(t);
       if (preset == null) _text.clear();
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _error = 'Could not send. Check your internet.');
+        setState(
+          () => _error = '$e'.contains('permission-denied')
+              ? 'Chat is not switched on yet. Alpha LPG needs to publish the latest database rules.'
+              : 'Could not send. Check your internet.',
+        );
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -129,6 +140,36 @@ class _ChatPageState extends State<ChatPage> {
                       );
                     }
                   });
+                }
+                if (list.isEmpty && widget.loadError != null) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.cloud_off_rounded,
+                            size: 40,
+                            color: Brand.danger,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            widget.loadError!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: pal.ink, height: 1.4),
+                          ),
+                          if (widget.onRetry != null) ...[
+                            const SizedBox(height: 12),
+                            OutlinedButton(
+                              onPressed: widget.onRetry,
+                              child: const Text('Try again'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
                 }
                 if (list.isEmpty) {
                   return Center(

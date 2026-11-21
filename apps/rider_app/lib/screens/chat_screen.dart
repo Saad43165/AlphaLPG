@@ -58,6 +58,10 @@ class _JobChatScreenState extends State<JobChatScreen> {
           'Please call me',
           'Running 10 minutes late',
         ],
+        loadError: _chat.error(order.id) == null
+            ? null
+            : ChatInbox.explain(_chat.error(order.id)!),
+        onRetry: () => _chat.retry(order.id),
         onOpened: () => _chat.markRead(order.id),
         onSend: (text) => s.backend.orders.sendMessage(
           order.id,

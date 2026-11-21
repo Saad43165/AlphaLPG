@@ -10,6 +10,7 @@
         "flutter",
         "flutter_foreground_task",
         "flutter_local_notifications",
+        "image",
         "material_ui"
       ],
       "devDependencies": [
@@ -214,6 +215,26 @@
       ]
     },
     {
+      "name": "flutter_local_notifications_platform_interface",
+      "version": "8.0.0",
+      "dependencies": [
+        "flutter",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "flutter_local_notifications_linux",
+      "version": "5.0.0",
+      "dependencies": [
+        "dbus",
+        "ffi",
+        "flutter",
+        "flutter_local_notifications_platform_interface",
+        "path",
+        "xdg_directories"
+      ]
+    },
+    {
       "name": "material_color_utilities",
       "version": "0.13.0",
       "dependencies": [
@@ -396,6 +417,29 @@
       ]
     },
     {
+      "name": "xdg_directories",
+      "version": "1.1.0",
+      "dependencies": [
+        "meta",
+        "path"
+      ]
+    },
+    {
+      "name": "ffi",
+      "version": "2.2.0",
+      "dependencies": []
+    },
+    {
+      "name": "dbus",
+      "version": "0.7.15",
+      "dependencies": [
+        "args",
+        "ffi",
+        "meta",
+        "xml"
+      ]
+    },
+    {
       "name": "vm_service",
       "version": "15.4.0",
       "dependencies": []
@@ -464,11 +508,6 @@
       ]
     },
     {
-      "name": "ffi",
-      "version": "2.2.0",
-      "dependencies": []
-    },
-    {
       "name": "jni",
       "version": "1.2.1",
       "dependencies": [
@@ -493,12 +532,18 @@
       ]
     },
     {
-      "name": "xdg_directories",
-      "version": "1.1.0",
+      "name": "xml",
+      "version": "6.6.1",
       "dependencies": [
+        "collection",
         "meta",
-        "path"
+        "petitparser"
       ]
+    },
+    {
+      "name": "args",
+      "version": "2.7.0",
+      "dependencies": []
     },
     {
       "name": "pub_semver",
@@ -548,15 +593,18 @@
       ]
     },
     {
-      "name": "args",
-      "version": "2.7.0",
-      "dependencies": []
-    },
-    {
       "name": "typed_data",
       "version": "1.4.0",
       "dependencies": [
         "collection"
+      ]
+    },
+    {
+      "name": "petitparser",
+      "version": "7.1.0",
+      "dependencies": [
+        "collection",
+        "meta"
       ]
     },
     {
@@ -583,50 +631,27 @@
       "dependencies": []
     },
     {
-      "name": "flutter_local_notifications_platform_interface",
-      "version": "8.0.0",
+      "name": "image",
+      "version": "4.13.1",
       "dependencies": [
-        "flutter",
-        "plugin_platform_interface"
+        "archive"
       ]
     },
     {
-      "name": "flutter_local_notifications_linux",
-      "version": "5.0.0",
+      "name": "archive",
+      "version": "4.7.1",
       "dependencies": [
-        "dbus",
-        "ffi",
-        "flutter",
-        "flutter_local_notifications_platform_interface",
         "path",
-        "xdg_directories"
+        "posix"
       ]
     },
     {
-      "name": "dbus",
-      "version": "0.7.15",
+      "name": "posix",
+      "version": "6.5.4",
       "dependencies": [
-        "args",
         "ffi",
         "meta",
-        "xml"
-      ]
-    },
-    {
-      "name": "xml",
-      "version": "6.6.1",
-      "dependencies": [
-        "collection",
-        "meta",
-        "petitparser"
-      ]
-    },
-    {
-      "name": "petitparser",
-      "version": "7.1.0",
-      "dependencies": [
-        "collection",
-        "meta"
+        "path"
       ]
     }
   ],

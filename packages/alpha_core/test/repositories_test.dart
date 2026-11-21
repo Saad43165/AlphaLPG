@@ -287,7 +287,10 @@ void _suite(Repos Function() make) {
     var o = (await orders.watchOrder(id).first)!;
     expect(o.status, OrderStatus.confirmed);
     expect(o.riderId, isNull);
-    expect((await orders.watchAvailable().first).map((x) => x.id), contains(id));
+    expect(
+      (await orders.watchAvailable().first).map((x) => x.id),
+      contains(id),
+    );
     expect(
       await orders.acceptOrder(id, riderId: 'r2', name: 'Bilal', phone: '0301'),
       isTrue,
@@ -300,41 +303,84 @@ void _suite(Repos Function() make) {
     expect(o.status, OrderStatus.outForDelivery);
   });
 
-  test('order chat: customer, rider and shop all see the same thread', () async {
-    final id = await r.orders.place(sampleOrder('u1'));
-    await r.orders.sendMessage(id, uid: 'u1', role: MessageRole.customer, name: 'Ali', text: ' Gate is blue ');
-    await r.orders.sendMessage(id, uid: 'r1', role: MessageRole.rider, name: 'Imran', text: 'On my way');
-    await r.orders.sendMessage(id, uid: 'boss', role: MessageRole.admin, name: 'Alpha LPG', text: 'Thanks!');
-    final thread = await r.orders.watchMessages(id).first;
-    expect(thread.map((m) => m.text), ['Gate is blue', 'On my way', 'Thanks!']);
-    expect(thread.map((m) => m.role), [MessageRole.customer, MessageRole.rider, MessageRole.admin]);
-    expect(await r.orders.watchMessages('other').first, isEmpty);
-  });
+  test(
+    'order chat: customer, rider and shop all see the same thread',
+    () async {
+      final id = await r.orders.place(sampleOrder('u1'));
+      await r.orders.sendMessage(
+        id,
+        uid: 'u1',
+        role: MessageRole.customer,
+        name: 'Ali',
+        text: ' Gate is blue ',
+      );
+      await r.orders.sendMessage(
+        id,
+        uid: 'r1',
+        role: MessageRole.rider,
+        name: 'Imran',
+        text: 'On my way',
+      );
+      await r.orders.sendMessage(
+        id,
+        uid: 'boss',
+        role: MessageRole.admin,
+        name: 'Alpha LPG',
+        text: 'Thanks!',
+      );
+      final thread = await r.orders.watchMessages(id).first;
+      expect(thread.map((m) => m.text), [
+        'Gate is blue',
+        'On my way',
+        'Thanks!',
+      ]);
+      expect(thread.map((m) => m.role), [
+        MessageRole.customer,
+        MessageRole.rider,
+        MessageRole.admin,
+      ]);
+      expect(await r.orders.watchMessages('other').first, isEmpty);
+    },
+  );
 
-  test('presence: only riders who are online AND recently seen count as live', () async {
-    final riders = r.riders;
-    await riders.saveRider(const RiderProfile(uid: 'a', name: 'A', phone: '0300'));
-    await riders.saveRider(const RiderProfile(uid: 'b', name: 'B', phone: '0301'));
-    expect(await riders.watchLiveRiderCount().first, 0);
-    await riders.setOnline('a', true);
-    await riders.setOnline('b', true);
-    expect(await riders.watchLiveRiderCount().first, 2);
-    await riders.setOnline('b', false);
-    expect(await riders.watchLiveRiderCount().first, 1);
-    await riders.setActive('a', false); // blocked riders are off shift
-    expect(await riders.watchLiveRiderCount().first, 0);
-    await riders.setActive('a', true);
-    await riders.setOnline('a', true);
-    await riders.heartbeat('a');
-    expect((await riders.watchAllRiders().first).firstWhere((x) => x.uid == 'a').isLive(), isTrue);
-    expect(
-      (await riders.watchAllRiders().first).firstWhere((x) => x.uid == 'a').isLive(DateTime.now().add(const Duration(minutes: 5))),
-      isFalse,
-      reason: 'a rider who stopped reporting in is not live',
-    );
-    await riders.deleteRider('b');
-    expect((await riders.watchAllRiders().first).map((x) => x.uid), ['a']);
-  });
+  test(
+    'presence: only riders who are online AND recently seen count as live',
+    () async {
+      final riders = r.riders;
+      await riders.saveRider(
+        const RiderProfile(uid: 'a', name: 'A', phone: '0300'),
+      );
+      await riders.saveRider(
+        const RiderProfile(uid: 'b', name: 'B', phone: '0301'),
+      );
+      expect(await riders.watchLiveRiderCount().first, 0);
+      await riders.setOnline('a', true);
+      await riders.setOnline('b', true);
+      expect(await riders.watchLiveRiderCount().first, 2);
+      await riders.setOnline('b', false);
+      expect(await riders.watchLiveRiderCount().first, 1);
+      await riders.setActive('a', false); // blocked riders are off shift
+      expect(await riders.watchLiveRiderCount().first, 0);
+      await riders.setActive('a', true);
+      await riders.setOnline('a', true);
+      await riders.heartbeat('a');
+      expect(
+        (await riders.watchAllRiders().first)
+            .firstWhere((x) => x.uid == 'a')
+            .isLive(),
+        isTrue,
+      );
+      expect(
+        (await riders.watchAllRiders().first)
+            .firstWhere((x) => x.uid == 'a')
+            .isLive(DateTime.now().add(const Duration(minutes: 5))),
+        isFalse,
+        reason: 'a rider who stopped reporting in is not live',
+      );
+      await riders.deleteRider('b');
+      expect((await riders.watchAllRiders().first).map((x) => x.uid), ['a']);
+    },
+  );
 
   test('admin takes an order back from a rider', () async {
     final id = await r.orders.place(sampleOrder('u1'));
@@ -344,6 +390,52 @@ void _suite(Repos Function() make) {
     expect(o.status, OrderStatus.confirmed);
     expect(o.riderId, isNull);
     expect(o.history.last.note, 'Taken back from the rider');
+  });
+
+  test('payment request from the shop and receipts from the customer', () async {
+    final id = await r.orders.place(
+      LpgOrder(
+        customerId: 'u1',
+        customerName: 'Ali',
+        customerPhone: '+923001234567',
+        items: sampleOrder('u1').items,
+        subtotal: 6592,
+        deliveryFee: 0,
+        total: 6592,
+        paymentMethod: PaymentMethod.jazzCash,
+        address: const Address(label: 'Home', line1: '1', area: 'DHA'),
+      ),
+    );
+    await r.orders.sendPaymentRequest(
+      id,
+      const PaymentRequest(
+        method: PaymentMethod.easyPaisa,
+        account: '03001234567',
+        accountTitle: 'Alpha LPG',
+        note: 'Send the receipt after paying',
+        amount: 6592,
+      ),
+    );
+    var o = (await r.orders.watchOrder(id).first)!;
+    expect(o.paymentRequest!.method, PaymentMethod.easyPaisa);
+    expect(o.paymentRequest!.account, '03001234567');
+    expect(o.paymentRequest!.amount, 6592);
+    expect(o.paymentRequest!.sentAt, isNotNull);
+    expect(o.receiptAt, isNull);
+
+    await r.orders.addReceipt(id, uid: 'u1', data: 'QUJD', note: 'from Easypaisa app');
+    await r.orders.setPaymentIssue(id, 'The receipt is not clear');
+    o = (await r.orders.watchOrder(id).first)!;
+    expect(o.receiptAt, isNotNull);
+    expect(o.paymentIssue, 'The receipt is not clear');
+    final receipts = await r.orders.watchReceipts(id).first;
+    expect(receipts.single.data, 'QUJD');
+
+    // A new receipt clears the problem the shop pointed out.
+    await r.orders.addReceipt(id, uid: 'u1', data: 'REVG');
+    o = (await r.orders.watchOrder(id).first)!;
+    expect(o.paymentIssue, isEmpty);
+    expect((await r.orders.watchReceipts(id).first).length, 2);
   });
 
   test('riders: a cancelled order cannot be accepted', () async {

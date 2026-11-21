@@ -111,9 +111,9 @@ class _MemoryCatalog implements CatalogRepository {
   @override
   Stream<List<Product>> watchAllProducts() => _s.watch(
     FirestorePaths.products,
-    (docs) => [
-      for (final e in docs.entries) Product.fromMap(e.key, e.value),
-    ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+    (docs) =>
+        [for (final e in docs.entries) Product.fromMap(e.key, e.value)]
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
   );
 
   @override

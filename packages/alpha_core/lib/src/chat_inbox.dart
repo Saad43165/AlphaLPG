@@ -21,6 +21,7 @@ class ChatInbox extends ChangeNotifier {
   final _reads = <String, Map<MessageRole, DateTime>>{};
   final _subs = <String, List<StreamSubscription<dynamic>>>{};
   final _pinned = <String, int>{};
+  final _errors = <String, Object>{};
   Set<String> _wanted = {};
 
   /// Start / stop following chats so that exactly [orderIds] are followed.
@@ -51,10 +52,19 @@ class ChatInbox extends ChangeNotifier {
     for (final id in want) {
       if (_subs.containsKey(id)) continue;
       _subs[id] = [
-        _orders.watchMessages(id).listen((m) {
-          _messages[id] = m;
-          notifyListeners();
-        }, onError: (_) {}),
+        _orders
+            .watchMessages(id)
+            .listen(
+              (m) {
+                _messages[id] = m;
+                _errors.remove(id);
+                notifyListeners();
+              },
+              onError: (Object e) {
+                _errors[id] = e;
+                notifyListeners();
+              },
+            ),
         _orders.watchChatReads(id).listen((r) {
           _reads[id] = r;
           notifyListeners();
@@ -71,8 +81,27 @@ class ChatInbox extends ChangeNotifier {
     }
   }
 
-  List<OrderMessage> messages(String orderId) =>
-      _messages[orderId] ?? const [];
+  /// Why the chat could not be loaded (null when fine). Typically the
+  /// database rules do not allow chat yet.
+  Object? error(String orderId) => _errors[orderId];
+
+  /// Try loading this chat again.
+  void retry(String orderId) {
+    for (final s
+        in _subs.remove(orderId) ?? const <StreamSubscription<dynamic>>[]) {
+      s.cancel();
+    }
+    _errors.remove(orderId);
+    _apply();
+    notifyListeners();
+  }
+
+  /// Plain words for a chat error, for the screens.
+  static String explain(Object e) => '$e'.contains('permission-denied')
+      ? 'Chat is not switched on yet. Alpha LPG needs to publish the latest database rules.'
+      : 'Could not load messages. Check your internet connection.';
+
+  List<OrderMessage> messages(String orderId) => _messages[orderId] ?? const [];
 
   OrderMessage? last(String orderId) {
     final m = messages(orderId);

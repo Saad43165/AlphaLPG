@@ -9,6 +9,7 @@ import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
 import '../widgets/common.dart';
+import '../widgets/payment_panel.dart';
 import 'chat_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
@@ -374,6 +375,7 @@ class OrderDetailScreen extends StatelessWidget {
                         : 'Check this transaction ID in your ${o.paymentMethod.label} account, then tap Mark paid.',
                   ),
                 ],
+                PaymentPanel(o),
               ],
             ),
 

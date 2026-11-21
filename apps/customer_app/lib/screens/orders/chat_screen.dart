@@ -69,6 +69,10 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
               'Please wait 5 minutes',
               'Where are you?',
             ],
+            loadError: _chat.error(widget.orderId) == null
+                ? null
+                : ChatInbox.explain(_chat.error(widget.orderId)!),
+            onRetry: () => _chat.retry(widget.orderId),
             onOpened: () => _chat.markRead(widget.orderId),
             onSend: (text) => backend.orders.sendMessage(
               widget.orderId,
