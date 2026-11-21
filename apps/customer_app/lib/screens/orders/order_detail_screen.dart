@@ -139,6 +139,10 @@ class _TrackingView extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = context.watch<AppState>().settings;
     final riderVisible = o.riderName != null && o.status.isActive;
+    final payFirst =
+        o.paymentMethod.isPrepaid &&
+        o.paymentStatus != PaymentStatus.paid &&
+        o.status != OrderStatus.cancelled;
     final scaleExtra = (MediaQuery.textScalerOf(context).scale(15) - 15) * 8;
     final expanded =
         (o.status == OrderStatus.delivered
@@ -224,6 +228,12 @@ class _TrackingView extends StatelessWidget {
                         ],
                       ],
                       if (o.status == OrderStatus.cancelled) _CancelledCard(o),
+                      if (payFirst) ...[
+                        _PayFirstBanner(o),
+                        const SizedBox(height: 14),
+                        _PaymentCard(o),
+                        const SizedBox(height: 14),
+                      ],
                       if (o.status == OrderStatus.outForDelivery)
                         LiveRiderMap(order: o),
                       if (riderVisible) ...[
@@ -247,8 +257,10 @@ class _TrackingView extends StatelessWidget {
                       ],
                       const _Heading('Order details'),
                       _ItemsCard(o),
-                      const _Heading('Payment'),
-                      _PaymentCard(o),
+                      if (!payFirst) ...[
+                        const _Heading('Payment'),
+                        _PaymentCard(o),
+                      ],
                       const _Heading('Delivery'),
                       _DeliveryCard(o),
                       if (o.status != OrderStatus.cancelled) ...[
@@ -324,6 +336,39 @@ class _TrackingView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Shown above everything while an online payment is still owed.
+class _PayFirstBanner extends StatelessWidget {
+  const _PayFirstBanner(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) {
+    final sent = o.paymentRequest != null;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Brand.flame.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.account_balance_wallet_rounded, color: Brand.flame),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              sent
+                  ? 'Payment needed: ${formatRupees(o.total)}. Pay with the details below, then add your receipt. Your order is delivered once Alpha LPG confirms it.'
+                  : 'Payment needed: ${formatRupees(o.total)}. Alpha LPG will send the ${o.paymentMethod.label} account here shortly. You can chat with them meanwhile.',
+              style: const TextStyle(fontWeight: FontWeight.w700, height: 1.35),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -83,6 +83,26 @@ Future<bool> completeDeliveryFlow(
   RiderSession session,
   LpgOrder order,
 ) async {
+  if (order.awaitingOnlinePayment) {
+    await showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Payment not confirmed yet'),
+        content: Text(
+          'This customer is paying by ${order.paymentMethod.label}. Alpha LPG '
+          'confirms online payments, and only then can you finish the delivery. '
+          'Do not take cash for this order. Ask Alpha LPG in chat.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    return false;
+  }
   final result = await showModalBottomSheet<({int cash, int empties})>(
     context: context,
     isScrollControlled: true,

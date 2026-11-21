@@ -883,6 +883,12 @@ class _ActionsState extends State<_Actions> {
         OutlinedButton(
           onPressed: _busy
               ? null
+              : o.awaitingPaymentCheck
+              ? () => showMessage(
+                  context,
+                  'Confirm the ${o.paymentMethod.label} payment first (Mark paid), then deliver.',
+                  error: true,
+                )
               : () => _do(() => s.markDelivered(o), 'Marked delivered'),
           child: const Text('Mark delivered'),
         ),

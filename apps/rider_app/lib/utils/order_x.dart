@@ -8,6 +8,11 @@ extension RiderOrderX on LpgOrder {
       ? total
       : 0;
 
+  /// A wallet / bank order the shop has not confirmed as paid yet. The rider
+  /// cannot finish it: Alpha LPG confirms online payments.
+  bool get awaitingOnlinePayment =>
+      paymentMethod.isPrepaid && paymentStatus != PaymentStatus.paid;
+
   /// "2× 11.8kg, 1× 6kg"
   String get itemsLine => items
       .map(

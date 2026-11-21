@@ -261,6 +261,7 @@ service cloud.firestore {
             && resource.data.riderId == request.auth.uid
             && resource.data.status == 'outForDelivery'
             && request.resource.data.status == 'delivered'
+            && (resource.data.paymentMethod == 'cashOnDelivery' || resource.data.paymentStatus == 'paid')
             && historyGrowsByOne()
             && request.resource.data.cashCollected is int
             && request.resource.data.cashCollected >= 0

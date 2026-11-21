@@ -422,6 +422,10 @@ class RiderSession extends ChangeNotifier {
   }) async {
     final id = _uid;
     if (id == null) return false;
+    if (order.awaitingOnlinePayment) {
+      completeError = 'Alpha LPG has not confirmed this online payment yet.';
+      return false;
+    }
     try {
       await backend.orders.completeDelivery(
         order.id,

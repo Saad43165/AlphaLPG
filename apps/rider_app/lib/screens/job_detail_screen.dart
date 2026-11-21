@@ -486,6 +486,23 @@ class JobDetailScreen extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 10),
+              if (o.awaitingOnlinePayment)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF4D6),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    'Online payment (${o.paymentMethod.label}) is not confirmed yet. Alpha LPG confirms it, then you can finish. Do not take cash.',
+                    style: const TextStyle(
+                      color: Color(0xFF5C4600),
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
               FilledButton.icon(
                 style: FilledButton.styleFrom(backgroundColor: Brand.success),
                 onPressed: () async {

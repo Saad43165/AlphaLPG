@@ -223,7 +223,11 @@ describe('rider workflow', () => {
     await assertFails(updateDoc(doc(staff('r1'), 'orders/o1'), { ...base, cashCollected: -5, emptiesCollected: 0 }));
     await assertFails(updateDoc(doc(staff('r1'), 'orders/o1'), { ...base, cashCollected: 0, emptiesCollected: 500 }));
     await assertFails(updateDoc(doc(staff('r1'), 'orders/o1'), { ...base, cashCollected: 0, emptiesCollected: 0, total: 1 }));
-    await assertSucceeds(updateDoc(doc(staff('r1'), 'orders/o1'), { ...base, cashCollected: 0, emptiesCollected: 1 }));
+    // Unpaid online order: the rider cannot finish it at all.
+    await assertFails(updateDoc(doc(staff('r1'), 'orders/o1'), { ...base, cashCollected: 0, emptiesCollected: 1 }));
+    // Once the shop confirmed the payment, the delivery goes through.
+    await seedOrder({ riderId: 'r1', status: 'outForDelivery', paymentMethod: 'bankTransfer', paymentStatus: 'paid' }, 'o3');
+    await assertSucceeds(updateDoc(doc(staff('r1'), 'orders/o3'), { ...base, cashCollected: 0, emptiesCollected: 1 }));
   });
 });
 
