@@ -69,15 +69,6 @@ extension _Tracking on LpgOrder {
     OrderStatus.cancelled => 'Order cancelled',
   };
 
-  double get routeProgress => switch (status) {
-    OrderStatus.placed => 0.04,
-    OrderStatus.confirmed => 0.18,
-    OrderStatus.assigned => 0.32,
-    OrderStatus.outForDelivery => 0.68,
-    OrderStatus.delivered => 1,
-    OrderStatus.cancelled => 0,
-  };
-
   LinearGradient get heroGradient => switch (status) {
     OrderStatus.delivered => const LinearGradient(
       colors: [Color(0xFF23B26A), Color(0xFF137A47)],
@@ -142,7 +133,7 @@ class _TrackingView extends StatelessWidget {
             ? 236
             : o.status == OrderStatus.cancelled
             ? 210
-            : 320) +
+            : 270) +
         scaleExtra;
     return AnnotatedRegion(
       value: Brand.lightStatusBar,
@@ -208,17 +199,14 @@ class _TrackingView extends StatelessWidget {
                           const SizedBox(height: 14),
                         ],
                       ],
-                      if (o.status == OrderStatus.cancelled)
-                        _CancelledCard(o)
-                      else
-                        _StepTracker(o),
-                      if (o.status == OrderStatus.outForDelivery) ...[
-                        const SizedBox(height: 14),
+                      if (o.status == OrderStatus.cancelled) _CancelledCard(o),
+                      if (o.status == OrderStatus.outForDelivery)
                         LiveRiderMap(order: o),
-                      ],
                       if (riderVisible) ...[
                         const SizedBox(height: 14),
                         _RiderCard(o),
+                        const SizedBox(height: 10),
+                        _ShareRow(o),
                       ],
                       if (o.canBeRated &&
                           o.status != OrderStatus.delivered) ...[
@@ -235,6 +223,15 @@ class _TrackingView extends StatelessWidget {
                       _PaymentCard(o),
                       const _Heading('Delivery'),
                       _DeliveryCard(o),
+                      if (o.status != OrderStatus.cancelled) ...[
+                        const _Heading('Order timeline'),
+                        _StepTracker(o),
+                      ],
+                      if (o.status != OrderStatus.placed &&
+                          o.status != OrderStatus.cancelled) ...[
+                        const SizedBox(height: 14),
+                        _ProblemButton(o),
+                      ],
                       const SizedBox(height: 20),
                       if (o.status != OrderStatus.delivered)
                         Row(
@@ -426,8 +423,8 @@ class _Hero extends StatelessWidget {
                       ),
                     ],
                     if (o.status.isActive) ...[
-                      const SizedBox(height: 22),
-                      _Route(o),
+                      const SizedBox(height: 20),
+                      _StageBar(o),
                     ],
                   ],
                 ),
@@ -439,164 +436,6 @@ class _Hero extends StatelessWidget {
     );
   }
 }
-
-class _Route extends StatelessWidget {
-  const _Route(this.o);
-  final LpgOrder o;
-
-  @override
-  Widget build(BuildContext context) {
-    final delivered = o.status == OrderStatus.delivered;
-    return Row(
-      children: [
-        const _RouteNode(icon: Icons.storefront_rounded, label: 'Alpha LPG'),
-        Expanded(
-          child: SizedBox(
-            height: 44,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(end: o.routeProgress),
-              duration: const Duration(milliseconds: 900),
-              curve: Curves.easeInOutCubic,
-              builder: (context, p, _) => LayoutBuilder(
-                builder: (context, c) {
-                  const truck = 36.0;
-                  final x = (c.maxWidth - truck) * p;
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        top: 21,
-                        child: CustomPaint(
-                          size: Size(c.maxWidth, 2),
-                          painter: _DashedLine(
-                            Colors.white.withValues(alpha: 0.45),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: 0,
-                        top: 20,
-                        child: Container(
-                          width: x + truck / 2,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Brand.flame,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      if (!delivered)
-                        Positioned(
-                          left: x,
-                          top: 4,
-                          child: Container(
-                            width: truck,
-                            height: truck,
-                            decoration: BoxDecoration(
-                              color: context.pal.card,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.two_wheeler_rounded,
-                              color: Brand.blueDark,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-        _RouteNode(
-          icon: delivered ? Icons.check_rounded : Icons.home_rounded,
-          label: o.address.label,
-          highlight: delivered,
-        ),
-      ],
-    );
-  }
-}
-
-class _RouteNode extends StatelessWidget {
-  const _RouteNode({
-    required this.icon,
-    required this.label,
-    this.highlight = false,
-  });
-  final IconData icon;
-  final String label;
-  final bool highlight;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    width: 64,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: highlight
-                ? Brand.flame
-                : Colors.white.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-          ),
-          child: Icon(icon, color: highlight ? Brand.navy : Colors.white),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _DashedLine extends CustomPainter {
-  _DashedLine(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    for (double x = 0; x < size.width; x += 9) {
-      canvas.drawLine(
-        Offset(x, 1),
-        Offset((x + 4).clamp(0, size.width), 1),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedLine old) => old.color != color;
-}
-
-// ---------------------------------------------------------------------------
 
 class _StepTracker extends StatelessWidget {
   const _StepTracker(this.o);
@@ -1510,4 +1349,178 @@ class _DeliveredActions extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Preparing → On the way → Delivered, on the coloured header.
+class _StageBar extends StatelessWidget {
+  const _StageBar(this.o);
+  final LpgOrder o;
+
+  int get _stage => switch (o.status) {
+    OrderStatus.outForDelivery => 1,
+    OrderStatus.delivered => 2,
+    _ => 0,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    const labels = ['Preparing', 'On the way', 'Delivered'];
+    const icons = [
+      Icons.inventory_2_rounded,
+      Icons.two_wheeler_rounded,
+      Icons.home_rounded,
+    ];
+    final stage = _stage;
+    Widget node(int i) {
+      final done = i < stage;
+      final now = i == stage;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: now ? 46 : 38,
+            height: now ? 46 : 38,
+            decoration: BoxDecoration(
+              color: done || now
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+              boxShadow: now
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Icon(
+              done ? Icons.check_rounded : icons[i],
+              size: now ? 24 : 20,
+              color: done || now
+                  ? o.heroGradient.colors.last
+                  : Colors.white.withValues(alpha: 0.85),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            labels[i],
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: done || now ? 1 : 0.75),
+              fontWeight: now ? FontWeight.w800 : FontWeight.w600,
+              fontSize: 12.5,
+            ),
+          ),
+        ],
+      );
+    }
+
+    Widget line(int i) => Expanded(
+      child: Padding(
+        // Level with the middle of the 46px node row.
+        padding: const EdgeInsets.only(bottom: 22),
+        child: Container(
+          height: 4,
+          decoration: BoxDecoration(
+            color: i < stage
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.25),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
+    );
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [node(0), line(0), node(1), line(1), node(2)],
+    );
+  }
+}
+
+/// "Share delivery details" with family, over WhatsApp.
+class _ShareRow extends StatelessWidget {
+  const _ShareRow(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerRight,
+    child: TextButton.icon(
+      style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
+      onPressed: () => Launch.whatsappShare(
+        'My Alpha LPG gas order ${o.displayNumber} is '
+        '${o.status == OrderStatus.outForDelivery ? 'on the way' : 'being prepared'}.'
+        '\nRider: ${o.riderName}${o.riderPhone != null ? ' (${o.riderPhone})' : ''}'
+        '\nDelivering to: ${o.address.oneLine}',
+      ),
+      icon: const Icon(Icons.share_rounded, size: 18),
+      label: const Text('Share delivery details'),
+    ),
+  );
+}
+
+/// "Something wrong with this order?" → WhatsApp with the order number and
+/// the problem already typed.
+class _ProblemButton extends StatelessWidget {
+  const _ProblemButton(this.o);
+  final LpgOrder o;
+
+  static const _reasons = [
+    ('Rider is late', Icons.schedule_rounded),
+    ('Wrong cylinder or quantity', Icons.swap_horiz_rounded),
+    ('Cylinder not delivered', Icons.report_gmailerrorred_rounded),
+    ('Payment or price problem', Icons.payments_rounded),
+    ('Rider behaviour', Icons.person_off_rounded),
+    ('Something else', Icons.chat_bubble_outline_rounded),
+  ];
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+    onPressed: () => showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheet) {
+        final whatsapp = context.read<AppState>().settings.whatsapp;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'What went wrong?',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'We will message you on WhatsApp about order ${o.displayNumber}.',
+                  style: TextStyle(color: context.pal.muted),
+                ),
+                const SizedBox(height: 8),
+                for (final (label, icon) in _reasons)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(icon, color: Brand.blueDark),
+                    title: Text(label),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () {
+                      Navigator.pop(sheet);
+                      Launch.whatsapp(
+                        whatsapp,
+                        'Hi Alpha LPG, there is a problem with order '
+                        '${o.displayNumber}: $label.',
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+    icon: const Icon(Icons.flag_outlined),
+    label: const Text('Something wrong with this order?'),
+  );
 }

@@ -58,7 +58,7 @@ service cloud.firestore {
       allow read: if isSelf(uid) || isAdmin();
       allow create, update: if isSelf(uid)
         && request.resource.data.keys().hasOnly(
-             ['name', 'phone', 'type', 'businessName', 'businessType', 'email', 'createdAt', 'updatedAt'])
+             ['name', 'phone', 'type', 'businessName', 'businessType', 'email', 'fcmToken', 'createdAt', 'updatedAt'])
         && isText(request.resource.data.name, 79)
         && request.resource.data.name.size() > 1
         && request.resource.data.type in ['home', 'business']
@@ -66,8 +66,10 @@ service cloud.firestore {
         && phoneMatchesToken(request.resource.data.get('phone', ''))
         && isText(request.resource.data.get('businessName', ''), 80)
         && isText(request.resource.data.get('businessType', ''), 40)
-        && isText(request.resource.data.get('email', ''), 100);
-      allow delete: if isAdmin();
+        && isText(request.resource.data.get('email', ''), 100)
+        && isText(request.resource.data.get('fcmToken', ''), 300);
+      // Customers can delete their own account data (orders are kept).
+      allow delete: if isSelf(uid) || isAdmin();
 
       match /addresses/{id} {
         allow read: if isSelf(uid) || isAdmin();

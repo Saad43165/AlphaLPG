@@ -176,6 +176,21 @@ void _suite(Repos Function() make) {
     expect(await repo.watchAddresses('u1').first, isEmpty);
   });
 
+  test('delete my account removes profile and saved locations', () async {
+    final repo = r.profiles;
+    await repo.saveProfile(
+      const CustomerProfile(uid: 'u9', name: 'Sara', phone: '+923001234567'),
+      isNew: true,
+    );
+    await repo.saveAddress(
+      'u9',
+      const Address(label: 'Home', line1: '1', area: 'DHA'),
+    );
+    await repo.deleteAccountData('u9');
+    expect(await repo.watchProfile('u9').first, isNull);
+    expect(await repo.watchAddresses('u9').first, isEmpty);
+  });
+
   test('quote requests are stored as new', () async {
     final repo = r.quotes;
     await repo.submit(

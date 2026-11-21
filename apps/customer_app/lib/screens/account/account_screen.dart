@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../../services/auth_service.dart';
 import '../../services/backend.dart';
 import '../../state/app_state.dart';
 import '../../theme/brand.dart';
@@ -159,6 +160,18 @@ class AccountScreen extends StatelessWidget {
                     'About Alpha LPG',
                     '/about',
                   ),
+                  _tile(
+                    context,
+                    Icons.privacy_tip_outlined,
+                    'Privacy policy',
+                    '/privacy',
+                  ),
+                  _tile(
+                    context,
+                    Icons.description_outlined,
+                    'Terms of service',
+                    '/terms',
+                  ),
                 ],
               ),
             ),
@@ -171,6 +184,12 @@ class AccountScreen extends StatelessWidget {
                 },
                 icon: const Icon(Icons.logout),
                 label: const Text('Sign out'),
+              ),
+              const SizedBox(height: 6),
+              TextButton(
+                style: TextButton.styleFrom(foregroundColor: Brand.danger),
+                onPressed: () => _deleteAccount(context),
+                child: const Text('Delete my account'),
               ),
             ],
             const SizedBox(height: 20),
@@ -187,6 +206,33 @@ class AccountScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _deleteAccount(BuildContext context) async {
+    final backend = context.read<Backend>();
+    final uid = backend.auth.uid;
+    if (uid == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => const _DeleteAccountDialog(),
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      await backend.profiles.deleteAccountData(uid);
+      await backend.auth.deleteAccount();
+      if (context.mounted) {
+        context.go('/');
+        showMessage(context, 'Your account has been deleted.');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showMessage(
+          context,
+          e is AuthException ? e.message : 'Could not delete your account. Please check your internet and try again.',
+          error: true,
+        );
+      }
+    }
+  }
+
   Widget _tile(
     BuildContext context,
     IconData icon,
@@ -198,5 +244,61 @@ class AccountScreen extends StatelessWidget {
     title: Text(title),
     trailing: const Icon(Icons.chevron_right),
     onTap: () => go ? context.go(route) : context.push(route),
+  );
+}
+
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog();
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final _c = TextEditingController();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Delete your account?'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'This removes your profile, saved locations and sign-in. '
+          'You will not be able to see your old orders. '
+          'Orders already placed are kept for the shop\'s records.\n\n'
+          'Type DELETE to confirm.',
+          style: TextStyle(height: 1.4),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _c,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(hintText: 'DELETE'),
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context, false),
+        child: const Text('Keep my account'),
+      ),
+      TextButton(
+        style: TextButton.styleFrom(foregroundColor: Brand.danger),
+        onPressed: _c.text.trim().toUpperCase() == 'DELETE'
+            ? () => Navigator.pop(context, true)
+            : null,
+        child: const Text('Delete'),
+      ),
+    ],
   );
 }

@@ -17,6 +17,7 @@ import 'screens/home/home_screen.dart';
 import 'screens/info/about_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/info/help_screen.dart';
+import 'screens/info/legal_screen.dart';
 import 'screens/info/safety_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/orders/invoice_screen.dart';
@@ -114,6 +115,8 @@ GoRouter buildRouter(AppState state) => GoRouter(
       builder: (_, s) => InvoiceScreen(order: s.extra! as LpgOrder),
     ),
     GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
+    GoRoute(path: '/privacy', builder: (_, _) => const PrivacyScreen()),
+    GoRoute(path: '/terms', builder: (_, _) => const TermsScreen()),
     GoRoute(path: '/welcome', builder: (_, _) => const OnboardingScreen()),
   ],
 );

@@ -17,6 +17,10 @@ abstract class AuthService extends ChangeNotifier {
   Future<bool> sendCode(String phoneE164);
   Future<void> verifyCode(String code);
   Future<void> signOut();
+
+  /// Permanently removes the sign-in account. May ask the customer to sign
+  /// in again first (Firebase wants a recent sign-in for this).
+  Future<void> deleteAccount();
 }
 
 class AuthException implements Exception {
@@ -97,6 +101,20 @@ class FirebaseAuthService extends AuthService {
   Future<void> signOut() => _auth.signOut();
 
   @override
+  Future<void> deleteAccount() async {
+    try {
+      await _auth.currentUser?.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw AuthException(
+          'For your security, please sign out, sign in again with your mobile number, then delete your account.',
+        );
+      }
+      throw AuthException(_message(e));
+    }
+  }
+
+  @override
   void dispose() {
     _sub.cancel();
     super.dispose();
@@ -147,4 +165,7 @@ class DemoAuthService extends AuthService {
     _phone = null;
     notifyListeners();
   }
+
+  @override
+  Future<void> deleteAccount() => signOut();
 }

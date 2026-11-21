@@ -245,6 +245,15 @@ describe('profiles, catalogue and staff', () => {
     await assertFails(setDoc(doc(customer(), 'customers/u1'), { ...ok, type: 'god' }));
     await assertFails(getDoc(doc(customer('u2', '+923111111111'), 'customers/u1')));
   });
+  it('customers can store a notification token and delete only their own account data', async () => {
+    const ok = { name: 'Bilal Ahmed', phone: PHONE, type: 'home', businessName: '', businessType: '', email: '', fcmToken: 'tok123', createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+    await assertSucceeds(setDoc(doc(customer(), 'customers/u1'), ok));
+    await assertFails(setDoc(doc(customer(), 'customers/u1'), { ...ok, fcmToken: 'x'.repeat(400) }));
+    await assertSucceeds(setDoc(doc(customer(), 'customers/u1/addresses/a1'), { label: 'Home', line1: 'x', area: 'y', createdAt: serverTimestamp() }));
+    await assertFails(deleteDoc(doc(customer('u2', '+923111111111'), 'customers/u1')));
+    await assertSucceeds(deleteDoc(doc(customer(), 'customers/u1/addresses/a1')));
+    await assertSucceeds(deleteDoc(doc(customer(), 'customers/u1')));
+  });
   it('saved locations must be inside Lahore and well formed', async () => {
     const a = { label: 'Home', line1: 'Main Blvd', area: 'Gulberg', landmark: '', city: 'Lahore', lat: 31.5, lng: 74.3, createdAt: serverTimestamp() };
     await assertSucceeds(setDoc(doc(customer(), 'customers/u1/addresses/a1'), a));

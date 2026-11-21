@@ -17,6 +17,10 @@ abstract interface class ProfileRepository {
   /// Creates (empty id) or updates an address; returns it with its id.
   Future<Address> saveAddress(String uid, Address a);
   Future<void> deleteAddress(String uid, String id);
+
+  /// Removes the customer's profile and saved locations ("delete my
+  /// account"). Past orders are kept for the shop's records.
+  Future<void> deleteAccountData(String uid);
 }
 
 class _FirestoreProfiles implements ProfileRepository {
@@ -57,6 +61,15 @@ class _FirestoreProfiles implements ProfileRepository {
     }
     await _addresses(uid).doc(a.id).set(a.toMap(), SetOptions(merge: true));
     return a;
+  }
+
+  @override
+  Future<void> deleteAccountData(String uid) async {
+    final addrs = await _addresses(uid).get();
+    for (final d in addrs.docs) {
+      await d.reference.delete();
+    }
+    await _doc(uid).delete();
   }
 
   @override
@@ -109,4 +122,14 @@ class _MemoryProfiles implements ProfileRepository {
   @override
   Future<void> deleteAddress(String uid, String id) async =>
       _s.delete(FirestorePaths.addresses(uid), id);
+
+  @override
+  Future<void> deleteAccountData(String uid) async {
+    final path = FirestorePaths.addresses(uid);
+    final ids = await _s.watch(path, (docs) => docs.keys.toList()).first;
+    for (final id in ids) {
+      _s.delete(path, id);
+    }
+    _s.delete(FirestorePaths.customers, uid);
+  }
 }

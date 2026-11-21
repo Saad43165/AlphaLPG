@@ -13,6 +13,12 @@ abstract final class Launch {
         mode: LaunchMode.externalApplication,
       );
 
+  /// Opens WhatsApp's contact picker with [message] ready to send.
+  static Future<bool> whatsappShare(String message) => launchUrl(
+    Uri.https('wa.me', '/', {'text': message}),
+    mode: LaunchMode.externalApplication,
+  );
+
   static Future<bool> email(String to, {String subject = ''}) => launchUrl(
     Uri(
       scheme: 'mailto',
