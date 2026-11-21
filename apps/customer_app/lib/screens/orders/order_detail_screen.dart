@@ -136,8 +136,14 @@ class _TrackingView extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = context.watch<AppState>().settings;
     final riderVisible = o.riderName != null && o.status.isActive;
+    final scaleExtra = (MediaQuery.textScalerOf(context).scale(15) - 15) * 8;
     final expanded =
-        320 + (MediaQuery.textScalerOf(context).scale(15) - 15) * 8;
+        (o.status == OrderStatus.delivered
+            ? 236
+            : o.status == OrderStatus.cancelled
+            ? 210
+            : 320) +
+        scaleExtra;
     return AnnotatedRegion(
       value: Brand.lightStatusBar,
       child: Scaffold(
@@ -182,10 +188,7 @@ class _TrackingView extends StatelessWidget {
                   final cut = (expanded - box.maxHeight) + kToolbarHeight + top;
                   return FlexibleSpaceBar(
                     collapseMode: CollapseMode.pin,
-                    background: ClipRect(
-                      clipper: _CutTop(cut < 0 ? 0 : cut),
-                      child: _Hero(o),
-                    ),
+                    background: _Hero(o, cut: cut < 0 ? 0 : cut),
                   );
                 },
               ),
@@ -197,6 +200,14 @@ class _TrackingView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (o.status == OrderStatus.delivered) ...[
+                        _DeliveredActions(o),
+                        const SizedBox(height: 14),
+                        if (o.canBeRated) ...[
+                          _RateCard(o),
+                          const SizedBox(height: 14),
+                        ],
+                      ],
                       if (o.status == OrderStatus.cancelled)
                         _CancelledCard(o)
                       else
@@ -209,7 +220,8 @@ class _TrackingView extends StatelessWidget {
                         const SizedBox(height: 14),
                         _RiderCard(o),
                       ],
-                      if (o.canBeRated) ...[
+                      if (o.canBeRated &&
+                          o.status != OrderStatus.delivered) ...[
                         const SizedBox(height: 14),
                         _RateCard(o),
                       ],
@@ -224,39 +236,40 @@ class _TrackingView extends StatelessWidget {
                       const _Heading('Delivery'),
                       _DeliveryCard(o),
                       const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => Launch.whatsapp(
-                                settings.whatsapp,
-                                'Hi Alpha LPG, I have a question about order ${o.displayNumber}.',
-                              ),
-                              icon: const Icon(
-                                Icons.chat_rounded,
-                                color: Brand.whatsapp,
-                              ),
-                              label: const Text('Get help'),
-                            ),
-                          ),
-                          if (!o.status.isActive) ...[
-                            const SizedBox(width: 10),
+                      if (o.status != OrderStatus.delivered)
+                        Row(
+                          children: [
                             Expanded(
-                              child: FilledButton.icon(
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size.fromHeight(50),
+                              child: OutlinedButton.icon(
+                                onPressed: () => Launch.whatsapp(
+                                  settings.whatsapp,
+                                  'Hi Alpha LPG, I have a question about order ${o.displayNumber}.',
                                 ),
-                                onPressed: () {
-                                  context.read<Cart>().reorder(o);
-                                  context.push('/cart');
-                                },
-                                icon: const Icon(Icons.replay_rounded),
-                                label: const Text('Order again'),
+                                icon: const Icon(
+                                  Icons.chat_rounded,
+                                  color: Brand.whatsapp,
+                                ),
+                                label: const Text('Get help'),
                               ),
                             ),
+                            if (!o.status.isActive) ...[
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: FilledButton.icon(
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(50),
+                                  ),
+                                  onPressed: () {
+                                    context.read<Cart>().reorder(o);
+                                    context.push('/cart');
+                                  },
+                                  icon: const Icon(Icons.replay_rounded),
+                                  label: const Text('Order again'),
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
-                      ),
+                        ),
                       if (o.status.customerCanCancel) ...[
                         const SizedBox(height: 8),
                         TextButton.icon(
@@ -315,22 +328,23 @@ BoxDecoration _cardDecoration(BuildContext context) => BoxDecoration(
 // Hero: status, ETA and the depot → home route.
 
 class _Hero extends StatelessWidget {
-  const _Hero(this.o);
+  const _Hero(this.o, {this.cut = 0});
   final LpgOrder o;
+
+  /// Content above this y is hidden (it has scrolled under the toolbar).
+  final double cut;
 
   @override
   Widget build(BuildContext context) {
     final eta = o.etaLine;
     return Container(
       decoration: BoxDecoration(gradient: o.heroGradient),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          // Content is clipped below the pinned toolbar, so it can never
-          // slide over the back arrow and order number while collapsing.
-          padding: const EdgeInsets.only(top: kToolbarHeight),
-          child: Opacity(
-            opacity: 1,
+      child: ClipRect(
+        clipper: _CutTop(cut),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.only(top: kToolbarHeight),
             child: Constrained(
               // Anchored to the bottom; clips instead of overflowing with very
               // large text sizes.
@@ -373,7 +387,10 @@ class _Hero extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (eta != null) ...[
+                    if (o.status == OrderStatus.delivered) ...[
+                      const SizedBox(height: 16),
+                      _FactChips(o),
+                    ] else if (eta != null) ...[
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -408,8 +425,10 @@ class _Hero extends StatelessWidget {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 22),
-                    if (o.status != OrderStatus.cancelled) _Route(o),
+                    if (o.status.isActive) ...[
+                      const SizedBox(height: 22),
+                      _Route(o),
+                    ],
                   ],
                 ),
               ),
@@ -1371,4 +1390,124 @@ class _CutTop extends CustomClipper<Rect> {
 
   @override
   bool shouldReclip(_CutTop old) => old.top != top;
+}
+
+/// Delivered: the facts that matter at a glance.
+class _FactChips extends StatelessWidget {
+  const _FactChips(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) {
+    final paid = o.paymentStatus == PaymentStatus.paid;
+    Widget chip(IconData icon, String text) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Brand.flame),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (o.etaLine != null) chip(Icons.schedule_rounded, o.etaLine!),
+        chip(
+          Icons.propane_tank_rounded,
+          '${o.cylinderCount} cylinder${o.cylinderCount == 1 ? '' : 's'}',
+        ),
+        chip(Icons.payments_rounded, formatRupees(o.total)),
+        chip(
+          paid ? Icons.verified_rounded : Icons.hourglass_bottom_rounded,
+          paid ? 'Paid' : 'Payment pending',
+        ),
+      ],
+    );
+  }
+}
+
+/// What people actually do after a delivery.
+class _DeliveredActions extends StatelessWidget {
+  const _DeliveredActions(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<AppState>().settings;
+    Widget small(
+      IconData icon,
+      String label,
+      VoidCallback onTap, {
+      Color? color,
+    }) => Expanded(
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 64),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+        ),
+        onPressed: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 22, color: color),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 12.5)),
+          ],
+        ),
+      ),
+    );
+    return Column(
+      children: [
+        FilledButton.icon(
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
+          onPressed: () {
+            context.read<Cart>().reorder(o);
+            context.push('/cart');
+          },
+          icon: const Icon(Icons.replay_rounded),
+          label: const Text('Order the same again'),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            small(
+              Icons.receipt_long_rounded,
+              'Invoice',
+              () => context.push('/invoice', extra: o),
+            ),
+            const SizedBox(width: 10),
+            small(
+              Icons.chat_rounded,
+              'Get help',
+              () => Launch.whatsapp(
+                settings.whatsapp,
+                'Hi Alpha LPG, I have a question about order ${o.displayNumber}.',
+              ),
+              color: Brand.whatsapp,
+            ),
+            const SizedBox(width: 10),
+            small(Icons.copy_rounded, 'Copy no.', () {
+              Clipboard.setData(ClipboardData(text: o.displayNumber));
+              showMessage(context, 'Order number copied');
+            }),
+          ],
+        ),
+      ],
+    );
+  }
 }
