@@ -1,3 +1,5 @@
+import 'package:alpha_ui/alpha_ui.dart' show showAppMessage;
+
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -437,16 +439,8 @@ class Constrained extends StatelessWidget {
   );
 }
 
-void showMessage(BuildContext context, String message, {bool error = false}) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: error ? const Color(0xFFB3261E) : null,
-      ),
-    );
-}
+void showMessage(BuildContext context, String message, {bool error = false}) =>
+    showAppMessage(context, message, error: error);
 
 /// Back button that always works: goes back, or Home when this screen is the
 /// only one in the stack (e.g. after sign-in or a deep link).

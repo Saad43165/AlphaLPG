@@ -33,11 +33,10 @@ class PaymentPanel extends StatelessWidget {
     if (req == null || !context.mounted) return;
     final err = await s.sendPaymentRequest(order, req);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(err ?? 'Sent to ${order.customerName}'),
-        backgroundColor: err == null ? null : Brand.danger,
-      ),
+    showAppMessage(
+      context,
+      err ?? 'Sent to ${order.customerName}',
+      error: err != null,
     );
   }
 
@@ -52,13 +51,10 @@ class PaymentPanel extends StatelessWidget {
     if (text == null || !context.mounted) return;
     final err = await s.setPaymentIssue(order, text);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          err ?? (text.isEmpty ? 'Problem cleared' : 'Customer told'),
-        ),
-        backgroundColor: err == null ? null : Brand.danger,
-      ),
+    showAppMessage(
+      context,
+      err ?? (text.isEmpty ? 'Problem cleared' : 'Customer told'),
+      error: err != null,
     );
   }
 

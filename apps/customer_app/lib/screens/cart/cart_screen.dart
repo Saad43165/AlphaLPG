@@ -1,3 +1,4 @@
+import 'package:alpha_ui/alpha_ui.dart' show showAppMessage;
 import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -373,19 +374,13 @@ class _CartLineTile extends StatelessWidget {
     final cart = context.read<Cart>();
     cart.setQuantity(line.productId, line.type, 0);
     Haptics.medium();
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('${product.name} removed'),
-          action: SnackBarAction(
-            label: 'Undo',
-            textColor: Brand.flame,
-            onPressed: () =>
-                cart.setQuantity(line.productId, line.type, line.quantity),
-          ),
-        ),
-      );
+    showAppMessage(
+      context,
+      '${product.name} removed',
+      actionLabel: 'Undo',
+      onAction: () =>
+          cart.setQuantity(line.productId, line.type, line.quantity),
+    );
   }
 
   @override

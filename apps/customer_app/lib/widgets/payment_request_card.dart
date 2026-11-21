@@ -233,9 +233,21 @@ class _PaySheetState extends State<_PaySheet> {
     super.dispose();
   }
 
+  int get _due => widget.order.paymentRequest?.amount ?? widget.order.total;
+
+  /// Screenshot, transaction ID and amount are all required.
   bool get _valid =>
+      _data != null &&
       _ref.text.trim().length >= 4 &&
       (int.tryParse(_amount.text.trim()) ?? 0) > 0;
+
+  String get _missing => _data == null
+      ? 'Add the payment screenshot'
+      : _ref.text.trim().length < 4
+      ? 'Enter the transaction ID'
+      : (int.tryParse(_amount.text.trim()) ?? 0) <= 0
+      ? 'Enter the amount you sent'
+      : 'Send to Alpha LPG';
 
   Future<void> _pick(ImageSource source) async {
     try {
@@ -319,10 +331,95 @@ class _PaySheetState extends State<_PaySheet> {
             const SizedBox(height: 4),
             Text(
               'Order ${o.displayNumber} · ${o.paymentMethod.label}. '
-              'The transaction ID is on the receipt your app shows after paying.',
+              'Three quick things so we can confirm it safely: the screenshot, the transaction ID and the amount.',
               style: TextStyle(color: pal.muted, height: 1.4),
             ),
             const SizedBox(height: 14),
+            // 1. Screenshot (required).
+            if (_data != null)
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Brand.success.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    ui.ReceiptImage(_data!, size: 72),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Screenshot added',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => _data = null),
+                      child: const Text('Change'),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Brand.blueDark, width: 1.4),
+                  color: Brand.blueDark.withValues(alpha: 0.06),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      '1. Screenshot of the payment (required)',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.tonalIcon(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(0, 46),
+                            ),
+                            onPressed: _busy
+                                ? null
+                                : () => _pick(ImageSource.gallery),
+                            icon: const Icon(
+                              Icons.photo_library_rounded,
+                              size: 18,
+                            ),
+                            label: const Text('Gallery'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton.tonalIcon(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(0, 46),
+                            ),
+                            onPressed: _busy
+                                ? null
+                                : () => _pick(ImageSource.camera),
+                            icon: const Icon(
+                              Icons.photo_camera_rounded,
+                              size: 18,
+                            ),
+                            label: const Text('Camera'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 14),
+            const Text(
+              '2. From your receipt',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
             TextField(
               controller: _ref,
               textCapitalization: TextCapitalization.characters,
@@ -345,45 +442,17 @@ class _PaySheetState extends State<_PaySheet> {
               ),
             ),
             const SizedBox(height: 12),
-            if (_data != null)
-              Row(
-                children: [
-                  ui.ReceiptImage(_data!, size: 72),
-                  const SizedBox(width: 12),
-                  const Expanded(child: Text('Receipt picture added')),
-                  TextButton(
-                    onPressed: () => setState(() => _data = null),
-                    child: const Text('Remove'),
+            if ((int.tryParse(_amount.text.trim()) ?? 0) > 0 &&
+                int.parse(_amount.text.trim()) != _due)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'You need to pay ${formatRupees(_due)}. If you sent a different amount, Alpha LPG will contact you.',
+                  style: const TextStyle(
+                    color: Brand.flame,
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
-              )
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 46),
-                      ),
-                      onPressed: _busy
-                          ? null
-                          : () => _pick(ImageSource.gallery),
-                      icon: const Icon(Icons.photo_library_rounded, size: 18),
-                      label: const Text('Add screenshot'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 46),
-                      ),
-                      onPressed: _busy ? null : () => _pick(ImageSource.camera),
-                      icon: const Icon(Icons.photo_camera_rounded, size: 18),
-                      label: const Text('Take photo'),
-                    ),
-                  ),
-                ],
+                ),
               ),
             if (_error != null)
               Padding(
@@ -395,6 +464,7 @@ class _PaySheetState extends State<_PaySheet> {
               ),
             const SizedBox(height: 14),
             FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
               onPressed: (_valid && !_busy) ? _submit : null,
               icon: _busy
                   ? const SizedBox(
@@ -403,7 +473,7 @@ class _PaySheetState extends State<_PaySheet> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.send_rounded),
-              label: Text(_busy ? 'Please wait…' : 'Send to Alpha LPG'),
+              label: Text(_busy ? 'Please wait…' : _missing),
             ),
           ],
         ),

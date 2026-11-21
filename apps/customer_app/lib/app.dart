@@ -45,6 +45,7 @@ class _AlphaAppState extends State<AlphaApp> {
   );
   late final Cart _cart = Cart(prefs: widget.prefs);
   late final GoRouter _router = buildRouter(_state);
+  final _messenger = GlobalKey<ScaffoldMessengerState>();
   late final OrderWatcher _watcher = OrderWatcher(widget.backend, _state);
   late final LocationService _location =
       widget.location ?? defaultLocationService(Env.geoapifyKey);
@@ -57,6 +58,25 @@ class _AlphaAppState extends State<AlphaApp> {
     super.initState();
     _watcher; // starts watching orders (notifications) once signed in
     Alerts.onTap = (payload) => _router.push(payload);
+    _state.inAppNotice = (title, body, route) {
+      final m = _messenger.currentState;
+      if (m == null) return;
+      m.hideCurrentSnackBar();
+      m.showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 6),
+          persist: false,
+          showCloseIcon: true,
+          closeIconColor: Colors.white,
+          content: Text('$title\n$body'),
+          action: SnackBarAction(
+            label: 'VIEW',
+            textColor: Colors.white,
+            onPressed: () => _router.push(route),
+          ),
+        ),
+      );
+    };
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final p = await Alerts.launchPayload();
       if (p != null && mounted) _router.push(p);
@@ -84,6 +104,7 @@ class _AlphaAppState extends State<AlphaApp> {
     child: ValueListenableBuilder<ThemeMode>(
       valueListenable: _state.themeMode,
       builder: (context, mode, _) => MaterialApp.router(
+        scaffoldMessengerKey: _messenger,
         title: 'Alpha LPG',
         debugShowCheckedModeBanner: false,
         theme: _light,

@@ -134,10 +134,13 @@ class OrderWatcher {
           title = 'Delivered';
           body = 'Order ${o.displayNumber} was delivered. Tap to rate it.';
         case OrderStatus.cancelled:
-          title = 'Order cancelled';
-          body = o.cancelReason.isNotEmpty
-              ? o.cancelReason
-              : 'Order ${o.displayNumber} was cancelled.';
+          final byShop =
+              o.history.isNotEmpty && o.history.last.by != o.customerId;
+          title = byShop ? 'Alpha LPG cancelled your order' : 'Order cancelled';
+          body =
+              'Order ${o.displayNumber} was cancelled'
+              '${o.cancelReason.isNotEmpty ? ': ${o.cancelReason}' : '.'}'
+              '${byShop && o.paymentStatus == PaymentStatus.paid ? ' Alpha LPG will contact you about your refund.' : ''}';
         case OrderStatus.placed:
           break;
       }
@@ -164,6 +167,8 @@ class OrderWatcher {
         body: body,
         payload: payload ?? '/orders/${o.id}',
       );
+      // Also inside the app, in case phone notifications are off.
+      _state.inAppNotice?.call(title, body, payload ?? '/orders/${o.id}');
     }
   }
 

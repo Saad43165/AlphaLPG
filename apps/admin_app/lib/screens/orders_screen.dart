@@ -381,7 +381,8 @@ class OrderTile extends StatelessWidget {
                   ],
                 ),
                 Divider(height: 22, color: pal.line),
-                // Money and rider, on one aligned row.
+                // Money and rider on one line; payment tags on their own
+                // line below so nothing gets squeezed.
                 Row(
                   children: [
                     Text(
@@ -392,7 +393,44 @@ class OrderTile extends StatelessWidget {
                         letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Icon(
+                            Icons.two_wheeler,
+                            size: 17,
+                            color: o.riderName == null
+                                ? pal.muted
+                                : Brand.blueDark,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              o.riderName ??
+                                  (o.status.isActive ? 'No rider yet' : '—'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: o.riderName == null
+                                    ? FontWeight.w500
+                                    : FontWeight.w700,
+                                fontSize: 13,
+                                color: o.riderName == null ? pal.muted : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
                     Pill(
                       paid
                           ? Icons.check_circle_rounded
@@ -405,9 +443,9 @@ class OrderTile extends StatelessWidget {
                               _ => Icons.hourglass_top_rounded,
                             },
                       paid
-                          ? 'Paid'
+                          ? 'Paid · ${o.paymentMethod.label}'
                           : o.paymentMethod == PaymentMethod.cashOnDelivery
-                          ? 'Cash'
+                          ? 'Cash on delivery'
                           : o.payStage?.label ?? 'Online',
                       color: paid
                           ? Brand.success
@@ -418,51 +456,12 @@ class OrderTile extends StatelessWidget {
                             },
                     ),
                     if (!paid &&
-                        context.watch<AdminSession>().hasPaymentWarning(o)) ...[
-                      const SizedBox(width: 6),
+                        context.watch<AdminSession>().hasPaymentWarning(o))
                       const Pill(
                         Icons.warning_amber_rounded,
-                        'Check',
+                        'Check payment',
                         color: Brand.danger,
                       ),
-                    ],
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: o.riderName == null
-                            ? (o.status.isActive
-                                  ? Text(
-                                      'No rider yet',
-                                      style: TextStyle(
-                                        color: pal.muted,
-                                        fontSize: 12.5,
-                                      ),
-                                    )
-                                  : null)
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.two_wheeler,
-                                    size: 17,
-                                    color: Brand.blueDark,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      o.riderName!,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    ),
                   ],
                 ),
                 if (o.status == OrderStatus.placed) ...[

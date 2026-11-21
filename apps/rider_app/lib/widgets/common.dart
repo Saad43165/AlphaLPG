@@ -32,16 +32,8 @@ class Constrained extends StatelessWidget {
   );
 }
 
-void showMessage(BuildContext context, String message, {bool error = false}) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: error ? const Color(0xFFB3261E) : null,
-      ),
-    );
-}
+void showMessage(BuildContext context, String message, {bool error = false}) =>
+    showAppMessage(context, message, error: error);
 
 class EmptyState extends StatelessWidget {
   const EmptyState({

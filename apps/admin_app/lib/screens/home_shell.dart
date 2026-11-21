@@ -33,25 +33,17 @@ class _HomeShellState extends State<HomeShell> {
         // Sound and buzz so a new order is noticed, then a tappable banner.
         SystemSound.play(SystemSoundType.alert);
         HapticFeedback.heavyImpact();
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              duration: const Duration(seconds: 8),
-              behavior: SnackBarBehavior.floating,
-              content: Text(
-                'New order: ${alert.customerName} · ${rs(alert.total)}',
-              ),
-              action: SnackBarAction(
-                label: 'OPEN',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => OrderDetailScreen(orderId: alert.id),
-                  ),
-                ),
-              ),
+        showAppMessage(
+          context,
+          'New order: ${alert.customerName} · ${rs(alert.total)}',
+          seconds: 8,
+          actionLabel: 'OPEN',
+          onAction: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => OrderDetailScreen(orderId: alert.id),
             ),
-          );
+          ),
+        );
       });
     }
     return Scaffold(

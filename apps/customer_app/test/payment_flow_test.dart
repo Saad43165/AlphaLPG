@@ -77,38 +77,44 @@ void main() {
       expect(find.text('Alpha LPG sent you payment details'), findsOneWidget);
       expect(find.text('03001234567'), findsOneWidget);
 
-      // The "I have paid" sheet needs a transaction ID and an amount.
+      // The "I have paid" sheet will not send without the screenshot.
       await tapText(tester, 'I have paid: send details');
       expect(
-        tester
-            .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Send to Alpha LPG'),
-            )
-            .onPressed,
-        isNull,
+        find.text('1. Screenshot of the payment (required)'),
+        findsOneWidget,
       );
       await tester.enterText(
         find.widgetWithText(TextField, 'Transaction ID (required)'),
         'EP123456',
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Send to Alpha LPG'));
-      await tester.pumpAndSettle();
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      final button = find.widgetWithText(
+        FilledButton,
+        'Add the payment screenshot',
       );
-      await tester.pumpAndSettle();
+      expect(button, findsOneWidget);
+      expect(tester.widget<FilledButton>(button).onPressed, isNull);
 
+      // What the sheet sends once complete reaches the shop.
+      await tester.runAsync(
+        () => backend.orders.submitPayment(
+          id,
+          uid: 'u',
+          reference: 'EP123456',
+          amount: 1826,
+          data: 'x' * 200,
+        ),
+      );
       final o = await tester.runAsync(
         () => backend.orders.watchOrder(id).first,
       );
       expect(o!.paymentReference, 'EP123456');
       expect(o.paidAmount, 1826);
       expect(o.receiptAt, isNotNull);
-      final chat = await tester.runAsync(
-        () => backend.orders.watchMessages(id).first,
+      final receipts = await tester.runAsync(
+        () => backend.orders.watchReceipts(id).first,
       );
-      expect(chat!.single.text, contains('EP123456'));
+      expect(receipts!, hasLength(1));
     },
   );
 

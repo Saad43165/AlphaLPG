@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -164,4 +167,37 @@ class _IdleHandler extends TaskHandler {
 
   @override
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {}
+}
+
+/// In-app message at the bottom of the screen. Always goes away by itself
+/// after [seconds] (also on phones where the system would keep it open), and
+/// can be closed with the ✕.
+void showAppMessage(
+  BuildContext context,
+  String message, {
+  bool error = false,
+  int seconds = 4,
+  String? actionLabel,
+  VoidCallback? onAction,
+}) {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger == null) return;
+  messenger.hideCurrentSnackBar();
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: error ? const Color(0xFFB3261E) : null,
+      duration: Duration(seconds: seconds),
+      persist: false,
+      showCloseIcon: true,
+      closeIconColor: Colors.white,
+      action: actionLabel == null
+          ? null
+          : SnackBarAction(
+              label: actionLabel,
+              textColor: Colors.white,
+              onPressed: onAction ?? () {},
+            ),
+    ),
+  );
 }
