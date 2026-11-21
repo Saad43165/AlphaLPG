@@ -185,15 +185,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Icon(
-                            Icons.verified_rounded,
-                            size: 18,
-                            color: Brand.success,
-                          ),
+                          if (!context.read<Backend>().auth.isQuick)
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 18,
+                              color: Brand.success,
+                            ),
                         ],
                       ),
                       Text(
-                        'Verified number. You sign in with it.',
+                        context.read<Backend>().auth.isQuick
+                            ? 'Our rider calls this number.'
+                            : 'Verified number. You sign in with it.',
                         style: TextStyle(color: pal.muted, fontSize: 12.5),
                       ),
                     ],

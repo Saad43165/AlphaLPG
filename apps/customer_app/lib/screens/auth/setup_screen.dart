@@ -218,7 +218,9 @@ class _SetupScreenState extends State<SetupScreen> {
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                '${prettyPkMobile(phone)} verified',
+                                context.read<Backend>().auth.isQuick
+                                    ? '${prettyPkMobile(phone)} saved'
+                                    : '${prettyPkMobile(phone)} verified',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                 ),

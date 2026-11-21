@@ -36,6 +36,7 @@ beforeEach(async () => {
 });
 
 const customer = (uid = 'u1', phone = PHONE) => env.authenticatedContext(uid, { phone_number: phone }).firestore();
+const quick = (uid = 'u1') => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'anonymous' } }).firestore();
 const staff = (uid) => env.authenticatedContext(uid).firestore();
 const guest = () => env.unauthenticatedContext().firestore();
 
@@ -116,6 +117,18 @@ describe('placing orders', () => {
     await assertFails(setDoc(doc(customer(), 'orders/a'), order()));
     await env.withSecurityRulesDisabled(async (ctx) => updateDoc(doc(ctx.firestore(), 'config/app'), { acceptingOrders: true, minOrderTotal: 5000 }));
     await assertFails(setDoc(doc(customer(), 'orders/b'), order()));
+  });
+});
+
+describe('quick sign-in customers (no SMS verification)', () => {
+  it('can order and keep a profile with a well-formed Pakistani mobile', async () => {
+    await assertSucceeds(setDoc(doc(quick(), 'orders/q1'), order({ customerPhone: '+923145459961' })));
+    await assertSucceeds(setDoc(doc(quick(), 'customers/u1'), { name: 'Saad', phone: '+923145459961', type: 'home', businessName: '', businessType: '', email: '', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+  });
+  it('cannot use a malformed number', async () => {
+    for (const bad of ['', 'abc', '03145459961', '+921234567890', '+9231454599611']) {
+      await assertFails(setDoc(doc(quick(), 'orders/q2'), order({ customerPhone: bad })));
+    }
   });
 });
 

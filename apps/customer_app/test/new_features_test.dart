@@ -30,6 +30,23 @@ void main() {
     }
   });
 
+  testWidgets('quick sign-in: a number is enough, no SMS code', (tester) async {
+    final backend = testBackend(quickLogin: true);
+    await pumpApp(tester, backend);
+    await tester.tap(find.text('Account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign in with mobile number'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your mobile number'), findsOneWidget);
+    expect(find.text('Send code'), findsNothing);
+    await tester.enterText(find.byType(TextField).first, '03145459961');
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(backend.auth.isSignedIn, isTrue);
+    expect(backend.auth.phone, '+923145459961');
+    expect(backend.auth.isQuick, isTrue);
+  });
+
   testWidgets('settings: switching to dark mode changes the whole theme', (
     tester,
   ) async {

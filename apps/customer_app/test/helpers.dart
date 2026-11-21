@@ -1,3 +1,4 @@
+import 'package:alpha_core/alpha_core.dart';
 import 'package:alpha_customer/app.dart';
 import 'package:alpha_customer/services/location_service.dart';
 import 'package:alpha_customer/widgets/slide_to_confirm.dart';
@@ -6,7 +7,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// In-memory backend without the demo dispatcher (no background timers).
-Backend testBackend() => Backend.memory();
+/// A demo backend using the SMS-code sign-in (most flows are tested with it).
+Backend testBackend({bool quickLogin = false}) {
+  final b = Backend.memory();
+  if (!quickLogin) {
+    b.catalog.saveSettings(
+      AppSettings.fromMap({...SeedData.settings.toMap(), 'loginMode': 'sms'}),
+    );
+  }
+  return b;
+}
 
 Future<void> pumpApp(
   WidgetTester tester,

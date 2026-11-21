@@ -26,8 +26,10 @@ class AppDrawer extends StatelessWidget {
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Sign out?'),
-        content: const Text(
-          'You can sign back in any time with your mobile number.',
+        content: Text(
+          backend.auth.isQuick
+              ? 'Signing out removes your order history from this phone. You can still place new orders by entering your number again.'
+              : 'You can sign back in any time with your mobile number.',
         ),
         actions: [
           TextButton(

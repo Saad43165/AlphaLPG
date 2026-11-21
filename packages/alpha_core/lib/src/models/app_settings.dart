@@ -19,6 +19,7 @@ class AppSettings {
     this.jazzCashAccount = '',
     this.easyPaisaAccount = '',
     this.raastId = '',
+    this.loginMode = 'quick',
   });
 
   final bool acceptingOrders;
@@ -51,6 +52,13 @@ class AppSettings {
   /// Raast ID (usually a mobile number) for instant bank transfers.
   final String raastId;
 
+  /// How customers sign in: 'quick' (mobile number, no SMS code; works on
+  /// Firebase's free plan, so the shop confirms orders by phone) or 'sms'
+  /// (one-time code by SMS; needs the paid Firebase plan).
+  final String loginMode;
+
+  bool get smsLogin => loginMode == 'sms';
+
   factory AppSettings.fromMap(Map<String, dynamic> m) {
     const d = AppSettings();
     return AppSettings(
@@ -76,6 +84,7 @@ class AppSettings {
       jazzCashAccount: m['jazzCashAccount'] as String? ?? d.jazzCashAccount,
       easyPaisaAccount: m['easyPaisaAccount'] as String? ?? d.easyPaisaAccount,
       raastId: m['raastId'] as String? ?? d.raastId,
+      loginMode: m['loginMode'] == 'sms' ? 'sms' : 'quick',
     );
   }
 
@@ -97,5 +106,6 @@ class AppSettings {
     'jazzCashAccount': jazzCashAccount,
     'easyPaisaAccount': easyPaisaAccount,
     'raastId': raastId,
+    'loginMode': loginMode,
   };
 }

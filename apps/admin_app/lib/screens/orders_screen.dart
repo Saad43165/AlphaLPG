@@ -65,10 +65,30 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 children: [
-                  _Stat('New orders', '${s.newCount}', Icons.notifications_active_rounded, const Color(0xFFB58900)),
-                  _Stat('On the road', '${s.ordersIn([OrderStatus.outForDelivery]).length}', Icons.two_wheeler, const Color(0xFF6A3FC1)),
-                  _Stat('Sales today', rs(s.salesToday), Icons.payments_rounded, Brand.success),
-                  _Stat('Delivered today', '${s.deliveredTodayCount}', Icons.check_circle_rounded, Brand.blueDark),
+                  _Stat(
+                    'New orders',
+                    '${s.newCount}',
+                    Icons.notifications_active_rounded,
+                    const Color(0xFFB58900),
+                  ),
+                  _Stat(
+                    'On the road',
+                    '${s.ordersIn([OrderStatus.outForDelivery]).length}',
+                    Icons.two_wheeler,
+                    const Color(0xFF6A3FC1),
+                  ),
+                  _Stat(
+                    'Sales today',
+                    rs(s.salesToday),
+                    Icons.payments_rounded,
+                    Brand.success,
+                  ),
+                  _Stat(
+                    'Delivered today',
+                    '${s.deliveredTodayCount}',
+                    Icons.check_circle_rounded,
+                    Brand.blueDark,
+                  ),
                 ],
               ),
             ),
@@ -91,7 +111,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         selected: _f == f,
                         onSelected: (_) => setState(() => _f = f),
                         label: Text(
-                          (counts[f] ?? 0) > 0 ? '$label · ${counts[f]}' : label,
+                          (counts[f] ?? 0) > 0
+                              ? '$label · ${counts[f]}'
+                              : label,
                         ),
                       ),
                     ),
@@ -101,7 +123,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
             if (s.error != null)
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(s.error!, style: const TextStyle(color: Brand.danger)),
+                child: Text(
+                  s.error!,
+                  style: const TextStyle(color: Brand.danger),
+                ),
               ),
             Expanded(
               child: !s.ordersLoaded
@@ -213,7 +238,8 @@ class OrderTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  o.customerType == CustomerSegment.business && o.businessName.isNotEmpty
+                  o.customerType == CustomerSegment.business &&
+                          o.businessName.isNotEmpty
                       ? '${o.customerName} · ${o.businessName}'
                       : o.customerName,
                   style: const TextStyle(fontWeight: FontWeight.w600),
@@ -228,7 +254,10 @@ class OrderTile extends StatelessWidget {
                   children: [
                     Text(
                       rs(o.total),
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Pill(
@@ -257,11 +286,18 @@ class OrderTile extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.two_wheeler, size: 16, color: Brand.blueDark),
+                      const Icon(
+                        Icons.two_wheeler,
+                        size: 16,
+                        color: Brand.blueDark,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         o.riderName!,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),

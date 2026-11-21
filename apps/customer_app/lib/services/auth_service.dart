@@ -16,6 +16,13 @@ abstract class AuthService extends ChangeNotifier {
   /// instantly (Android auto-verification), so no code needs to be typed.
   Future<bool> sendCode(String phoneE164);
   Future<void> verifyCode(String code);
+
+  /// "Quick sign-in": no SMS code. The number is taken as typed; the shop
+  /// confirms orders by phone. Works on Firebase's free plan.
+  Future<void> signInQuick(String phoneE164);
+
+  /// True for quick sign-in accounts (their orders live on this phone only).
+  bool get isQuick;
   Future<void> signOut();
 
   /// Permanently removes the sign-in account. May ask the customer to sign
@@ -44,7 +51,36 @@ class FirebaseAuthService extends AuthService {
   @override
   String? get uid => _auth.currentUser?.uid;
   @override
-  String? get phone => _auth.currentUser?.phoneNumber;
+  String? get phone {
+    final u = _auth.currentUser;
+    if (u == null) return null;
+    // Quick sign-in keeps the typed number in the account's display name.
+    return u.phoneNumber ?? (u.isAnonymous ? u.displayName : null);
+  }
+
+  @override
+  bool get isQuick => _auth.currentUser?.isAnonymous ?? false;
+
+  @override
+  Future<void> signInQuick(String phoneE164) async {
+    try {
+      final cred = _auth.currentUser?.isAnonymous == true
+          ? null
+          : await _auth.signInAnonymously();
+      final user = cred?.user ?? _auth.currentUser!;
+      await user.updateDisplayName(phoneE164);
+      await user.reload();
+      notifyListeners();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'operation-not-allowed' ||
+          e.code == 'admin-restricted-operation') {
+        throw AuthException(
+          'Quick sign-in is not switched on yet. Please call Alpha LPG to order.',
+        );
+      }
+      throw AuthException(_message(e));
+    }
+  }
 
   @override
   Future<bool> sendCode(String phoneE164) async {
@@ -163,6 +199,20 @@ class DemoAuthService extends AuthService {
   Future<void> signOut() async {
     _uid = null;
     _phone = null;
+    _quick = false;
+    notifyListeners();
+  }
+
+  @override
+  bool get isQuick => _quick;
+  bool _quick = false;
+
+  @override
+  Future<void> signInQuick(String phoneE164) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _quick = true;
+    _phone = phoneE164;
+    _uid = 'demo-${phoneE164.substring(phoneE164.length - 6)}';
     notifyListeners();
   }
 

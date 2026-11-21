@@ -23,7 +23,10 @@ class OrderDetailScreen extends StatelessWidget {
     if (o == null) {
       return Scaffold(
         appBar: AppBar(),
-        body: const EmptyState(icon: Icons.search_off_rounded, title: 'Order not found'),
+        body: const EmptyState(
+          icon: Icons.search_off_rounded,
+          title: 'Order not found',
+        ),
       );
     }
     final order = o;
@@ -52,7 +55,10 @@ class OrderDetailScreen extends StatelessWidget {
               children: [
                 Text(
                   order.customerName,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                  ),
                 ),
                 if (order.businessName.isNotEmpty) Text(order.businessName),
                 const SizedBox(height: 4),
@@ -68,7 +74,10 @@ class OrderDetailScreen extends StatelessWidget {
                     ),
                     if (wa != null)
                       OutlinedButton.icon(
-                        onPressed: () => Launch.whatsapp(wa, 'Alpha LPG order ${order.displayNumber}: '),
+                        onPressed: () => Launch.whatsapp(
+                          wa,
+                          'Alpha LPG order ${order.displayNumber}: ',
+                        ),
                         icon: const Icon(Icons.chat_rounded, size: 18),
                         label: const Text('WhatsApp'),
                       ),
@@ -85,11 +94,18 @@ class OrderDetailScreen extends StatelessWidget {
                 ),
                 if (order.scheduledFor != null) ...[
                   const SizedBox(height: 8),
-                  Pill(Icons.schedule_rounded, 'Scheduled ${fmt.format(order.scheduledFor!)}', color: Brand.blueDark),
+                  Pill(
+                    Icons.schedule_rounded,
+                    'Scheduled ${fmt.format(order.scheduledFor!)}',
+                    color: Brand.blueDark,
+                  ),
                 ],
                 if (order.notes.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text('Note: ${order.notes}', style: const TextStyle(fontStyle: FontStyle.italic)),
+                  Text(
+                    'Note: ${order.notes}',
+                    style: const TextStyle(fontStyle: FontStyle.italic),
+                  ),
                 ],
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
@@ -99,7 +115,11 @@ class OrderDetailScreen extends StatelessWidget {
                     address: order.address.oneLine,
                   ),
                   icon: const Icon(Icons.map_rounded, size: 18),
-                  label: Text(order.address.hasLocation ? 'Open pin in Maps' : 'Search address in Maps'),
+                  label: Text(
+                    order.address.hasLocation
+                        ? 'Open pin in Maps'
+                        : 'Search address in Maps',
+                  ),
                 ),
               ],
             ),
@@ -112,16 +132,24 @@ class OrderDetailScreen extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text('${i.quantity}× ${i.name}\n${i.type.label}',
-                              style: const TextStyle(height: 1.3)),
+                          child: Text(
+                            '${i.quantity}× ${i.name}\n${i.type.label}',
+                            style: const TextStyle(height: 1.3),
+                          ),
                         ),
-                        Text(rs(i.lineTotal), style: const TextStyle(fontWeight: FontWeight.w600)),
+                        Text(
+                          rs(i.lineTotal),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ],
                     ),
                   ),
                 const Divider(height: 22),
                 _Line('Subtotal', rs(order.subtotal)),
-                _Line('Delivery', order.deliveryFee == 0 ? 'Free' : rs(order.deliveryFee)),
+                _Line(
+                  'Delivery',
+                  order.deliveryFee == 0 ? 'Free' : rs(order.deliveryFee),
+                ),
                 _Line('Total', rs(order.total), bold: true),
                 const SizedBox(height: 6),
                 Text(
@@ -136,7 +164,9 @@ class OrderDetailScreen extends StatelessWidget {
                 _Line('Method', order.paymentMethod.label),
                 _Line(
                   'Status',
-                  order.paymentStatus == PaymentStatus.paid ? 'Paid' : 'Not paid yet',
+                  order.paymentStatus == PaymentStatus.paid
+                      ? 'Paid'
+                      : 'Not paid yet',
                   bold: true,
                 ),
                 if (order.paymentReference.isNotEmpty)
@@ -152,7 +182,10 @@ class OrderDetailScreen extends StatelessWidget {
                       order.paymentReference.isEmpty
                           ? 'The customer has not sent a transaction ID yet. Check your ${order.paymentMethod.label} account before marking paid.'
                           : 'Check this transaction ID in your ${order.paymentMethod.label} account, then mark it paid.',
-                      style: const TextStyle(color: Color(0xFF8A6D00), height: 1.35),
+                      style: const TextStyle(
+                        color: Color(0xFF8A6D00),
+                        height: 1.35,
+                      ),
                     ),
                   ),
               ],
@@ -161,8 +194,12 @@ class OrderDetailScreen extends StatelessWidget {
               const Heading('Rider'),
               _Card(
                 children: [
-                  Text(order.riderName!, style: const TextStyle(fontWeight: FontWeight.w800)),
-                  if (order.riderPhone != null) Text(prettyPhone(order.riderPhone!)),
+                  Text(
+                    order.riderName!,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  if (order.riderPhone != null)
+                    Text(prettyPhone(order.riderPhone!)),
                   if (order.riderPhone != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -185,7 +222,9 @@ class OrderDetailScreen extends StatelessWidget {
                     children: [
                       for (var i = 1; i <= 5; i++)
                         Icon(
-                          i <= order.rating! ? Icons.star_rounded : Icons.star_border_rounded,
+                          i <= order.rating!
+                              ? Icons.star_rounded
+                              : Icons.star_border_rounded,
                           color: Brand.flame,
                         ),
                     ],
@@ -204,10 +243,18 @@ class OrderDetailScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            e.note.isEmpty ? e.status.label : '${e.status.label} · ${e.note}',
+                            e.note.isEmpty
+                                ? e.status.label
+                                : '${e.status.label} · ${e.note}',
                           ),
                         ),
-                        Text(fmt.format(e.at), style: TextStyle(color: context.pal.muted, fontSize: 12)),
+                        Text(
+                          fmt.format(e.at),
+                          style: TextStyle(
+                            color: context.pal.muted,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -229,7 +276,10 @@ class _Card extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(14),
     decoration: panel(context),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    ),
   );
 }
 
@@ -249,7 +299,9 @@ class _Line extends StatelessWidget {
           child: Text(
             v,
             textAlign: TextAlign.end,
-            style: TextStyle(fontWeight: bold ? FontWeight.w800 : FontWeight.w600),
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -272,8 +324,10 @@ class _LiveRider extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(top: 10),
           child: l == null
-              ? Text('Waiting for the rider\'s first location…',
-                  style: TextStyle(color: context.pal.muted))
+              ? Text(
+                  'Waiting for the rider\'s first location…',
+                  style: TextStyle(color: context.pal.muted),
+                )
               : Row(
                   children: [
                     Expanded(
@@ -326,7 +380,8 @@ class _ActionsState extends State<_Actions> {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (_) => _RiderPicker(riders: s.riders, current: widget.order.riderId),
+      builder: (_) =>
+          _RiderPicker(riders: s.riders, current: widget.order.riderId),
     );
     if (r != null) {
       await _do(() => s.assign(widget.order, r), 'Assigned to ${r.name}');
@@ -342,13 +397,21 @@ class _ActionsState extends State<_Actions> {
         content: TextField(
           controller: c,
           maxLength: 120,
-          decoration: const InputDecoration(labelText: 'Reason (the customer will see it)'),
+          decoration: const InputDecoration(
+            labelText: 'Reason (the customer will see it)',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Keep order')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Keep order'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Brand.danger),
-            onPressed: () => Navigator.pop(ctx, c.text.trim().isEmpty ? 'Cancelled by Alpha LPG' : c.text.trim()),
+            onPressed: () => Navigator.pop(
+              ctx,
+              c.text.trim().isEmpty ? 'Cancelled by Alpha LPG' : c.text.trim(),
+            ),
             child: const Text('Cancel order'),
           ),
         ],
@@ -356,7 +419,10 @@ class _ActionsState extends State<_Actions> {
     );
     c.dispose();
     if (reason != null && mounted) {
-      await _do(() => context.read<AdminSession>().cancel(widget.order, reason), 'Order cancelled');
+      await _do(
+        () => context.read<AdminSession>().cancel(widget.order, reason),
+        'Order cancelled',
+      );
     }
   }
 
@@ -366,40 +432,59 @@ class _ActionsState extends State<_Actions> {
     final s = context.read<AdminSession>();
     final buttons = <Widget>[];
     if (o.status == OrderStatus.placed) {
-      buttons.add(FilledButton.icon(
-        onPressed: _busy ? null : () => _do(() => s.confirm(o), 'Order confirmed'),
-        icon: const Icon(Icons.check_rounded),
-        label: const Text('Confirm order'),
-      ));
+      buttons.add(
+        FilledButton.icon(
+          onPressed: _busy
+              ? null
+              : () => _do(() => s.confirm(o), 'Order confirmed'),
+          icon: const Icon(Icons.check_rounded),
+          label: const Text('Confirm order'),
+        ),
+      );
     }
     if (o.status == OrderStatus.placed ||
         o.status == OrderStatus.confirmed ||
         o.status == OrderStatus.assigned) {
-      buttons.add(FilledButton.tonalIcon(
-        onPressed: _busy ? null : _assign,
-        icon: const Icon(Icons.two_wheeler),
-        label: Text(o.riderId == null ? 'Assign rider' : 'Change rider'),
-      ));
+      buttons.add(
+        FilledButton.tonalIcon(
+          onPressed: _busy ? null : _assign,
+          icon: const Icon(Icons.two_wheeler),
+          label: Text(o.riderId == null ? 'Assign rider' : 'Change rider'),
+        ),
+      );
     }
-    if (o.awaitingPaymentCheck || (o.paymentStatus == PaymentStatus.pending && o.status == OrderStatus.delivered)) {
-      buttons.add(FilledButton.tonalIcon(
-        onPressed: _busy ? null : () => _do(() => s.markPaid(o), 'Marked as paid'),
-        icon: const Icon(Icons.verified_rounded),
-        label: const Text('Mark paid'),
-      ));
+    if (o.awaitingPaymentCheck ||
+        (o.paymentStatus == PaymentStatus.pending &&
+            o.status == OrderStatus.delivered)) {
+      buttons.add(
+        FilledButton.tonalIcon(
+          onPressed: _busy
+              ? null
+              : () => _do(() => s.markPaid(o), 'Marked as paid'),
+          icon: const Icon(Icons.verified_rounded),
+          label: const Text('Mark paid'),
+        ),
+      );
     }
-    if (o.status == OrderStatus.assigned || o.status == OrderStatus.outForDelivery) {
-      buttons.add(OutlinedButton(
-        onPressed: _busy ? null : () => _do(() => s.markDelivered(o), 'Marked delivered'),
-        child: const Text('Mark delivered'),
-      ));
+    if (o.status == OrderStatus.assigned ||
+        o.status == OrderStatus.outForDelivery) {
+      buttons.add(
+        OutlinedButton(
+          onPressed: _busy
+              ? null
+              : () => _do(() => s.markDelivered(o), 'Marked delivered'),
+          child: const Text('Mark delivered'),
+        ),
+      );
     }
     if (o.status.isActive) {
-      buttons.add(TextButton(
-        onPressed: _busy ? null : _cancel,
-        style: TextButton.styleFrom(foregroundColor: Brand.danger),
-        child: const Text('Cancel order'),
-      ));
+      buttons.add(
+        TextButton(
+          onPressed: _busy ? null : _cancel,
+          style: TextButton.styleFrom(foregroundColor: Brand.danger),
+          child: const Text('Cancel order'),
+        ),
+      );
     }
     if (buttons.isEmpty) return const SizedBox.shrink();
     return SafeArea(
@@ -433,7 +518,9 @@ class _RiderPicker extends StatelessWidget {
     ]..sort((a, b) => (b.online ? 1 : 0).compareTo(a.online ? 1 : 0));
     return SafeArea(
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+        ),
         child: list.isEmpty
             ? const Padding(
                 padding: EdgeInsets.all(32),
@@ -444,17 +531,35 @@ class _RiderPicker extends StatelessWidget {
                 children: [
                   const Padding(
                     padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-                    child: Text('Choose a rider', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                    child: Text(
+                      'Choose a rider',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
                   ),
                   for (final r in list)
                     ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: (r.online ? Brand.success : Colors.grey).withValues(alpha: 0.15),
-                        child: Icon(Icons.two_wheeler, color: r.online ? Brand.success : Colors.grey),
+                        backgroundColor:
+                            (r.online ? Brand.success : Colors.grey).withValues(
+                              alpha: 0.15,
+                            ),
+                        child: Icon(
+                          Icons.two_wheeler,
+                          color: r.online ? Brand.success : Colors.grey,
+                        ),
                       ),
                       title: Text(r.name),
-                      subtitle: Text(r.online ? 'Online · ${r.vehicle}' : 'Offline · ${r.vehicle}'),
-                      trailing: r.uid == current ? const Icon(Icons.check_rounded) : null,
+                      subtitle: Text(
+                        r.online
+                            ? 'Online · ${r.vehicle}'
+                            : 'Offline · ${r.vehicle}',
+                      ),
+                      trailing: r.uid == current
+                          ? const Icon(Icons.check_rounded)
+                          : null,
                       onTap: () => Navigator.pop(context, r),
                     ),
                 ],

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../config/env.dart';
 import '../../services/auth_service.dart';
 import '../../services/backend.dart';
+import '../../state/app_state.dart';
 import '../../theme/brand.dart';
 import '../../utils/format.dart';
 import '../../utils/nav.dart';
@@ -68,6 +69,16 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  /// No SMS: take the number and sign in straight away.
+  Future<void> _quick() async {
+    final e164 = normalizePkMobile(_phone.text);
+    if (e164 == null) {
+      setState(() => _error = 'Enter a valid mobile number, e.g. 0308 5745740');
+      return;
+    }
+    await _run(() => _auth.signInQuick(e164));
+  }
+
   Future<void> _verify() async {
     if (_code.text.trim().length != 6) {
       setState(() => _error = 'Enter the 6-digit code');
@@ -103,7 +114,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isDemo = context.read<Backend>().isDemo;
-    final codeStep = _sentTo != null;
+    final quick = !context.select<AppState, bool>((s) => s.settings.smsLogin);
+    final codeStep = _sentTo != null && !quick;
     final text = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
@@ -120,14 +132,18 @@ class _LoginScreenState extends State<LoginScreen> {
             const Center(child: BrandLogo(height: 72)),
             const SizedBox(height: 32),
             Text(
-              codeStep ? 'Enter verification code' : 'Sign in with your mobile',
+              codeStep
+                  ? 'Enter verification code'
+                  : (quick ? 'Your mobile number' : 'Sign in with your mobile'),
               style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Text(
               codeStep
                   ? 'We sent a 6-digit code by SMS to ${prettyPkMobile(_sentTo!)}.'
-                  : 'We will text you a one-time code. No password needed.',
+                  : (quick
+                        ? 'Our rider calls this number about your delivery. No password and no SMS code.'
+                        : 'We will text you a one-time code. No password needed.'),
             ),
             const SizedBox(height: 24),
             if (!codeStep)
@@ -144,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   hintText: '0308 5745740',
                   prefixIcon: Icon(Icons.phone_iphone),
                 ),
-                onSubmitted: (_) => _sendCode(),
+                onSubmitted: (_) => quick ? _quick() : _sendCode(),
               )
             else
               TextField(
@@ -165,13 +181,19 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: _busy ? null : (codeStep ? _verify : _sendCode),
+              onPressed: _busy
+                  ? null
+                  : (codeStep ? _verify : (quick ? _quick : _sendCode)),
               child: _busy
                   ? const SizedBox.square(
                       dimension: 22,
                       child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
-                  : Text(codeStep ? 'Verify & continue' : 'Send code'),
+                  : Text(
+                      codeStep
+                          ? 'Verify & continue'
+                          : (quick ? 'Continue' : 'Send code'),
+                    ),
             ),
             if (codeStep)
               TextButton(
@@ -183,7 +205,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       }),
                 child: const Text('Change number / resend code'),
               ),
-            if (isDemo) ...[
+            if (quick) ...[
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Alpha LPG may call to confirm your order. Your orders are saved on this phone.',
+                      style: TextStyle(
+                        color: context.pal.muted,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (isDemo && !quick) ...[
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(12),

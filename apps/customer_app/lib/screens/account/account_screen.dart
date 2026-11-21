@@ -179,7 +179,30 @@ class AccountScreen extends StatelessWidget {
               const SizedBox(height: 20),
               OutlinedButton.icon(
                 onPressed: () async {
-                  await context.read<Backend>().auth.signOut();
+                  final auth = context.read<Backend>().auth;
+                  if (auth.isQuick) {
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (c) => AlertDialog(
+                        title: const Text('Sign out?'),
+                        content: const Text(
+                          'Signing out removes your order history from this phone. You can still place new orders by entering your number again.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(c, false),
+                            child: const Text('Stay'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(c, true),
+                            child: const Text('Sign out'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (ok != true) return;
+                  }
+                  await auth.signOut();
                   if (context.mounted) context.go('/');
                 },
                 icon: const Icon(Icons.logout),

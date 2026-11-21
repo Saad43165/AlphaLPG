@@ -28,7 +28,9 @@ class CatalogueScreen extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    st.acceptingOrders ? Icons.storefront_rounded : Icons.pause_circle_rounded,
+                    st.acceptingOrders
+                        ? Icons.storefront_rounded
+                        : Icons.pause_circle_rounded,
                     color: st.acceptingOrders ? Brand.success : Brand.danger,
                   ),
                   const SizedBox(width: 12),
@@ -37,14 +39,19 @@ class CatalogueScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          st.acceptingOrders ? 'Taking orders' : 'Orders paused',
+                          st.acceptingOrders
+                              ? 'Taking orders'
+                              : 'Orders paused',
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                         Text(
                           st.acceptingOrders
                               ? 'Customers can place orders.'
                               : 'Customers see your closed message.',
-                          style: TextStyle(color: context.pal.muted, fontSize: 13),
+                          style: TextStyle(
+                            color: context.pal.muted,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -52,16 +59,18 @@ class CatalogueScreen extends StatelessWidget {
                   Switch(
                     value: st.acceptingOrders,
                     onChanged: (v) async {
-                      final err = await s.saveSettings(_copy(st, acceptingOrders: v));
-                      if (err != null && context.mounted) showMessage(context, err, error: true);
+                      final err = await s.saveSettings(
+                        _copy(st, acceptingOrders: v),
+                      );
+                      if (err != null && context.mounted)
+                        showMessage(context, err, error: true);
                     },
                   ),
                 ],
               ),
             ),
             const Heading('Cylinders and prices'),
-            if (!s.storeReady)
-              _Defaults(session: s),
+            if (!s.storeReady) _Defaults(session: s),
             for (final p in s.products)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -80,21 +89,43 @@ class CatalogueScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(p.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                                  Text(
+                                    p.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
                                   const SizedBox(height: 2),
                                   Text(
                                     'Refill ${rs(p.refillPrice)}'
                                     '${p.newCylinderPrice != null ? '  ·  New ${rs(p.newCylinderPrice!)}' : ''}',
-                                    style: TextStyle(color: context.pal.muted, fontSize: 13),
+                                    style: TextStyle(
+                                      color: context.pal.muted,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                   const SizedBox(height: 6),
                                   Wrap(
                                     spacing: 6,
                                     children: [
-                                      if (!p.active) const Pill(Icons.visibility_off_rounded, 'Hidden', color: Brand.danger),
+                                      if (!p.active)
+                                        const Pill(
+                                          Icons.visibility_off_rounded,
+                                          'Hidden',
+                                          color: Brand.danger,
+                                        ),
                                       if (p.active && !p.inStock)
-                                        const Pill(Icons.remove_shopping_cart_rounded, 'Out of stock', color: Color(0xFF8A6D00)),
-                                      if (p.active && p.inStock) const Pill(Icons.check_rounded, 'On sale', color: Brand.success),
+                                        const Pill(
+                                          Icons.remove_shopping_cart_rounded,
+                                          'Out of stock',
+                                          color: Color(0xFF8A6D00),
+                                        ),
+                                      if (p.active && p.inStock)
+                                        const Pill(
+                                          Icons.check_rounded,
+                                          'On sale',
+                                          color: Brand.success,
+                                        ),
                                     ],
                                   ),
                                 ],
@@ -128,14 +159,18 @@ class CatalogueScreen extends StatelessWidget {
   }
 
   static AppSettings _copy(AppSettings s, {bool? acceptingOrders}) =>
-      AppSettings.fromMap({...s.toMap(), 'acceptingOrders': acceptingOrders ?? s.acceptingOrders});
+      AppSettings.fromMap({
+        ...s.toMap(),
+        'acceptingOrders': acceptingOrders ?? s.acceptingOrders,
+      });
 
-  void _editProduct(BuildContext context, Product? p) => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (_) => _ProductEditor(product: p),
-  );
+  void _editProduct(BuildContext context, Product? p) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => _ProductEditor(product: p),
+      );
 }
 
 class _Defaults extends StatefulWidget {
@@ -157,7 +192,10 @@ class _DefaultsState extends State<_Defaults> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Nothing here yet', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        const Text(
+          'Nothing here yet',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        ),
         const SizedBox(height: 6),
         Text(
           'Customers cannot order until the cylinders and shop settings exist. '
@@ -200,13 +238,20 @@ class _ProductEditorState extends State<_ProductEditor> {
   late final _size = TextEditingController(
     text: widget.product == null ? '' : '${widget.product!.sizeKg}',
   );
-  late final _refill = TextEditingController(text: widget.product == null ? '' : '${widget.product!.refillPrice}');
-  late final _newPrice = TextEditingController(text: '${widget.product?.newCylinderPrice ?? ''}');
-  late final _desc = TextEditingController(text: widget.product?.description ?? '');
+  late final _refill = TextEditingController(
+    text: widget.product == null ? '' : '${widget.product!.refillPrice}',
+  );
+  late final _newPrice = TextEditingController(
+    text: '${widget.product?.newCylinderPrice ?? ''}',
+  );
+  late final _desc = TextEditingController(
+    text: widget.product?.description ?? '',
+  );
   late final _badge = TextEditingController(text: widget.product?.badge ?? '');
   late bool _active = widget.product?.active ?? true;
   late bool _inStock = widget.product?.inStock ?? true;
-  late CustomerSegment _segment = widget.product?.segment ?? CustomerSegment.both;
+  late CustomerSegment _segment =
+      widget.product?.segment ?? CustomerSegment.both;
   bool _busy = false;
   String? _error;
 
@@ -229,7 +274,9 @@ class _ProductEditorState extends State<_ProductEditor> {
       name: _name.text.trim(),
       sizeKg: kg,
       refillPrice: int.parse(_refill.text.trim()),
-      newCylinderPrice: _newPrice.text.trim().isEmpty ? null : int.parse(_newPrice.text.trim()),
+      newCylinderPrice: _newPrice.text.trim().isEmpty
+          ? null
+          : int.parse(_newPrice.text.trim()),
       description: _desc.text.trim(),
       badge: _badge.text.trim(),
       imageUrl: old?.imageUrl ?? '',
@@ -265,7 +312,12 @@ class _ProductEditorState extends State<_ProductEditor> {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.fromLTRB(20, 0, 20, MediaQuery.viewInsetsOf(context).bottom + 20),
+    padding: EdgeInsets.fromLTRB(
+      20,
+      0,
+      20,
+      MediaQuery.viewInsetsOf(context).bottom + 20,
+    ),
     child: Form(
       key: _form,
       child: SingleChildScrollView(
@@ -273,12 +325,19 @@ class _ProductEditorState extends State<_ProductEditor> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(widget.product == null ? 'New cylinder' : 'Edit ${widget.product!.name}',
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+            Text(
+              widget.product == null
+                  ? 'New cylinder'
+                  : 'Edit ${widget.product!.name}',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+            ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Name', hintText: '11.8kg Gas Cylinder'),
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                hintText: '11.8kg Gas Cylinder',
+              ),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 12),
@@ -288,7 +347,9 @@ class _ProductEditorState extends State<_ProductEditor> {
                   child: TextFormField(
                     controller: _size,
                     enabled: widget.product == null,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(labelText: 'Size (kg)'),
                     validator: (v) {
                       final n = double.tryParse((v ?? '').trim());
@@ -302,7 +363,9 @@ class _ProductEditorState extends State<_ProductEditor> {
                     controller: _refill,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(labelText: 'Refill price (Rs)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Refill price (Rs)',
+                    ),
                     validator: _money,
                   ),
                 ),
@@ -315,7 +378,8 @@ class _ProductEditorState extends State<_ProductEditor> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(
                 labelText: 'Price with a new cylinder (Rs)',
-                helperText: 'Leave empty if you do not sell new cylinders online',
+                helperText:
+                    'Leave empty if you do not sell new cylinders online',
               ),
               validator: (v) => _money(v, optional: true),
             ),
@@ -328,14 +392,18 @@ class _ProductEditorState extends State<_ProductEditor> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _badge,
-              decoration: const InputDecoration(labelText: 'Badge (optional)', hintText: 'Most popular'),
+              decoration: const InputDecoration(
+                labelText: 'Badge (optional)',
+                hintText: 'Most popular',
+              ),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<CustomerSegment>(
               initialValue: _segment,
               decoration: const InputDecoration(labelText: 'Shown to'),
               items: [
-                for (final v in CustomerSegment.values) DropdownMenuItem(value: v, child: Text(v.label)),
+                for (final v in CustomerSegment.values)
+                  DropdownMenuItem(value: v, child: Text(v.label)),
               ],
               onChanged: (v) => setState(() => _segment = v ?? _segment),
             ),
@@ -352,12 +420,24 @@ class _ProductEditorState extends State<_ProductEditor> {
               onChanged: (v) => setState(() => _inStock = v),
             ),
             if (_error != null)
-              Text(_error!, style: const TextStyle(color: Brand.danger, fontWeight: FontWeight.w600)),
+              Text(
+                _error!,
+                style: const TextStyle(
+                  color: Brand.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             const SizedBox(height: 8),
             FilledButton(
               onPressed: _busy ? null : _save,
               child: _busy
-                  ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                  ? const SizedBox.square(
+                      dimension: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Save'),
             ),
           ],
@@ -378,6 +458,7 @@ class _SettingsEditorState extends State<SettingsEditor> {
   final _form = GlobalKey<FormState>();
   late final Map<String, TextEditingController> _c;
   late bool _accepting;
+  late String _loginMode;
   bool _busy = false;
   String? _error;
 
@@ -386,11 +467,14 @@ class _SettingsEditorState extends State<SettingsEditor> {
     super.initState();
     final s = context.read<AdminSession>().settings;
     _accepting = s.acceptingOrders;
+    _loginMode = s.loginMode;
     _c = {
       'deliveryFee': TextEditingController(text: '${s.deliveryFee}'),
       'freeDeliveryFrom': TextEditingController(text: '${s.freeDeliveryFrom}'),
       'minOrderTotal': TextEditingController(text: '${s.minOrderTotal}'),
-      'maxCylindersPerOrder': TextEditingController(text: '${s.maxCylindersPerOrder}'),
+      'maxCylindersPerOrder': TextEditingController(
+        text: '${s.maxCylindersPerOrder}',
+      ),
       'closedMessage': TextEditingController(text: s.closedMessage),
       'phone': TextEditingController(text: s.phone),
       'whatsapp': TextEditingController(text: s.whatsapp),
@@ -444,6 +528,7 @@ class _SettingsEditorState extends State<SettingsEditor> {
       jazzCashAccount: _t('jazzCashAccount'),
       easyPaisaAccount: _t('easyPaisaAccount'),
       raastId: _t('raastId'),
+      loginMode: _loginMode,
     );
     final err = await context.read<AdminSession>().saveSettings(next);
     if (!mounted) return;
@@ -465,11 +550,18 @@ class _SettingsEditorState extends State<SettingsEditor> {
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       decoration: InputDecoration(labelText: label, helperText: help),
-      validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a number (0 if none)' : null,
+      validator: (v) =>
+          (v ?? '').trim().isEmpty ? 'Enter a number (0 if none)' : null,
     ),
   );
 
-  Widget _text(String k, String label, {String? help, int lines = 1, TextInputType? type}) => Padding(
+  Widget _text(
+    String k,
+    String label, {
+    String? help,
+    int lines = 1,
+    TextInputType? type,
+  }) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: TextFormField(
       controller: _c[k],
@@ -488,7 +580,13 @@ class _SettingsEditorState extends State<SettingsEditor> {
         child: FilledButton(
           onPressed: _busy ? null : _save,
           child: _busy
-              ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+              ? const SizedBox.square(
+                  dimension: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
+                )
               : const Text('Save settings'),
         ),
       ),
@@ -506,26 +604,80 @@ class _SettingsEditorState extends State<SettingsEditor> {
               onChanged: (v) => setState(() => _accepting = v),
             ),
             _text('closedMessage', 'Message when paused', lines: 2),
+            const Heading('How customers sign in'),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'quick',
+                  label: Text('Quick'),
+                  icon: Icon(Icons.bolt_rounded),
+                ),
+                ButtonSegment(
+                  value: 'sms',
+                  label: Text('SMS code'),
+                  icon: Icon(Icons.sms_rounded),
+                ),
+              ],
+              selected: {_loginMode},
+              onSelectionChanged: (v) => setState(() => _loginMode = v.first),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 8),
+              child: Text(
+                _loginMode == 'quick'
+                    ? 'Customers type their mobile number only. Works on the free Firebase plan. Call to confirm orders: numbers are not verified.'
+                    : 'Customers get a one-time code by SMS. Needs the paid Firebase (Blaze) plan.',
+                style: TextStyle(color: context.pal.muted, height: 1.35),
+              ),
+            ),
             const Heading('Delivery'),
             _num('deliveryFee', 'Delivery fee (Rs)'),
-            _num('freeDeliveryFrom', 'Free delivery from (Rs)', help: '0 turns free delivery off'),
+            _num(
+              'freeDeliveryFrom',
+              'Free delivery from (Rs)',
+              help: '0 turns free delivery off',
+            ),
             _num('minOrderTotal', 'Minimum order (Rs)'),
             _num('maxCylindersPerOrder', 'Most cylinders per order'),
-            _text('serviceAreas', 'Areas you deliver to', help: 'Separate with commas. Empty means all of Lahore.', lines: 2),
+            _text(
+              'serviceAreas',
+              'Areas you deliver to',
+              help: 'Separate with commas. Empty means all of Lahore.',
+              lines: 2,
+            ),
             const Heading('Shop'),
             _text('phone', 'Phone', type: TextInputType.phone),
-            _text('whatsapp', 'WhatsApp number', help: 'International form, e.g. 923085745740', type: TextInputType.phone),
+            _text(
+              'whatsapp',
+              'WhatsApp number',
+              help: 'International form, e.g. 923085745740',
+              type: TextInputType.phone,
+            ),
             _text('email', 'Email', type: TextInputType.emailAddress),
             _text('shopAddress', 'Address', lines: 2),
             _text('openingHours', 'Opening hours'),
             const Heading('Where customers send money'),
             _text('accountTitle', 'Account title (name on the accounts)'),
-            _text('jazzCashAccount', 'JazzCash number', type: TextInputType.phone),
-            _text('easyPaisaAccount', 'Easypaisa number', type: TextInputType.phone),
+            _text(
+              'jazzCashAccount',
+              'JazzCash number',
+              type: TextInputType.phone,
+            ),
+            _text(
+              'easyPaisaAccount',
+              'Easypaisa number',
+              type: TextInputType.phone,
+            ),
             _text('raastId', 'Raast ID'),
             _text('bankDetails', 'Bank name and account / IBAN', lines: 3),
             if (_error != null)
-              Text(_error!, style: const TextStyle(color: Brand.danger, fontWeight: FontWeight.w600)),
+              Text(
+                _error!,
+                style: const TextStyle(
+                  color: Brand.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
           ],
         ),
       ),

@@ -41,9 +41,12 @@ class RidersScreen extends StatelessWidget {
                 itemBuilder: (_, i) {
                   final r = riders[i];
                   final jobs = s.orders
-                      .where((o) =>
-                          o.riderId == r.uid &&
-                          (o.status == OrderStatus.assigned || o.status == OrderStatus.outForDelivery))
+                      .where(
+                        (o) =>
+                            o.riderId == r.uid &&
+                            (o.status == OrderStatus.assigned ||
+                                o.status == OrderStatus.outForDelivery),
+                      )
                       .length;
                   return Container(
                     padding: const EdgeInsets.all(14),
@@ -51,15 +54,29 @@ class RidersScreen extends StatelessWidget {
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: (r.online && r.active ? Brand.success : Colors.grey).withValues(alpha: 0.15),
-                          child: Icon(Icons.two_wheeler, color: r.online && r.active ? Brand.success : Colors.grey),
+                          backgroundColor:
+                              (r.online && r.active
+                                      ? Brand.success
+                                      : Colors.grey)
+                                  .withValues(alpha: 0.15),
+                          child: Icon(
+                            Icons.two_wheeler,
+                            color: r.online && r.active
+                                ? Brand.success
+                                : Colors.grey,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(r.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                              Text(
+                                r.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                               Text(
                                 !r.active
                                     ? 'Blocked'
@@ -67,13 +84,22 @@ class RidersScreen extends StatelessWidget {
                                     ? 'Online${jobs > 0 ? ' · $jobs job${jobs == 1 ? '' : 's'}' : ''}'
                                     : 'Offline',
                                 style: TextStyle(
-                                  color: !r.active ? Brand.danger : r.online ? Brand.success : context.pal.muted,
+                                  color: !r.active
+                                      ? Brand.danger
+                                      : r.online
+                                      ? Brand.success
+                                      : context.pal.muted,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
                               ),
-                              Text('${prettyPhone(r.phone)} · ${r.vehicle}',
-                                  style: TextStyle(color: context.pal.muted, fontSize: 13)),
+                              Text(
+                                '${prettyPhone(r.phone)} · ${r.vehicle}',
+                                style: TextStyle(
+                                  color: context.pal.muted,
+                                  fontSize: 13,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -86,7 +112,8 @@ class RidersScreen extends StatelessWidget {
                           value: r.active,
                           onChanged: (v) async {
                             final err = await s.setRiderActive(r, v);
-                            if (err != null && context.mounted) showMessage(context, err, error: true);
+                            if (err != null && context.mounted)
+                              showMessage(context, err, error: true);
                           },
                         ),
                       ],
@@ -135,7 +162,9 @@ class _AddRiderState extends State<_AddRider> {
       phone: _phone.text.trim(),
       email: _email.text.trim(),
       password: _pass.text,
-      vehicle: _vehicle.text.trim().isEmpty ? 'Motorbike' : _vehicle.text.trim(),
+      vehicle: _vehicle.text.trim().isEmpty
+          ? 'Motorbike'
+          : _vehicle.text.trim(),
     );
     if (!mounted) return;
     if (err == null) {
@@ -151,7 +180,12 @@ class _AddRiderState extends State<_AddRider> {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.fromLTRB(20, 0, 20, MediaQuery.viewInsetsOf(context).bottom + 20),
+    padding: EdgeInsets.fromLTRB(
+      20,
+      0,
+      20,
+      MediaQuery.viewInsetsOf(context).bottom + 20,
+    ),
     child: Form(
       key: _form,
       child: SingleChildScrollView(
@@ -159,20 +193,30 @@ class _AddRiderState extends State<_AddRider> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Add a rider', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+            const Text(
+              'Add a rider',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+            ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(labelText: 'Full name'),
-              validator: (v) => (v ?? '').trim().length < 2 ? 'Enter the name' : null,
+              validator: (v) =>
+                  (v ?? '').trim().length < 2 ? 'Enter the name' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _phone,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Mobile number', hintText: '03xx xxxxxxx'),
-              validator: (v) => (v ?? '').replaceAll(RegExp(r'\D'), '').length < 10 ? 'Enter a valid number' : null,
+              decoration: const InputDecoration(
+                labelText: 'Mobile number',
+                hintText: '03xx xxxxxxx',
+              ),
+              validator: (v) =>
+                  (v ?? '').replaceAll(RegExp(r'\D'), '').length < 10
+                  ? 'Enter a valid number'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -184,23 +228,39 @@ class _AddRiderState extends State<_AddRider> {
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(labelText: 'Login email'),
-              validator: (v) => (v ?? '').contains('@') ? null : 'Enter an email',
+              validator: (v) =>
+                  (v ?? '').contains('@') ? null : 'Enter an email',
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _pass,
-              decoration: const InputDecoration(labelText: 'Password (min 6 characters)'),
-              validator: (v) => (v ?? '').length < 6 ? 'At least 6 characters' : null,
+              decoration: const InputDecoration(
+                labelText: 'Password (min 6 characters)',
+              ),
+              validator: (v) =>
+                  (v ?? '').length < 6 ? 'At least 6 characters' : null,
             ),
             if (_error != null) ...[
               const SizedBox(height: 10),
-              Text(_error!, style: const TextStyle(color: Brand.danger, fontWeight: FontWeight.w600)),
+              Text(
+                _error!,
+                style: const TextStyle(
+                  color: Brand.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
             const SizedBox(height: 16),
             FilledButton(
               onPressed: _busy ? null : _save,
               child: _busy
-                  ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                  ? const SizedBox.square(
+                      dimension: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Create rider'),
             ),
           ],

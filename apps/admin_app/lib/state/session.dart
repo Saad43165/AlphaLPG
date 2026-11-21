@@ -63,7 +63,8 @@ class AdminSession extends ChangeNotifier {
       if (s.contains(o.status)) o,
   ];
 
-  int get newCount => orders.where((o) => o.status == OrderStatus.placed).length;
+  int get newCount =>
+      orders.where((o) => o.status == OrderStatus.placed).length;
   int get activeCount => orders
       .where(
         (o) =>
@@ -77,8 +78,9 @@ class AdminSession extends ChangeNotifier {
   Iterable<LpgOrder> get _deliveredToday => orders.where(
     (o) =>
         o.status == OrderStatus.delivered &&
-        (o.timeOf(OrderStatus.delivered) ?? o.updatedAt ?? DateTime(0))
-            .isAfter(_today),
+        (o.timeOf(OrderStatus.delivered) ?? o.updatedAt ?? DateTime(0)).isAfter(
+          _today,
+        ),
   );
   int get deliveredTodayCount => _deliveredToday.length;
   int get salesToday => _deliveredToday.fold(0, (n, o) => n + o.total);
@@ -109,8 +111,9 @@ class AdminSession extends ChangeNotifier {
     }
   }
 
-  Future<String?> confirm(LpgOrder o) =>
-      _run(() => backend.orders.updateStatus(o.id, OrderStatus.confirmed, uid!));
+  Future<String?> confirm(LpgOrder o) => _run(
+    () => backend.orders.updateStatus(o.id, OrderStatus.confirmed, uid!),
+  );
 
   Future<String?> assign(LpgOrder o, RiderProfile r) => _run(
     () => backend.orders.assignRider(
@@ -131,8 +134,9 @@ class AdminSession extends ChangeNotifier {
     ),
   );
 
-  Future<String?> markDelivered(LpgOrder o) =>
-      _run(() => backend.orders.updateStatus(o.id, OrderStatus.delivered, uid!));
+  Future<String?> markDelivered(LpgOrder o) => _run(
+    () => backend.orders.updateStatus(o.id, OrderStatus.delivered, uid!),
+  );
 
   Future<String?> markPaid(LpgOrder o) =>
       _run(() => backend.orders.markPaid(o.id, uid!));
@@ -171,9 +175,7 @@ class AdminSession extends ChangeNotifier {
     if (s.contains('unavailable') || s.contains('network')) {
       return 'No internet connection. Please try again.';
     }
-    return e is Exception && s.startsWith('Exception: ')
-        ? s.substring(11)
-        : s;
+    return e is Exception && s.startsWith('Exception: ') ? s.substring(11) : s;
   }
 
   // ---- Wiring ---------------------------------------------------------------
@@ -200,13 +202,16 @@ class AdminSession extends ChangeNotifier {
 
   void _startData() {
     void listen<T>(Stream<T> s, void Function(T) on) => _subs.add(
-      s.listen((v) {
-        on(v);
-        notifyListeners();
-      }, onError: (Object e) {
-        error = _friendly(e);
-        notifyListeners();
-      }),
+      s.listen(
+        (v) {
+          on(v);
+          notifyListeners();
+        },
+        onError: (Object e) {
+          error = _friendly(e);
+          notifyListeners();
+        },
+      ),
     );
     listen(backend.orders.watchRecent(), (v) {
       orders = v;

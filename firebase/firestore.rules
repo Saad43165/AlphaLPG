@@ -34,7 +34,11 @@ service cloud.firestore {
     // Phone sign-in puts the verified number in the token; data that names a
     // phone number must match it, so nobody can order "as" another number.
     function phoneMatchesToken(phone) {
-      return !('phone_number' in request.auth.token) || phone == request.auth.token.phone_number;
+      return ('phone_number' in request.auth.token)
+        ? phone == request.auth.token.phone_number
+        // "Quick sign-in" customers have no verified number: it must at least
+        // be a well-formed Pakistani mobile, and the shop confirms by phone.
+        : phone.matches('^\\+923[0-9]{9}$');
     }
 
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
