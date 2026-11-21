@@ -143,14 +143,6 @@ class _TrackingView extends StatelessWidget {
         o.paymentMethod.isPrepaid &&
         o.paymentStatus != PaymentStatus.paid &&
         o.status != OrderStatus.cancelled;
-    final scaleExtra = (MediaQuery.textScalerOf(context).scale(15) - 15) * 8;
-    final expanded =
-        (o.status == OrderStatus.delivered
-            ? 236
-            : o.status == OrderStatus.cancelled
-            ? 210
-            : 270) +
-        scaleExtra;
     return AnnotatedRegion(
       value: Brand.lightStatusBar,
       child: Scaffold(
@@ -159,8 +151,9 @@ class _TrackingView extends StatelessWidget {
             SliverAppBar(
               leading: const ScreenBack(),
               pinned: true,
-              expandedHeight: expanded,
-              backgroundColor: o.heroGradient.colors.last,
+              backgroundColor: o.heroGradient.colors.first,
+              surfaceTintColor: Colors.transparent,
+              scrolledUnderElevation: 0,
               foregroundColor: Colors.white,
               systemOverlayStyle: Brand.lightStatusBar,
               title: Text(
@@ -199,19 +192,8 @@ class _TrackingView extends StatelessWidget {
                   icon: const Icon(Icons.copy_rounded),
                 ),
               ],
-              // While the bar collapses the hero is cut off at the toolbar, so
-              // its text can never slide over the back arrow and order number.
-              flexibleSpace: LayoutBuilder(
-                builder: (context, box) {
-                  final top = MediaQuery.paddingOf(context).top;
-                  final cut = (expanded - box.maxHeight) + kToolbarHeight + top;
-                  return FlexibleSpaceBar(
-                    collapseMode: CollapseMode.pin,
-                    background: _Hero(o, cut: cut < 0 ? 0 : cut),
-                  );
-                },
-              ),
             ),
+            SliverToBoxAdapter(child: _Hero(o)),
             SliverToBoxAdapter(
               child: Constrained(
                 child: Padding(
@@ -398,111 +380,94 @@ BoxDecoration _cardDecoration(BuildContext context) => BoxDecoration(
 // Hero: status, ETA and the depot → home route.
 
 class _Hero extends StatelessWidget {
-  const _Hero(this.o, {this.cut = 0});
+  const _Hero(this.o);
   final LpgOrder o;
-
-  /// Content above this y is hidden (it has scrolled under the toolbar).
-  final double cut;
 
   @override
   Widget build(BuildContext context) {
     final eta = o.etaLine;
     return Container(
       decoration: BoxDecoration(gradient: o.heroGradient),
-      child: ClipRect(
-        clipper: _CutTop(cut),
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.only(top: kToolbarHeight),
-            child: Constrained(
-              // Anchored to the bottom; clips instead of overflowing with very
-              // large text sizes.
-              child: SingleChildScrollView(
-                reverse: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 22),
+      child: Constrained(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                layoutBuilder: (current, _) => current ?? const SizedBox(),
                 child: Column(
+                  key: ValueKey(o.status),
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      layoutBuilder: (current, _) =>
-                          current ?? const SizedBox(),
-                      child: Column(
-                        key: ValueKey(o.status),
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            o.headline,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 30,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.8,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            o.status == OrderStatus.cancelled &&
-                                    o.cancelReason.isNotEmpty
-                                ? 'Reason: ${o.cancelReason}'
-                                : o.statusLine,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      o.headline,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
                       ),
                     ),
-                    if (o.status == OrderStatus.delivered) ...[
-                      const SizedBox(height: 16),
-                      _FactChips(o),
-                    ] else if (eta != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              o.status == OrderStatus.delivered
-                                  ? Icons.check_circle_rounded
-                                  : Icons.schedule_rounded,
-                              color: Brand.flame,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                eta,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                    const SizedBox(height: 4),
+                    Text(
+                      o.status == OrderStatus.cancelled &&
+                              o.cancelReason.isNotEmpty
+                          ? 'Reason: ${o.cancelReason}'
+                          : o.statusLine,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 15,
                       ),
-                    ],
-                    if (o.status.isActive) ...[
-                      const SizedBox(height: 20),
-                      _StageBar(o),
-                    ],
+                    ),
                   ],
                 ),
               ),
-            ),
+              if (o.status == OrderStatus.delivered) ...[
+                const SizedBox(height: 16),
+                _FactChips(o),
+              ] else if (eta != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        o.status == OrderStatus.delivered
+                            ? Icons.check_circle_rounded
+                            : Icons.schedule_rounded,
+                        color: Brand.flame,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          eta,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (o.status.isActive) ...[
+                const SizedBox(height: 20),
+                _StageBar(o),
+              ],
+            ],
           ),
         ),
       ),
@@ -1300,19 +1265,6 @@ class _PaymentCard extends StatelessWidget {
   }
 }
 
-/// Clips everything above [top] (used to hide the hero behind the toolbar).
-class _CutTop extends CustomClipper<Rect> {
-  const _CutTop(this.top);
-  final double top;
-
-  @override
-  Rect getClip(Size size) => Rect.fromLTRB(0, top, size.width, size.height);
-
-  @override
-  bool shouldReclip(_CutTop old) => old.top != top;
-}
-
-/// Delivered: the facts that matter at a glance.
 class _FactChips extends StatelessWidget {
   const _FactChips(this.o);
   final LpgOrder o;
