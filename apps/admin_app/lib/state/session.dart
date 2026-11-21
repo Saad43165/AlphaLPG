@@ -90,6 +90,10 @@ class AdminSession extends ChangeNotifier {
   int get receiptsToCheckCount =>
       orders.where((o) => o.awaitingPaymentCheck && o.receiptAt != null).length;
 
+  /// Online orders where the shop still has to send its account details.
+  int get needDetailsCount =>
+      orders.where((o) => o.payStage == PayStage.sendDetails).length;
+
   int get toVerifyCount => orders.where((o) => o.awaitingPaymentCheck).length;
 
   Iterable<LpgOrder> get _deliveredToday => orders.where(
@@ -381,7 +385,9 @@ class AdminSession extends ChangeNotifier {
             newOrderAlert = o;
             Alerts.show(
               id: 200 + (o.id.hashCode & 0xffff),
-              title: 'New order · ${rs(o.total)}',
+              title: o.paymentMethod.isPrepaid
+                  ? 'New order · ${rs(o.total)} · send ${o.paymentMethod.label} details'
+                  : 'New order · ${rs(o.total)}',
               body: '${o.customerName} · ${o.itemsLine} · ${o.areaLine}',
             );
           }

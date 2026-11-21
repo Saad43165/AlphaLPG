@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session.dart';
+import '../utils/order_x.dart';
 
 String _accountFor(PaymentMethod m, AppSettings s) => switch (m) {
   PaymentMethod.jazzCash => s.jazzCashAccount,
@@ -71,9 +72,31 @@ class PaymentPanel extends StatelessWidget {
     final paid = o.paymentStatus == PaymentStatus.paid;
     final backend = context.read<AdminSession>().backend;
     final fmt = DateFormat('d MMM, h:mm a');
+    final stage = o.payStage;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (stage != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color:
+                  (stage == PayStage.sendDetails
+                          ? Brand.cylinderRed
+                          : Brand.flame)
+                      .withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(switch (stage) {
+              PayStage.sendDetails =>
+                'To do: send ${o.paymentMethod.label} payment details to the customer. They have not received them yet.',
+              PayStage.waiting => 'Details sent. Waiting for the customer to pay and send a receipt.',
+              PayStage.receipt => 'Receipt received. Check it in your account, then tap Mark paid.',
+              PayStage.issue => 'You told the customer about a problem. Waiting for a new receipt.',
+            }, style: const TextStyle(fontWeight: FontWeight.w700, height: 1.35)),
+          ),
+        ],
         if (req != null) ...[
           const SizedBox(height: 10),
           Container(

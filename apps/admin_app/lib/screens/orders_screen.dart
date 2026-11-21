@@ -32,10 +32,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
       OrderStatus.outForDelivery,
     ]),
     _Filter.verify => [
-      for (final o in s.orders)
-        if (o.awaitingPaymentCheck && o.receiptAt != null) o,
-      for (final o in s.orders)
-        if (o.awaitingPaymentCheck && o.receiptAt == null) o,
+      for (final stage in [
+        PayStage.sendDetails,
+        PayStage.receipt,
+        PayStage.issue,
+        PayStage.waiting,
+      ])
+        for (final o in s.orders)
+          if (o.payStage == stage) o,
     ],
     _Filter.done => s.ordersIn([OrderStatus.delivered]),
     _Filter.cancelled => s.ordersIn([OrderStatus.cancelled]),
@@ -107,37 +111,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
         child: Column(
           children: [
             if (!_searching) const _ShopBar(),
+            if (!_searching && s.needDetailsCount > 0)
+              _PayBanner(
+                icon: Icons.send_rounded,
+                text: s.needDetailsCount == 1
+                    ? '1 order needs payment details sent'
+                    : '${s.needDetailsCount} orders need payment details sent',
+                onTap: () => setState(() => _f = _Filter.verify),
+              ),
             if (!_searching && s.receiptsToCheckCount > 0)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                child: Material(
-                  color: Brand.flame.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(14),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => setState(() => _f = _Filter.verify),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.receipt_long_rounded),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              s.receiptsToCheckCount == 1
-                                  ? '1 payment receipt to check'
-                                  : '${s.receiptsToCheckCount} payment receipts to check',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right_rounded),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              _PayBanner(
+                icon: Icons.receipt_long_rounded,
+                text: s.receiptsToCheckCount == 1
+                    ? '1 payment receipt to check'
+                    : '${s.receiptsToCheckCount} payment receipts to check',
+                onTap: () => setState(() => _f = _Filter.verify),
               ),
             if (!_searching)
               SizedBox(
@@ -183,7 +171,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     for (final (f, label) in const [
                       (_Filter.fresh, 'New'),
                       (_Filter.active, 'In progress'),
-                      (_Filter.verify, 'Verify payment'),
+                      (_Filter.verify, 'Online payments'),
                       (_Filter.done, 'Delivered'),
                       (_Filter.cancelled, 'Cancelled'),
                     ])
@@ -400,17 +388,26 @@ class OrderTile extends StatelessWidget {
                     Pill(
                       paid
                           ? Icons.check_circle_rounded
-                          : o.paymentMethod.isPrepaid
-                          ? Icons.hourglass_top_rounded
-                          : Icons.payments_outlined,
+                          : o.paymentMethod == PaymentMethod.cashOnDelivery
+                          ? Icons.payments_outlined
+                          : switch (o.payStage) {
+                              PayStage.sendDetails => Icons.send_rounded,
+                              PayStage.receipt => Icons.receipt_long_rounded,
+                              PayStage.issue => Icons.error_outline_rounded,
+                              _ => Icons.hourglass_top_rounded,
+                            },
                       paid
                           ? 'Paid'
                           : o.paymentMethod == PaymentMethod.cashOnDelivery
                           ? 'Cash'
-                          : o.receiptAt != null
-                          ? 'Receipt'
-                          : 'Verify',
-                      color: paid ? Brand.success : const Color(0xFF8A6D00),
+                          : o.payStage?.label ?? 'Online',
+                      color: paid
+                          ? Brand.success
+                          : switch (o.payStage) {
+                              PayStage.sendDetails => Brand.cylinderRed,
+                              PayStage.receipt => Brand.flame,
+                              _ => const Color(0xFF8A6D00),
+                            },
                     ),
                     Expanded(
                       child: Align(
@@ -583,4 +580,44 @@ class _ShopBar extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PayBanner extends StatelessWidget {
+  const _PayBanner({
+    required this.icon,
+    required this.text,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+    child: Material(
+      color: Brand.flame.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(icon),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  text,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }

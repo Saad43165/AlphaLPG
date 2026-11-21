@@ -31,7 +31,34 @@ String rs(int v) {
   return 'Rs ${v < 0 ? '-' : ''}$b';
 }
 
+/// Where an online payment stands, from the shop's point of view.
+enum PayStage {
+  /// The customer chose an online method; the shop has not sent the account.
+  sendDetails('Send details'),
+
+  /// Details sent; the customer has not paid / sent a receipt yet.
+  waiting('Waiting for customer'),
+
+  /// A receipt came in: check it and mark paid.
+  receipt('Receipt: check it'),
+
+  /// The shop flagged a problem; waiting for a new receipt.
+  issue('Problem sent');
+
+  const PayStage(this.label);
+  final String label;
+}
+
 extension AdminOrderMoneyX on LpgOrder {
+  /// Null for cash, paid or cancelled orders.
+  PayStage? get payStage {
+    if (!awaitingPaymentCheck) return null;
+    if (paymentIssue.isNotEmpty) return PayStage.issue;
+    if (receiptAt != null) return PayStage.receipt;
+    if (paymentRequest != null) return PayStage.waiting;
+    return PayStage.sendDetails;
+  }
+
   /// A wallet / bank order whose money has not been confirmed yet.
   bool get awaitingPaymentCheck =>
       paymentMethod.isPrepaid &&
