@@ -12,6 +12,7 @@ import '../widgets/common.dart';
 import '../utils/export.dart';
 import 'cash_screen.dart';
 import 'customers_screen.dart';
+import 'reports_inbox_screen.dart';
 import 'reports_screen.dart';
 import 'team_screen.dart';
 
@@ -70,6 +71,24 @@ class MoreScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const ReportsScreen()),
+              ),
+            ),
+            ListTile(
+              leading: Badge(
+                isLabelVisible: s.openReportCount > 0,
+                label: Text('${s.openReportCount}'),
+                child: const Icon(Icons.report_rounded),
+              ),
+              title: const Text('Customer reports'),
+              subtitle: const Text('Problems with orders and riders'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: s,
+                    child: const ReportsInboxScreen(),
+                  ),
+                ),
               ),
             ),
             ListTile(

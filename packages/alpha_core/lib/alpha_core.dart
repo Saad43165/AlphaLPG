@@ -14,6 +14,7 @@ export 'src/models/ops_models.dart';
 export 'src/models/order.dart';
 export 'src/models/ordering_status.dart';
 export 'src/models/order_message.dart';
+export 'src/models/order_report.dart';
 export 'src/models/order_status.dart';
 export 'src/models/payment_request.dart';
 export 'src/models/product.dart';

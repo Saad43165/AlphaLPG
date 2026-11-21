@@ -69,6 +69,11 @@ void main() {
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
       await tester.pumpAndSettle();
+      // The order page only points to the payment screen.
+      expect(find.text('Payment details are ready'), findsOneWidget);
+      expect(find.text('Alpha LPG sent you payment details'), findsNothing);
+      await tapText(tester, 'Pay now');
+      expect(find.text('Payment'), findsWidgets);
       expect(find.text('Alpha LPG sent you payment details'), findsOneWidget);
       expect(find.text('03001234567'), findsOneWidget);
 
@@ -106,6 +111,66 @@ void main() {
       expect(chat!.single.text, contains('EP123456'));
     },
   );
+
+  testWidgets('a problem report goes straight to the shop, not the chat', (
+    tester,
+  ) async {
+    final backend = testBackend();
+    late String id;
+    await tester.runAsync(() async {
+      await backend.auth.sendCode('+923001234567');
+      await backend.auth.verifyCode('123456');
+      await backend.profiles.saveProfile(
+        CustomerProfile(
+          uid: backend.auth.uid!,
+          name: 'Sara',
+          phone: '+923001234567',
+        ),
+        isNew: true,
+      );
+      id = await backend.orders.place(
+        LpgOrder(
+          customerId: backend.auth.uid!,
+          customerName: 'Sara',
+          customerPhone: '+923001234567',
+          items: const [
+            OrderItem(
+              productId: 'cyl-6kg',
+              name: '6kg Gas Cylinder',
+              sizeKg: 6,
+              type: PurchaseType.refill,
+              unitPrice: 1676,
+              quantity: 1,
+            ),
+          ],
+          subtotal: 1676,
+          deliveryFee: 150,
+          total: 1826,
+          address: const Address(label: 'Home', line1: '1', area: 'DHA'),
+        ),
+      );
+      await backend.orders.updateStatus(id, OrderStatus.confirmed, 'boss');
+    });
+    await pumpApp(tester, backend);
+    await tapText(tester, 'My orders');
+    await tapText(tester, '1× 6kg Gas Cylinder');
+    await tapText(tester, 'Something wrong with this order?');
+    await tapText(tester, 'Cylinder leaking or damaged');
+    await tapText(tester, 'Send to Alpha LPG');
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    final reports = await tester.runAsync(
+      () => backend.orders.watchReports().first,
+    );
+    expect(reports!.single.reason, 'Cylinder leaking or damaged');
+    expect(reports.single.orderId, id);
+    final chat = await tester.runAsync(
+      () => backend.orders.watchMessages(id).first,
+    );
+    expect(chat, isEmpty);
+  });
 
   test('area fee and low stock helpers', () {
     final s = AppSettings.fromMap({

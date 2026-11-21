@@ -107,6 +107,7 @@ class OrderWatcher {
 
   void _announce(LpgOrder o, _Seen before, _Seen now) {
     String? title, body;
+    String? payload;
     if (before.rider != null && now.rider == null && o.status.isActive) {
       title = 'We are finding you a new rider';
       body =
@@ -141,9 +142,11 @@ class OrderWatcher {
           break;
       }
     } else if (now.requested && !before.requested) {
+      payload = '/orders/${o.id}/payment';
       title = 'Payment details from Alpha LPG';
       body = 'Tap to see where to send ${formatRupees(o.total)}.';
     } else if (now.issue.isNotEmpty && now.issue != before.issue) {
+      payload = '/orders/${o.id}/payment';
       title = 'Payment needs attention';
       body = now.issue;
     } else if (now.arrived && !before.arrived) {
@@ -159,7 +162,7 @@ class OrderWatcher {
         id: _id(o.id, 1),
         title: title,
         body: body,
-        payload: '/orders/${o.id}',
+        payload: payload ?? '/orders/${o.id}',
       );
     }
   }

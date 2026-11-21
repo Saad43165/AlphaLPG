@@ -49,7 +49,7 @@ void main() {
     );
     expect(
       PriceBreakdown.of([item(100, 21)], settings).problem(settings),
-      contains('bulk quote'),
+      contains('bulk order'),
     );
     const minSettings = AppSettings(minOrderTotal: 2000);
     expect(

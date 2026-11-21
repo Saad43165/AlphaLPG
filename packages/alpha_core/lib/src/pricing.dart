@@ -58,7 +58,7 @@ class PriceBreakdown {
       return 'One order can have up to $maxLines different items. Please place the rest as a second order.';
     }
     if (cylinders > s.maxCylindersPerOrder) {
-      return 'For more than ${s.maxCylindersPerOrder} cylinders please request a bulk quote.';
+      return 'One order can have up to ${s.maxCylindersPerOrder} cylinders. For more, send a bulk order request and we will call you with a price.';
     }
     if (subtotal < s.minOrderTotal) {
       return 'Minimum order is ${formatRupees(s.minOrderTotal)}.';

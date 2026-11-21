@@ -227,6 +227,40 @@ class _RiderCard extends StatelessWidget {
                       '${prettyPhone(r.phone)} · ${r.vehicle}',
                       style: TextStyle(color: pal.muted, fontSize: 13),
                     ),
+                    if (s.ratingOf(r.uid) case final st?)
+                      InkWell(
+                        onTap: () => showModalBottomSheet<void>(
+                          context: context,
+                          showDragHandle: true,
+                          isScrollControlled: true,
+                          builder: (_) => _Reviews(
+                            name: r.name,
+                            orders: s.ratingsOf(r.uid),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                color: Color(0xFFF5A623),
+                                size: 17,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${st.$1.toStringAsFixed(1)} · ${st.$2} review${st.$2 == 1 ? '' : 's'}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -654,6 +688,55 @@ class _AddRiderState extends State<_AddRider> {
             ),
           ],
         ),
+      ),
+    ),
+  );
+}
+
+/// What customers said about a rider.
+class _Reviews extends StatelessWidget {
+  const _Reviews({required this.name, required this.orders});
+  final String name;
+  final List<LpgOrder> orders;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+      ),
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        children: [
+          Text(
+            'Reviews for $name',
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          for (final o in orders)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 1; i <= 5; i++)
+                    Icon(
+                      i <= o.rating!
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      size: 16,
+                      color: const Color(0xFFF5A623),
+                    ),
+                ],
+              ),
+              title: Text(
+                o.feedback.isEmpty ? '(no comment)' : o.feedback,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text('${o.customerName} · ${o.displayNumber}'),
+            ),
+        ],
       ),
     ),
   );

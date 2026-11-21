@@ -149,6 +149,19 @@ class OrderPlacedScreen extends StatelessWidget {
                       ],
                     ],
                     const SizedBox(height: 24),
+                    if (o != null && o.paymentMethod.isPrepaid) ...[
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Brand.flame,
+                        ),
+                        onPressed: () => context.goHomeThenPush([
+                          '/orders/$orderId/payment',
+                        ]),
+                        icon: const Icon(Icons.account_balance_wallet_rounded),
+                        label: const Text('Go to payment'),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                     FilledButton.icon(
                       onPressed: () =>
                           context.goHomeThenPush(['/orders/$orderId']),

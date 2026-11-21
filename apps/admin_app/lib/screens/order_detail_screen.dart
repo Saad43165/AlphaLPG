@@ -12,6 +12,7 @@ import '../utils/payment_checks.dart';
 import '../widgets/common.dart';
 import '../widgets/payment_panel.dart';
 import 'chat_screen.dart';
+import 'reports_inbox_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key, required this.orderId});
@@ -341,6 +342,13 @@ class OrderDetailScreen extends StatelessWidget {
                 ),
               ],
             ),
+
+            // ---- Customer reports on this order ----------------------------
+            for (final r in s.reports.where((x) => x.orderId == o.id))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ReportCard(r, showOrderLink: false),
+              ),
 
             // ---- Payment ----------------------------------------------------
             _Section(

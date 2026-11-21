@@ -13,7 +13,7 @@ import 'package:alpha_admin/utils/photo.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart'
-    show Switch, Size, Scrollable, TextField, Text;
+    show Switch, Size, Scrollable, TextField;
 
 class FakeAuth extends AdminAuth {
   @override

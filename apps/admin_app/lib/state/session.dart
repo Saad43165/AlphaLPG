@@ -47,6 +47,40 @@ class AdminSession extends ChangeNotifier {
   List<AuditEntry> auditLog = const [];
   List<ErrorEntry> errorLog = const [];
   List<AdminUser> admins = const [];
+  List<OrderReport> reports = const [];
+  final _knownReports = <String>{};
+  bool _reportsLoaded = false;
+
+  int get openReportCount => reports.where((r) => r.isOpen).length;
+
+  /// Delivered orders this rider was rated on, newest first.
+  List<LpgOrder> ratingsOf(String riderId) => [
+    for (final o in orders)
+      if (o.riderId == riderId && o.rating != null) o,
+  ];
+
+  /// Average stars and how many ratings (null when none yet).
+  (double, int)? ratingOf(String riderId) {
+    final l = ratingsOf(riderId);
+    if (l.isEmpty) return null;
+    return (l.fold(0, (n, o) => n + o.rating!) / l.length, l.length);
+  }
+
+  final _publishedStats = <String, String>{};
+
+  /// Customers see each rider's stars; keep the public copy up to date.
+  void _publishRiderStats() {
+    for (final r in riders) {
+      final st = ratingOf(r.uid);
+      if (st == null) continue;
+      final key = '${st.$1.toStringAsFixed(2)}/${st.$2}';
+      if (_publishedStats[r.uid] == key) continue;
+      _publishedStats[r.uid] = key;
+      backend.orders
+          .saveRiderStats(r.uid, double.parse(st.$1.toStringAsFixed(2)), st.$2)
+          .catchError((_) {});
+    }
+  }
 
   /// This signed-in admin's record (null = the original owner / custom claim).
   AdminUser? me;
@@ -312,6 +346,19 @@ class AdminSession extends ChangeNotifier {
   Future<String?> removeStaff(AdminUser a) => _run(() async {
     await backend.ops.removeAdmin(a.uid);
     _audit('Removed staff', target: a.name, detail: a.email);
+  });
+
+  Future<String?> resolveReport(
+    OrderReport r, {
+    required String reply,
+    bool resolved = true,
+  }) => _run(() async {
+    await backend.orders.resolveReport(r.id, reply: reply, resolved: resolved);
+    _audit(
+      resolved ? 'Resolved customer report' : 'Reopened customer report',
+      target: r.orderNumber,
+      detail: reply,
+    );
   });
 
   Future<String?> saveProduct(Product p) =>
@@ -601,6 +648,13 @@ class AdminSession extends ChangeNotifier {
         },
       ),
     );
+    // Owner-only data: quietly ignored for staff (the rules refuse it).
+    void quiet<T>(Stream<T> st, void Function(T) on) => _subs.add(
+      st.listen((v) {
+        on(v);
+        notifyListeners();
+      }, onError: (_) {}),
+    );
     listen(backend.orders.watchRecent(), (v) {
       // After the first load, a placed order we have not seen is "new".
       if (ordersLoaded) {
@@ -644,21 +698,39 @@ class AdminSession extends ChangeNotifier {
         ..clear()
         ..addAll(v.map((o) => o.id));
       orders = v;
+      _publishRiderStats();
       ordersLoaded = true;
     });
-    listen(backend.riders.watchAllRiders(), (v) => riders = v);
+    listen(backend.riders.watchAllRiders(), (v) {
+      riders = v;
+      _publishRiderStats();
+    });
+    quiet(backend.orders.watchReports(), (v) {
+      if (_reportsLoaded) {
+        for (final r in v) {
+          if (!_knownReports.contains(r.id)) {
+            Alerts.show(
+              id: 600000 + (r.id.hashCode & 0xffff),
+              title: r.aboutRider
+                  ? 'Rider reported · ${r.orderNumber}'
+                  : 'Problem reported · ${r.orderNumber}',
+              body: '${r.customerName}: ${r.reason}',
+              payload: 'order:${r.orderId}',
+            );
+          }
+        }
+      }
+      _reportsLoaded = true;
+      _knownReports
+        ..clear()
+        ..addAll(v.map((r) => r.id));
+      reports = v;
+    });
     listen(backend.profiles.watchCustomers(), (v) => customers = v);
     listen(backend.ops.watchLedger(), (v) => ledger = v);
     listen(backend.ops.watchHandovers(), (v) => handovers = v);
     listen(backend.ops.watchErrors(), (v) => errorLog = v);
     listen(backend.ops.watchAdmin(uid!), (v) => me = v);
-    // Owner-only data: quietly ignored for staff (the rules refuse it).
-    void quiet<T>(Stream<T> st, void Function(T) on) => _subs.add(
-      st.listen((v) {
-        on(v);
-        notifyListeners();
-      }, onError: (_) {}),
-    );
     quiet(backend.ops.watchAudit(), (v) => auditLog = v);
     quiet(backend.ops.watchAdmins(), (v) => admins = v);
     listen(backend.profiles.watchAllBlocked(), (v) {

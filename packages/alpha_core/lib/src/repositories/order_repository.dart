@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../dates.dart';
 import '../firestore_paths.dart';
 import '../models/order.dart';
+import '../models/order_report.dart';
 import '../models/order_message.dart';
 import '../models/order_status.dart';
 import '../models/payment_request.dart';
@@ -34,6 +35,31 @@ abstract interface class OrderRepository {
     String? data,
     String note = '',
   });
+
+  /// Customer: complaint about the order or the rider, straight to the shop.
+  Future<void> addReport(OrderReport r);
+
+  /// Customer: their own reports on one order.
+  Stream<List<OrderReport>> watchOrderReports(
+    String orderId,
+    String customerId,
+  );
+
+  /// Admin: all reports, newest first.
+  Stream<List<OrderReport>> watchReports({int limit = 200});
+
+  /// Admin: answer and close (or reopen) a report.
+  Future<void> resolveReport(
+    String id, {
+    required String reply,
+    bool resolved = true,
+  });
+
+  /// Public star rating of a rider (null if none yet).
+  Stream<RiderStats?> watchRiderStats(String riderId);
+
+  /// Admin: publish a rider's star rating.
+  Future<void> saveRiderStats(String riderId, double average, int count);
 
   /// Rider: a photo of the delivered cylinders / the customer's door
   /// (base64 JPEG, kept small). Customer and shop can see it.
@@ -261,6 +287,64 @@ class _FirestoreOrders implements OrderRepository {
     });
     await batch.commit();
   }
+
+  @override
+  Future<void> addReport(OrderReport r) => _db.collection('reports').add({
+    ...r.toNewMap(),
+    'createdAt': FieldValue.serverTimestamp(),
+  });
+
+  @override
+  Stream<List<OrderReport>> watchOrderReports(
+    String orderId,
+    String customerId,
+  ) => _db
+      .collection('reports')
+      .where('customerId', isEqualTo: customerId)
+      .where('orderId', isEqualTo: orderId)
+      .snapshots()
+      .map(
+        (s) => [for (final d in s.docs) OrderReport.fromMap(d.id, d.data())]
+          ..sort(
+            (a, b) => (b.createdAt ?? DateTime(0)).compareTo(
+              a.createdAt ?? DateTime(0),
+            ),
+          ),
+      );
+
+  @override
+  Stream<List<OrderReport>> watchReports({int limit = 200}) => _db
+      .collection('reports')
+      .orderBy('createdAt', descending: true)
+      .limit(limit)
+      .snapshots()
+      .map(
+        (s) => [for (final d in s.docs) OrderReport.fromMap(d.id, d.data())],
+      );
+
+  @override
+  Future<void> resolveReport(
+    String id, {
+    required String reply,
+    bool resolved = true,
+  }) => _db.collection('reports').doc(id).update({
+    'reply': reply,
+    'status': resolved ? 'resolved' : 'open',
+    'resolvedAt': resolved ? FieldValue.serverTimestamp() : null,
+  });
+
+  @override
+  Stream<RiderStats?> watchRiderStats(String riderId) => _db
+      .collection('riderStats')
+      .doc(riderId)
+      .snapshots()
+      .map((d) => d.exists ? RiderStats.fromMap(d.id, d.data()!) : null);
+
+  @override
+  Future<void> saveRiderStats(String riderId, double average, int count) => _db
+      .collection('riderStats')
+      .doc(riderId)
+      .set({'average': average, 'count': count});
 
   @override
   Future<void> addDeliveryProof(
@@ -661,6 +745,67 @@ class _MemoryOrders implements OrderRepository {
       },
     );
   }
+
+  @override
+  Future<void> addReport(OrderReport r) async => _s.set('reports', _s.newId(), {
+    ...r.toNewMap(),
+    'createdAt': DateTime.now(),
+  });
+
+  @override
+  Stream<List<OrderReport>> watchOrderReports(
+    String orderId,
+    String customerId,
+  ) => watchReports().map(
+    (l) => [
+      for (final r in l)
+        if (r.orderId == orderId && r.customerId == customerId) r,
+    ],
+  );
+
+  @override
+  Stream<List<OrderReport>> watchReports({int limit = 200}) =>
+      _s.watch('reports', (docs) {
+        final l =
+            [for (final e in docs.entries) OrderReport.fromMap(e.key, e.value)]
+              ..sort(
+                (a, b) => (b.createdAt ?? DateTime(0)).compareTo(
+                  a.createdAt ?? DateTime(0),
+                ),
+              );
+        return l.take(limit).toList();
+      });
+
+  @override
+  Future<void> resolveReport(
+    String id, {
+    required String reply,
+    bool resolved = true,
+  }) async => _s.update(
+    'reports',
+    id,
+    (d) => {
+      ...d,
+      'reply': reply,
+      'status': resolved ? 'resolved' : 'open',
+      'resolvedAt': resolved ? DateTime.now() : null,
+    },
+  );
+
+  @override
+  Stream<RiderStats?> watchRiderStats(String riderId) =>
+      _s.watch('riderStats', (docs) {
+        final d = docs[riderId];
+        return d == null ? null : RiderStats.fromMap(riderId, d);
+      });
+
+  @override
+  Future<void> saveRiderStats(
+    String riderId,
+    double average,
+    int count,
+  ) async =>
+      _s.set('riderStats', riderId, {'average': average, 'count': count});
 
   @override
   Future<void> addDeliveryProof(

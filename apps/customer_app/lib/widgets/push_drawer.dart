@@ -70,7 +70,10 @@ class PushDrawerState extends State<PushDrawerHost>
           },
           child: Container(
             // Behind everything: the menu's own backdrop.
-            color: pal.isDark ? const Color(0xFF060F18) : Brand.navy,
+            // Follows the theme: light menu in light mode, dark in dark mode.
+            color: pal.isDark
+                ? const Color(0xFF060F18)
+                : const Color(0xFFF2F6FB),
             child: Stack(
               children: [
                 // The menu, easing in from slightly left and small.

@@ -27,7 +27,7 @@ void main() {
     await tester.tap(find.byTooltip('Increase'));
     await tester.pumpAndSettle();
     await tapText(tester, 'Add · Rs. 6,592');
-    expect(find.text('2 cylinders · Rs. 6,592'), findsOneWidget);
+    expect(find.text('2 cylinders in your cart'), findsOneWidget);
 
     // Cart: free delivery above Rs. 6,000, refill reminder, swipe-to-remove.
     await tapText(tester, 'View cart');

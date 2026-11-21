@@ -486,6 +486,44 @@ service cloud.firestore {
       allow delete: if isOwner() && uid != request.auth.uid;
     }
 
+    // ---- Customer reports about an order or its rider (straight to the shop) --
+
+    match /reports/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.customerId == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+             'orderId', 'orderNumber', 'customerId', 'customerName', 'customerPhone',
+             'riderId', 'riderName', 'about', 'reason', 'details', 'status', 'reply', 'createdAt'])
+        && request.resource.data.customerId == request.auth.uid
+        && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.customerId == request.auth.uid
+        && request.resource.data.about in ['order', 'rider']
+        && isText(request.resource.data.reason, 80)
+        && request.resource.data.reason.size() > 0
+        && isText(request.resource.data.details, 600)
+        && isText(request.resource.data.orderNumber, 40)
+        && isText(request.resource.data.customerName, 80)
+        && isText(request.resource.data.customerPhone, 20)
+        && request.resource.data.status == 'open'
+        && request.resource.data.reply == ''
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'resolvedAt'])
+        && request.resource.data.status in ['open', 'resolved']
+        && isText(request.resource.data.reply, 600);
+      allow delete: if isOwner();
+    }
+
+    // Riders' public star rating (worked out by the shop from customer ratings).
+    match /riderStats/{uid} {
+      allow read: if signedIn();
+      allow write: if isAdmin()
+        && request.resource.data.keys().hasOnly(['average', 'count'])
+        && isNum(request.resource.data.average)
+        && request.resource.data.average >= 0 && request.resource.data.average <= 5
+        && request.resource.data.count is int;
+    }
+
     // ---- Shop operations (admin only) -----------------------------------------
 
     // Customer cylinder / deposit account.

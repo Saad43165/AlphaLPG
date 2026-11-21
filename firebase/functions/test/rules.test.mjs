@@ -382,6 +382,29 @@ describe('chat read receipts', () => {
   });
 });
 
+describe('customer reports', () => {
+  const rep = (over = {}) => ({ orderId: 'o1', orderNumber: 'AL-1', customerId: 'u1', customerName: 'Ali', customerPhone: '+923001234567', riderId: 'r1', riderName: 'Imran', about: 'rider', reason: 'Rider behaviour', details: 'Rude', status: 'open', reply: '', createdAt: serverTimestamp(), ...over });
+  it('a customer reports their own order to the shop; others cannot see it', async () => {
+    await seedOrder({ riderId: 'r1' });
+    const ref = await addDoc(collection(customer(), 'reports'), rep());
+    await assertSucceeds(getDoc(doc(customer(), ref.path)));
+    await assertSucceeds(getDoc(doc(staff('boss'), ref.path)));
+    await assertFails(getDoc(doc(staff('r1'), ref.path)));
+    await assertFails(getDoc(doc(customer('u2', '+923111111111'), ref.path)));
+    await assertFails(addDoc(collection(customer('u2', '+923111111111'), 'reports'), rep({ customerId: 'u2' })));
+    await assertFails(addDoc(collection(customer(), 'reports'), rep({ status: 'resolved' })));
+    await assertFails(addDoc(collection(customer(), 'reports'), rep({ reply: 'fake' })));
+    await assertFails(updateDoc(doc(customer(), ref.path), { status: 'resolved' }));
+    await assertSucceeds(updateDoc(doc(staff('boss'), ref.path), { status: 'resolved', reply: 'We spoke to the rider', resolvedAt: serverTimestamp() }));
+  });
+  it('rider star rating: everyone signed in reads, only the shop writes', async () => {
+    await assertSucceeds(setDoc(doc(staff('boss'), 'riderStats/r1'), { average: 4.6, count: 12 }));
+    await assertSucceeds(getDoc(doc(customer(), 'riderStats/r1')));
+    await assertFails(setDoc(doc(staff('r1'), 'riderStats/r1'), { average: 5, count: 99 }));
+    await assertFails(setDoc(doc(staff('boss'), 'riderStats/r1'), { average: 9, count: 1 }));
+  });
+});
+
 describe('assigning riders', () => {
   it('only an on-shift, active rider can be given an order', async () => {
     const to = (uid) => ({ status: 'assigned', riderId: uid, riderName: uid, riderPhone: '0300', history: ev('assigned', 'boss'), updatedAt: serverTimestamp() });

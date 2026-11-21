@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisCount: columns,
                       mainAxisSpacing: 14,
                       crossAxisSpacing: 14,
-                      mainAxisExtent: 262,
+                      mainAxisExtent: 282,
                     ),
                     itemBuilder: (_, i) => _ProductCard(products[i]),
                   ),
@@ -421,13 +421,19 @@ class _ProductCard extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(6, 10, 4, 2),
-                  child: Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                  // Two lines so long names ("10kg Composite Cylinder") show
+                  // in full instead of being cut off.
+                  child: SizedBox(
+                    height: 38,
+                    child: Text(
+                      product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        height: 1.25,
+                      ),
                     ),
                   ),
                 ),

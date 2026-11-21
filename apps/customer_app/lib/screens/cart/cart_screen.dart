@@ -137,6 +137,7 @@ class CartScreen extends StatelessWidget {
                   '${price.cylinders} cylinder${price.cylinders == 1 ? '' : 's'}',
               label: 'Checkout',
               problem: problem,
+              bulk: price.cylinders > state.settings.maxCylindersPerOrder,
               onPressed: () => context.push('/checkout'),
             ),
     );
@@ -164,7 +165,11 @@ class CheckoutBar extends StatelessWidget {
     required this.onPressed,
     this.problem,
     this.busy = false,
+    this.bulk = false,
   });
+
+  /// Too many cylinders for one order: offer the bulk-order request.
+  final bool bulk;
 
   final int total;
   final String caption;
@@ -202,6 +207,21 @@ class CheckoutBar extends StatelessWidget {
                     style: const TextStyle(
                       color: Brand.danger,
                       fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              if (bulk)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                      ),
+                      onPressed: () => context.push('/bulk-quote'),
+                      icon: const Icon(Icons.local_shipping_rounded),
+                      label: const Text('Request a bulk order instead'),
                     ),
                   ),
                 ),

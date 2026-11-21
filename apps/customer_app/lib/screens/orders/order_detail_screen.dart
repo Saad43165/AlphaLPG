@@ -16,7 +16,7 @@ import '../../widgets/live.dart';
 import '../../widgets/live_rider_map.dart';
 import '../../widgets/payment.dart';
 import 'invoice_screen.dart' show shareInvoiceImage;
-import '../../widgets/payment_request_card.dart';
+import '../../widgets/report_sheet.dart';
 import '../../utils/haptics.dart';
 
 /// Live order tracking: status header with ETA and route, step tracker,
@@ -215,8 +215,6 @@ class _TrackingView extends StatelessWidget {
                       if (payFirst) ...[
                         _PayFirstBanner(o),
                         const SizedBox(height: 14),
-                        _PaymentCard(o),
-                        const SizedBox(height: 14),
                       ],
                       if (o.status == OrderStatus.outForDelivery)
                         LiveRiderMap(order: o),
@@ -241,10 +239,8 @@ class _TrackingView extends StatelessWidget {
                       ],
                       const _Heading('Order details'),
                       _ItemsCard(o),
-                      if (!payFirst) ...[
-                        const _Heading('Payment'),
-                        _PaymentCard(o),
-                      ],
+                      const _Heading('Payment'),
+                      _PaymentCard(o),
                       const _Heading('Delivery'),
                       _DeliveryCard(o),
                       if (o.status != OrderStatus.cancelled) ...[
@@ -328,26 +324,66 @@ class _PayFirstBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sent = o.paymentRequest != null;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Brand.flame.withValues(alpha: 0.16),
+    final checking = o.receiptAt != null && o.paymentIssue.isEmpty;
+    final (String title, String text, Color color) = o.paymentIssue.isNotEmpty
+        ? ('Payment problem', o.paymentIssue, Brand.danger)
+        : checking
+        ? (
+            'Checking your payment',
+            'Alpha LPG is confirming transaction ${o.paymentReference}.',
+            Brand.blueDark,
+          )
+        : sent
+        ? (
+            'Payment details are ready',
+            'Pay ${formatRupees(o.total)} and send your receipt.',
+            Brand.flame,
+          )
+        : (
+            'Payment needed',
+            'Alpha LPG will send the ${o.paymentMethod.label} account shortly.',
+            Brand.flame,
+          );
+    return Material(
+      color: color.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.account_balance_wallet_rounded, color: Brand.flame),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              sent
-                  ? 'Payment needed: ${formatRupees(o.total)}. Pay with the details below, then add your receipt. Your order is delivered once Alpha LPG confirms it.'
-                  : 'Payment needed: ${formatRupees(o.total)}. Alpha LPG will send the ${o.paymentMethod.label} account here shortly. You can chat with them meanwhile.',
-              style: const TextStyle(fontWeight: FontWeight.w700, height: 1.35),
-            ),
+        onTap: () => context.push('/orders/${o.id}/payment'),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Icon(Icons.account_balance_wallet_rounded, color: color),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(text, style: const TextStyle(height: 1.35)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                ),
+                onPressed: () => context.push('/orders/${o.id}/payment'),
+                child: Text(sent ? 'Pay now' : 'Open'),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -712,6 +748,38 @@ class _RiderCard extends StatelessWidget {
                       : 'Loading your cylinders · Alpha LPG rider',
                   style: TextStyle(color: context.pal.muted, fontSize: 12.5),
                 ),
+                if (o.riderId != null)
+                  StreamBuilder<RiderStats?>(
+                    stream: context.read<Backend>().orders.watchRiderStats(
+                      o.riderId!,
+                    ),
+                    builder: (context, snap) {
+                      final st = snap.data;
+                      if (st == null || st.count == 0) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Color(0xFFF5A623),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${st.average.toStringAsFixed(1)} · ${st.count} rating${st.count == 1 ? '' : 's'}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -735,6 +803,23 @@ class _RiderCard extends StatelessWidget {
               onTap: () => Launch.call(o.riderPhone!),
             ),
           ],
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (_) => openReport(context, o, aboutRider: true),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'report',
+                child: Row(
+                  children: [
+                    Icon(Icons.flag_outlined, color: Brand.danger),
+                    SizedBox(width: 10),
+                    Text('Report the rider'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -1126,8 +1211,6 @@ class _PaymentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final paid = o.paymentStatus == PaymentStatus.paid;
-    final needsTransfer =
-        o.paymentMethod.isPrepaid && !paid && o.status != OrderStatus.cancelled;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1179,38 +1262,25 @@ class _PaymentCard extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ],
-          if (needsTransfer) ...[
+          if (o.paymentMethod.isPrepaid &&
+              o.status != OrderStatus.cancelled) ...[
             const SizedBox(height: 12),
-            if (o.paymentRequest != null) ...[
-              PaymentRequestCard(o.paymentRequest!),
-              const SizedBox(height: 12),
-            ],
-            if (o.paymentRequest != null) ...[
-              const SizedBox(height: 10),
-              ReceiptSection(o),
-            ] else
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: context.pal.isDark
-                      ? const Color(0xFF2A2F3A)
-                      : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.hourglass_top_rounded, size: 20),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Waiting for Alpha LPG to send you the payment details. You will get a notification here as soon as they are ready. Please do not pay before that.',
-                        style: TextStyle(height: 1.4),
-                      ),
-                    ),
-                  ],
-                ),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+              onPressed: () => context.push('/orders/${o.id}/payment'),
+              icon: Icon(
+                paid
+                    ? Icons.receipt_long_rounded
+                    : Icons.account_balance_wallet_rounded,
               ),
+              label: Text(
+                paid
+                    ? 'View payment'
+                    : o.paymentRequest == null
+                    ? 'Open payment'
+                    : 'Pay now and send receipt',
+              ),
+            ),
           ],
           const SizedBox(height: 10),
           if (o.status != OrderStatus.cancelled)
@@ -1443,63 +1513,22 @@ class _ShareRow extends StatelessWidget {
   );
 }
 
-/// "Something wrong with this order?" → WhatsApp with the order number and
-/// the problem already typed.
+/// "Something wrong with this order?" → a private report to Alpha LPG.
 class _ProblemButton extends StatelessWidget {
   const _ProblemButton(this.o);
   final LpgOrder o;
 
-  static const _reasons = [
-    ('Rider is late', Icons.schedule_rounded),
-    ('Wrong cylinder or quantity', Icons.swap_horiz_rounded),
-    ('Cylinder not delivered', Icons.report_gmailerrorred_rounded),
-    ('Payment or price problem', Icons.payments_rounded),
-    ('Rider behaviour', Icons.person_off_rounded),
-    ('Something else', Icons.chat_bubble_outline_rounded),
-  ];
-
   @override
-  Widget build(BuildContext context) => OutlinedButton.icon(
-    onPressed: () => showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheet) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'What went wrong?',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'This goes straight to Alpha LPG for order ${o.displayNumber}. You can follow up in the chat.',
-                  style: TextStyle(color: context.pal.muted),
-                ),
-                const SizedBox(height: 8),
-                for (final (label, icon) in _reasons)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(icon, color: Brand.blueDark),
-                    title: Text(label),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () {
-                      Navigator.pop(sheet);
-                      reportProblem(context, o, label);
-                    },
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    ),
-    icon: const Icon(Icons.flag_outlined),
-    label: const Text('Something wrong with this order?'),
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      OutlinedButton.icon(
+        onPressed: () => openReport(context, o),
+        icon: const Icon(Icons.flag_outlined),
+        label: const Text('Something wrong with this order?'),
+      ),
+      MyReports(o),
+    ],
   );
 }
 
@@ -1656,39 +1685,6 @@ class _ChatCard extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-/// Sends the problem to Alpha LPG inside the app (the order chat), where the
-/// shop is alerted, then opens the chat so the customer can add details.
-Future<void> reportProblem(
-  BuildContext context,
-  LpgOrder o,
-  String label,
-) async {
-  final backend = context.read<Backend>();
-  final state = context.read<AppState>();
-  final router = GoRouter.of(context);
-  try {
-    await backend.orders.sendMessage(
-      o.id,
-      uid: o.customerId,
-      role: MessageRole.customer,
-      name: state.profile?.name ?? 'Customer',
-      text: '⚠ Problem with this order: $label.',
-    );
-    if (context.mounted) {
-      showMessage(context, 'Sent to Alpha LPG. They will reply in the chat.');
-    }
-    router.push('/orders/${o.id}/chat');
-  } catch (_) {
-    if (context.mounted) {
-      showMessage(
-        context,
-        'Could not send. Check your internet and try again.',
-        error: true,
-      );
-    }
   }
 }
 

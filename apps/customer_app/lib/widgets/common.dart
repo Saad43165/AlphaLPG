@@ -167,36 +167,89 @@ class CartBar extends StatelessWidget {
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Material(
-          color: Brand.navy,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => context.push('/cart'),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              child: Row(
-                children: [
-                  const Icon(Icons.shopping_bag, color: Brand.flame),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '${cart.count} cylinder${cart.count == 1 ? '' : 's'} · ${formatRupees(total)}',
-                      style: const TextStyle(
+        child: DecoratedBox(
+          // Bright brand gradient + shadow so it never blends into the page,
+          // in light or dark mode.
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF7A1A), Color(0xFFE5331F)],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFE5331F).withValues(alpha: 0.45),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => context.push('/cart'),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 16, 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${cart.count}',
+                        style: const TextStyle(
+                          color: Color(0xFFE5331F),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
-                  ),
-                  const Text(
-                    'View cart',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            formatRupees(total),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 17,
+                            ),
+                          ),
+                          Text(
+                            '${cart.count} cylinder${cart.count == 1 ? '' : 's'} in your cart',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const Icon(Icons.chevron_right, color: Colors.white),
-                ],
+                    const Text(
+                      'View cart',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

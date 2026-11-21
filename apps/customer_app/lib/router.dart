@@ -10,6 +10,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/auth/setup_screen.dart';
 import 'screens/business/bulk_quote_screen.dart';
+import 'screens/orders/payment_screen.dart';
 import 'screens/cart/cart_screen.dart';
 import 'screens/cart/checkout_screen.dart';
 import 'screens/cart/order_placed_screen.dart';
@@ -94,6 +95,10 @@ GoRouter buildRouter(AppState state) => GoRouter(
         GoRoute(
           path: 'chat',
           builder: (_, s) => OrderChatScreen(orderId: s.pathParameters['id']!),
+        ),
+        GoRoute(
+          path: 'payment',
+          builder: (_, s) => PaymentScreen(orderId: s.pathParameters['id']!),
         ),
       ],
     ),
