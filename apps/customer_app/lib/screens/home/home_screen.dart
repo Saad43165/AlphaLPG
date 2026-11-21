@@ -9,7 +9,7 @@ import '../../state/cart.dart';
 import '../../theme/brand.dart';
 import '../../utils/launch.dart';
 import '../../widgets/address_picker.dart';
-import '../../widgets/app_drawer.dart';
+import '../../widgets/push_drawer.dart';
 import '../../widgets/common.dart';
 import '../../widgets/gas_meter_card.dart';
 import '../../widgets/live.dart';
@@ -44,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return AnnotatedRegion(
       value: Brand.lightStatusBar,
       child: Scaffold(
-        drawer: const AppDrawer(),
         bottomNavigationBar: const CartBar(),
         body: CustomScrollView(
           slivers: [
@@ -183,7 +182,7 @@ class _Header extends StatelessWidget {
                         Builder(
                           builder: (context) => IconButton(
                             tooltip: 'Menu',
-                            onPressed: () => Scaffold.of(context).openDrawer(),
+                            onPressed: () => PushDrawerState.of(context).open(),
                             icon: const Icon(
                               Icons.menu_rounded,
                               color: Colors.white,

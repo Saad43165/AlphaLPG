@@ -26,7 +26,9 @@ import 'services/backend.dart';
 import 'state/app_state.dart';
 import 'theme/brand.dart';
 import 'utils/haptics.dart';
+import 'widgets/app_drawer.dart';
 import 'widgets/live.dart';
+import 'widgets/push_drawer.dart';
 
 /// Paths that need a signed-in customer.
 const _protected = [
@@ -150,21 +152,24 @@ class _Shell extends StatelessWidget {
         ),
       ],
     );
-    return Scaffold(
-      body: shell,
-      // Transparent so the floating pill sits over the page background.
-      bottomNavigationBar: uid == null
-          ? bar(0)
-          : Live<List<LpgOrder>>(
-              cacheKey: 'nav-$uid',
-              stream: () =>
-                  context.read<Backend>().orders.watchCustomerOrders(uid),
-              builder: (context, snap) => bar(
-                (snap.data ?? const <LpgOrder>[])
-                    .where((o) => o.status.isActive)
-                    .length,
+    return PushDrawerHost(
+      drawer: const AppDrawer(),
+      child: Scaffold(
+        body: shell,
+        // Transparent so the floating pill sits over the page background.
+        bottomNavigationBar: uid == null
+            ? bar(0)
+            : Live<List<LpgOrder>>(
+                cacheKey: 'nav-$uid',
+                stream: () =>
+                    context.read<Backend>().orders.watchCustomerOrders(uid),
+                builder: (context, snap) => bar(
+                  (snap.data ?? const <LpgOrder>[])
+                      .where((o) => o.status.isActive)
+                      .length,
+                ),
               ),
-            ),
+      ),
     );
   }
 }

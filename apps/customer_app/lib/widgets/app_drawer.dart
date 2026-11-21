@@ -9,13 +9,14 @@ import '../theme/brand.dart';
 import '../utils/format.dart';
 import '../utils/launch.dart';
 import 'common.dart';
+import 'push_drawer.dart';
 
 /// Side menu: who you are, where things are, and a quick theme switch.
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   void _go(BuildContext context, String route, {bool tab = false}) {
-    Navigator.pop(context); // close the drawer
+    PushDrawerState.maybeOf(context)?.close();
     tab ? context.go(route) : context.push(route);
   }
 
@@ -41,7 +42,7 @@ class AppDrawer extends StatelessWidget {
       ),
     );
     if (ok != true || !context.mounted) return;
-    Navigator.pop(context);
+    PushDrawerState.maybeOf(context)?.close();
     await backend.auth.signOut();
     if (context.mounted) context.go('/');
   }
@@ -53,7 +54,9 @@ class AppDrawer extends StatelessWidget {
     final p = state.profile;
     final settings = state.settings;
     return Drawer(
-      width: 308,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      shape: const RoundedRectangleBorder(),
       child: SafeArea(
         top: false,
         child: Column(
@@ -101,7 +104,7 @@ class AppDrawer extends StatelessWidget {
                     () => _go(context, '/about'),
                   ),
                   _Tile(Icons.chat_rounded, 'WhatsApp us', () {
-                    Navigator.pop(context);
+                    PushDrawerState.maybeOf(context)?.close();
                     Launch.whatsapp(
                       settings.whatsapp,
                       'Assalam-o-Alaikum, I need help with Alpha LPG.',
@@ -245,7 +248,7 @@ class _Header extends StatelessWidget {
                     minimumSize: const Size(0, 44),
                   ),
                   onPressed: () {
-                    Navigator.pop(context);
+                    PushDrawerState.maybeOf(context)?.close();
                     context.push('/login?from=/');
                   },
                   child: const Text('Sign in with mobile'),
