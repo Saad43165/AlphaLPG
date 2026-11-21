@@ -1,11 +1,22 @@
-// PLACEHOLDER: replace by running, from this folder:
-//   dart pub global activate flutterfire_cli
-//   flutterfire configure --project=<your-firebase-project-id> --android-package-name=pk.alphalpg.rider
-// Until then the app shows a "Firebase is not set up" screen (it has no demo mode).
+// Firebase project: smarttasksmanager. Android only.
+// Regenerate with `flutterfire configure --project=smarttasksmanager`.
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform => throw UnsupportedError(
-    'Firebase is not configured. Run `flutterfire configure`.',
+  static FirebaseOptions get currentPlatform {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return android;
+    }
+    throw UnsupportedError('Firebase is only set up for Android.');
+  }
+
+  static const android = FirebaseOptions(
+    apiKey: 'AIzaSyBQg38DfCpOEkHZzJP5d7zAJkDDqJ6wBjA',
+    appId: '1:797362725470:android:d5630490837790c0eecacf',
+    messagingSenderId: '797362725470',
+    projectId: 'smarttasksmanager',
+    storageBucket: 'smarttasksmanager.firebasestorage.app',
   );
 }
