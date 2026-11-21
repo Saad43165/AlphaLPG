@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
-import '../utils/payment_checks.dart';
 import '../widgets/common.dart';
 import 'order_detail_screen.dart';
 
@@ -419,10 +418,7 @@ class OrderTile extends StatelessWidget {
                             },
                     ),
                     if (!paid &&
-                        paymentWarnings(
-                          o,
-                          context.watch<AdminSession>().orders,
-                        ).isNotEmpty) ...[
+                        context.watch<AdminSession>().hasPaymentWarning(o)) ...[
                       const SizedBox(width: 6),
                       const Pill(
                         Icons.warning_amber_rounded,

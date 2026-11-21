@@ -1070,6 +1070,14 @@ class _RiderPicker extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (!list.any((r) => r.isLive()))
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+                      child: Text(
+                        'No rider is on shift right now. A rider must be online in the Rider app before you can give them an order.',
+                        style: TextStyle(color: Brand.danger, height: 1.35),
+                      ),
+                    ),
                   for (final r in list)
                     ListTile(
                       leading: CircleAvatar(
@@ -1110,7 +1118,10 @@ class _RiderPicker extends StatelessWidget {
                       trailing: r.uid == current
                           ? const Icon(Icons.check_rounded)
                           : null,
-                      onTap: () => Navigator.pop(context, r),
+                      enabled: r.isLive(),
+                      onTap: r.isLive()
+                          ? () => Navigator.pop(context, r)
+                          : null,
                     ),
                 ],
               ),

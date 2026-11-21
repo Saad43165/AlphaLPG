@@ -252,6 +252,10 @@ void main() {
       await tapText(tester, 'Mark delivered');
       expect(find.text('Confirm delivery'), findsOneWidget);
       expect(find.widgetWithText(TextField, '6592'), findsOneWidget);
+      // Empties are ticked one by one (2 refills = 2 empties).
+      expect(find.text('0 of 2'), findsOneWidget);
+      await tapText(tester, 'Tick all');
+      expect(find.text('2 of 2'), findsOneWidget);
       await tapText(tester, 'Mark as delivered');
       expect(find.text('Delivered. Well done!'), findsOneWidget);
       expect(

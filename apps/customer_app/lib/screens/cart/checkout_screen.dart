@@ -158,6 +158,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         .toList();
     if (!slots.contains(_slot) && slots.isNotEmpty) _slot = slots.first;
 
+    // Everything needed before the order can be placed. The slide stays
+    // locked (with the reason on it) until all of it is done.
+    final (String? problem, String lockLabel) = items.isEmpty
+        ? ('Your cart is empty.', 'Cart is empty')
+        : state.blocked != null
+        ? (
+            'This account cannot place orders. Please call ${state.settings.phone}.',
+            'Ordering not available',
+          )
+        : address == null
+        ? ('Add your delivery location in step 1.', 'Add delivery location')
+        : (!_asap && slots.isEmpty)
+        ? (
+            'No delivery slot left on this day. Choose another day.',
+            'Choose a delivery time',
+          )
+        : state.openOrders >= maxOpenOrders
+        ? (
+            'You already have ${state.openOrders} orders on the way. Please wait for one to arrive.',
+            'Too many open orders',
+          )
+        : switch (price.problem(state.settings, status: state.ordering)) {
+            final String p => (p, 'Cannot order yet'),
+            null => (null, 'Slide to place order'),
+          };
+
     return Scaffold(
       appBar: AppBar(
         leading: const ScreenBack(),
@@ -454,7 +480,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       bottomNavigationBar: _SlideBar(
         total: price.total,
         caption: _payment.label,
-        problem: items.isEmpty ? 'Your cart is empty.' : null,
+        problem: problem,
+        label: lockLabel,
         onConfirmed: _place,
       ),
     );
@@ -753,11 +780,15 @@ class _SlideBar extends StatelessWidget {
     required this.caption,
     required this.onConfirmed,
     this.problem,
+    this.label = 'Slide to place order',
   });
 
   final int total;
   final String caption;
   final String? problem;
+
+  /// The words on the slide (the reason while it is locked).
+  final String label;
   final Future<bool> Function() onConfirmed;
 
   @override
@@ -824,7 +855,7 @@ class _SlideBar extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: SlideToConfirm(
-                      label: 'Slide to order',
+                      label: label,
                       enabled: problem == null,
                       onConfirmed: onConfirmed,
                     ),

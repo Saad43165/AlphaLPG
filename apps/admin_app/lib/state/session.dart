@@ -9,6 +9,7 @@ import 'package:alpha_ui/alpha_ui.dart' show Alerts, KeepAlive;
 
 import '../services/backend.dart';
 import '../utils/order_x.dart';
+import '../utils/payment_checks.dart';
 
 /// The owner's live view of the whole business.
 class AdminSession extends ChangeNotifier {
@@ -181,6 +182,11 @@ class AdminSession extends ChangeNotifier {
   });
 
   Future<String?> assign(LpgOrder o, RiderProfile r) => _run(() async {
+    if (!r.isLive()) {
+      throw StateError(
+        '${r.name} is offline. Only riders on shift can get orders.',
+      );
+    }
     await backend.orders.assignRider(
       o.id,
       uid!,
@@ -403,10 +409,16 @@ class AdminSession extends ChangeNotifier {
   /// Takes an order back from its rider so it can be given to someone else.
   Future<String?> unassign(LpgOrder o) => _run(() async {
     if (o.status != OrderStatus.assigned) {
-      throw StateError('Only an order the rider has not started can be taken back.');
+      throw StateError(
+        'Only an order the rider has not started can be taken back.',
+      );
     }
     await backend.orders.unassignRider(o.id, uid!);
-    _audit('Took order back from rider', target: o.displayNumber, detail: o.riderName ?? '');
+    _audit(
+      'Took order back from rider',
+      target: o.displayNumber,
+      detail: o.riderName ?? '',
+    );
   });
 
   Future<String?> setRiderActive(RiderProfile r, bool active) =>
@@ -427,6 +439,7 @@ class AdminSession extends ChangeNotifier {
   });
 
   String _friendly(Object e) {
+    if (e is StateError) return e.message;
     final s = '$e';
     if (s.contains('permission-denied')) {
       return 'Not allowed. Check that this account is listed in the admins collection and the rules are published.';
@@ -525,6 +538,8 @@ class AdminSession extends ChangeNotifier {
     ];
   }
 
+  int _lastWaiting = 0;
+
   void _checkWaiting() {
     final late = waitingForRider;
     for (final o in late) {
@@ -538,7 +553,28 @@ class AdminSession extends ChangeNotifier {
         );
       }
     }
-    notifyListeners();
+    // Repaint only when the list of waiting orders changed.
+    if (late.length != _lastWaiting) {
+      _lastWaiting = late.length;
+      notifyListeners();
+    }
+  }
+
+  // Payment warnings are worked out once per orders update, not per tile.
+  List<LpgOrder>? _warnFor;
+  Set<String> _warned = const {};
+
+  /// Orders that have something worth checking before marking them paid.
+  bool hasPaymentWarning(LpgOrder o) {
+    if (!identical(_warnFor, orders)) {
+      _warnFor = orders;
+      _warned = {
+        for (final x in orders)
+          if (x.awaitingPaymentCheck && paymentWarnings(x, orders).isNotEmpty)
+            x.id,
+      };
+    }
+    return _warned.contains(o.id);
   }
 
   void _startData() {

@@ -214,7 +214,13 @@ service cloud.firestore {
             // Once the rider is on the way the order stays with them: it can
             // not be taken back or given to someone else.
             && (resource.data.status != 'outForDelivery'
-                || request.resource.data.get('riderId', null) == resource.data.get('riderId', null)))
+                || request.resource.data.get('riderId', null) == resource.data.get('riderId', null))
+            // A new rider can only be given an order while they are on shift.
+            && (request.resource.data.get('riderId', null) == null
+                || request.resource.data.get('riderId', null) == resource.data.get('riderId', null)
+                || (exists(/databases/$(database)/documents/riders/$(request.resource.data.riderId))
+                    && get(/databases/$(database)/documents/riders/$(request.resource.data.riderId)).data.get('online', false) == true
+                    && get(/databases/$(database)/documents/riders/$(request.resource.data.riderId)).data.get('active', true) == true)))
         // Customer cancels while the order is still "placed".
         || (signedIn()
             && resource.data.customerId == request.auth.uid

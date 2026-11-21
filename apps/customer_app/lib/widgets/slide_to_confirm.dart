@@ -185,6 +185,14 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  if (!enabled) ...[
+                                    Icon(
+                                      Icons.lock_outline_rounded,
+                                      size: 18,
+                                      color: pal.muted,
+                                    ),
+                                    const SizedBox(width: 6),
+                                  ],
                                   Text(
                                     widget.label,
                                     maxLines: 1,
@@ -198,23 +206,24 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                                   ),
                                   const SizedBox(width: 4),
                                   // Three chevrons light up in turn.
-                                  for (var i = 0; i < 3; i++)
-                                    Icon(
-                                      Icons.chevron_right_rounded,
-                                      size: 20,
-                                      color:
-                                          (enabled ? Colors.white : pal.muted)
-                                              .withValues(
-                                                alpha: enabled
-                                                    ? 0.3 +
-                                                          0.7 *
-                                                              _wave(
-                                                                _hint.value,
-                                                                i,
-                                                              )
-                                                    : 0.5,
-                                              ),
-                                    ),
+                                  if (enabled)
+                                    for (var i = 0; i < 3; i++)
+                                      Icon(
+                                        Icons.chevron_right_rounded,
+                                        size: 20,
+                                        color:
+                                            (enabled ? Colors.white : pal.muted)
+                                                .withValues(
+                                                  alpha: enabled
+                                                      ? 0.3 +
+                                                            0.7 *
+                                                                _wave(
+                                                                  _hint.value,
+                                                                  i,
+                                                                )
+                                                      : 0.5,
+                                                ),
+                                      ),
                                 ],
                               ),
                             ),

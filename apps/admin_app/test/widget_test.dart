@@ -83,6 +83,7 @@ void main() {
           online: true,
         ),
       );
+      await b.riders.setOnline('r1', true);
       await b.orders.place(_order());
     });
 

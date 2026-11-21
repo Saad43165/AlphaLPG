@@ -382,6 +382,17 @@ describe('chat read receipts', () => {
   });
 });
 
+describe('assigning riders', () => {
+  it('only an on-shift, active rider can be given an order', async () => {
+    const to = (uid) => ({ status: 'assigned', riderId: uid, riderName: uid, riderPhone: '0300', history: ev('assigned', 'boss'), updatedAt: serverTimestamp() });
+    await seedOrder({ status: 'confirmed' });
+    await assertFails(updateDoc(doc(staff('boss'), 'orders/o1'), to('off')));
+    await assertFails(updateDoc(doc(staff('boss'), 'orders/o1'), to('blocked')));
+    await assertFails(updateDoc(doc(staff('boss'), 'orders/o1'), to('nobody')));
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'orders/o1'), to('r1')));
+  });
+});
+
 describe('taking an order back', () => {
   it('the shop can take back an assigned order but not one that is on the way', async () => {
     const back = { status: 'confirmed', riderId: null, riderName: null, riderPhone: null, history: ev('confirmed', 'boss'), updatedAt: serverTimestamp() };
