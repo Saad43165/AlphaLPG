@@ -1,6 +1,7 @@
 import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
 
 import 'screens/account/account_screen.dart';
 import 'screens/location/location_picker_screen.dart';
@@ -21,7 +22,11 @@ import 'screens/onboarding_screen.dart';
 import 'screens/orders/invoice_screen.dart';
 import 'screens/orders/order_detail_screen.dart';
 import 'screens/orders/orders_screen.dart';
+import 'services/backend.dart';
 import 'state/app_state.dart';
+import 'theme/brand.dart';
+import 'utils/haptics.dart';
+import 'widgets/live.dart';
 
 /// Paths that need a signed-in customer.
 const _protected = [
@@ -115,30 +120,197 @@ class _Shell extends StatelessWidget {
   const _Shell(this.shell);
   final StatefulNavigationShell shell;
 
+  void _go(int i) {
+    Haptics.select();
+    shell.goBranch(i, initialLocation: i == shell.currentIndex);
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: shell,
-    bottomNavigationBar: NavigationBar(
-      selectedIndex: shell.currentIndex,
-      onDestinationSelected: (i) =>
-          shell.goBranch(i, initialLocation: i == shell.currentIndex),
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.local_fire_department_outlined),
-          selectedIcon: Icon(Icons.local_fire_department),
-          label: 'Order',
+  Widget build(BuildContext context) {
+    final uid = context.select<AppState, String?>((s) => s.uid);
+    Widget bar(int active) => _FloatingNav(
+      index: shell.currentIndex,
+      onTap: _go,
+      items: [
+        const _NavItem(
+          'Order',
+          Icons.local_fire_department_outlined,
+          Icons.local_fire_department_rounded,
         ),
-        NavigationDestination(
-          icon: Icon(Icons.receipt_long_outlined),
-          selectedIcon: Icon(Icons.receipt_long),
-          label: 'My orders',
+        _NavItem(
+          'My orders',
+          Icons.receipt_long_outlined,
+          Icons.receipt_long_rounded,
+          badge: active,
         ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
-          label: 'Account',
+        const _NavItem(
+          'Account',
+          Icons.person_outline_rounded,
+          Icons.person_rounded,
         ),
       ],
-    ),
-  );
+    );
+    return Scaffold(
+      body: shell,
+      // Transparent so the floating pill sits over the page background.
+      bottomNavigationBar: uid == null
+          ? bar(0)
+          : Live<List<LpgOrder>>(
+              cacheKey: 'nav-$uid',
+              stream: () =>
+                  context.read<Backend>().orders.watchCustomerOrders(uid),
+              builder: (context, snap) => bar(
+                (snap.data ?? const <LpgOrder>[])
+                    .where((o) => o.status.isActive)
+                    .length,
+              ),
+            ),
+    );
+  }
+}
+
+class _NavItem {
+  const _NavItem(this.label, this.icon, this.selectedIcon, {this.badge = 0});
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
+  final int badge;
+}
+
+/// A rounded bar with a sliding highlight under the current tab and a count
+/// of active orders on "My orders".
+class _FloatingNav extends StatelessWidget {
+  const _FloatingNav({
+    required this.index,
+    required this.onTap,
+    required this.items,
+  });
+  final int index;
+  final ValueChanged<int> onTap;
+  final List<_NavItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Container(
+      color: pal.surface,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+          child: Container(
+            height: 68,
+            decoration: BoxDecoration(
+              color: pal.card,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: pal.line),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: pal.isDark ? 0.4 : 0.1),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(6),
+            child: LayoutBuilder(
+              builder: (context, box) {
+                final w = box.maxWidth / items.length;
+                return Stack(
+                  children: [
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeOutCubic,
+                      left: w * index,
+                      top: 0,
+                      bottom: 0,
+                      width: w,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Brand.blueDark, Brand.blue],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Brand.blue.withValues(alpha: 0.4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        for (var i = 0; i < items.length; i++)
+                          Expanded(
+                            child: _NavButton(
+                              item: items[i],
+                              selected: i == index,
+                              onTap: () => onTap(i),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  const _NavButton({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+  final _NavItem item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    final color = selected ? Colors.white : pal.muted;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: item.label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Badge(
+              isLabelVisible: item.badge > 0,
+              label: Text('${item.badge}'),
+              backgroundColor: Brand.cylinderRed,
+              child: Icon(
+                selected ? item.selectedIcon : item.icon,
+                size: 24,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              item.label,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

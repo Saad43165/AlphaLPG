@@ -26,26 +26,52 @@ class SlideToConfirm extends StatefulWidget {
 }
 
 class _SlideToConfirmState extends State<SlideToConfirm>
-    with SingleTickerProviderStateMixin {
-  static const _height = 58.0;
-  static const _thumb = 50.0;
+    with TickerProviderStateMixin {
+  static const _height = 64.0;
+  static const _thumb = 54.0;
 
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 260),
   );
+
+  /// Drives the travelling chevrons (off when animations are disabled).
+  late final AnimationController _hint = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1500),
+  );
   bool _busy = false;
   bool _crossedHalf = false;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final animate =
+        !MediaQuery.disableAnimationsOf(context) && widget.enabled && !_busy;
+    if (animate && !_hint.isAnimating) {
+      _hint.repeat();
+    } else if (!animate && _hint.isAnimating) {
+      _hint.stop();
+    }
+  }
+
+  @override
+  void didUpdateWidget(SlideToConfirm old) {
+    super.didUpdateWidget(old);
+    didChangeDependencies();
+  }
+
+  @override
   void dispose() {
     _c.dispose();
+    _hint.dispose();
     super.dispose();
   }
 
   Future<void> _confirm() async {
     if (_busy || !widget.enabled) return;
     setState(() => _busy = true);
+    _hint.stop();
     await _c.animateTo(1, curve: Curves.easeOut);
     Haptics.heavy();
     var ok = false;
@@ -61,14 +87,21 @@ class _SlideToConfirmState extends State<SlideToConfirm>
         curve: Curves.easeOutCubic,
         duration: const Duration(milliseconds: 380),
       );
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+        didChangeDependencies();
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final enabled = widget.enabled;
-    final color = enabled ? widget.color : context.pal.line;
+    final pal = context.pal;
+    final base = enabled ? widget.color : pal.line;
+    final deep = enabled
+        ? Color.lerp(widget.color, Brand.navy, 0.45)!
+        : pal.line;
     return Semantics(
       button: true,
       enabled: enabled,
@@ -76,7 +109,7 @@ class _SlideToConfirmState extends State<SlideToConfirm>
       onTap: enabled ? _confirm : null,
       child: LayoutBuilder(
         builder: (context, box) {
-          final travel = box.maxWidth - _thumb - 8;
+          final travel = box.maxWidth - _thumb - 10;
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onHorizontalDragUpdate: !enabled || _busy
@@ -103,22 +136,29 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                     }
                   },
             child: AnimatedBuilder(
-              animation: _c,
+              animation: Listenable.merge([_c, _hint]),
               builder: (context, _) {
                 final p = _c.value;
-                final x = 4 + travel * p;
+                final x = 5 + travel * p;
+                final done = _busy && p >= 1;
                 return Container(
                   height: _height,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: enabled ? 0.14 : 0.5),
+                    gradient: LinearGradient(colors: [deep, base]),
                     borderRadius: BorderRadius.circular(_height / 2),
-                    border: Border.all(
-                      color: color.withValues(alpha: enabled ? 0.45 : 0.8),
-                    ),
+                    boxShadow: enabled
+                        ? [
+                            BoxShadow(
+                              color: base.withValues(alpha: 0.35),
+                              blurRadius: 14,
+                              offset: const Offset(0, 6),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Stack(
                     children: [
-                      // Filled trail behind the thumb.
+                      // Light trail behind the thumb.
                       Positioned(
                         left: 0,
                         top: 0,
@@ -126,7 +166,7 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                         width: x + _thumb,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.9),
+                            color: Colors.white.withValues(alpha: 0.22),
                             borderRadius: BorderRadius.circular(_height / 2),
                           ),
                         ),
@@ -134,13 +174,13 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.only(
-                            left: _thumb,
-                            right: 12,
+                            left: _thumb + 6,
+                            right: 14,
                           ),
                           child: Opacity(
-                            opacity: (1 - p * 1.6).clamp(0.0, 1.0),
+                            opacity: (1 - p * 1.8).clamp(0.0, 1.0),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Flexible(
                                   child: Text(
@@ -149,18 +189,36 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w800,
-                                      color: enabled
-                                          ? context.pal.ink
-                                          : context.pal.muted,
+                                      fontSize: 16,
+                                      letterSpacing: 0.2,
+                                      color: enabled ? Colors.white : pal.muted,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.keyboard_double_arrow_right_rounded,
-                                  size: 20,
-                                  color: color,
-                                ),
+                                const SizedBox(width: 6),
+                                // Three chevrons light up in turn.
+                                for (var i = 0; i < 3; i++)
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      left: i == 0 ? 0 : 0,
+                                    ),
+                                    child: Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 20,
+                                      color:
+                                          (enabled ? Colors.white : pal.muted)
+                                              .withValues(
+                                                alpha: enabled
+                                                    ? 0.3 +
+                                                          0.7 *
+                                                              _wave(
+                                                                _hint.value,
+                                                                i,
+                                                              )
+                                                    : 0.5,
+                                              ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
@@ -168,7 +226,7 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                       ),
                       Positioned(
                         left: x,
-                        top: 4,
+                        top: 5,
                         child: Container(
                           width: _thumb,
                           height: _thumb,
@@ -177,25 +235,28 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.22),
-                                blurRadius: 8,
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 10,
                                 offset: const Offset(0, 3),
                               ),
                             ],
                           ),
-                          child: _busy && p >= 1
+                          child: done
                               ? Padding(
-                                  padding: const EdgeInsets.all(14),
+                                  padding: const EdgeInsets.all(15),
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
-                                    color: color,
+                                    color: base,
                                   ),
                                 )
                               : Icon(
                                   p > 0.9
                                       ? Icons.check_rounded
                                       : Icons.local_fire_department_rounded,
-                                  color: color,
+                                  size: 28,
+                                  color: enabled
+                                      ? Brand.cylinderRed
+                                      : pal.muted,
                                 ),
                         ),
                       ),
@@ -208,5 +269,12 @@ class _SlideToConfirmState extends State<SlideToConfirm>
         },
       ),
     );
+  }
+
+  /// 0..1 brightness of chevron [i] as the hint animation runs (a moving glow).
+  static double _wave(double t, int i) {
+    final d = ((t * 3) - i) % 3;
+    final v = d < 0 ? d + 3 : d;
+    return v < 1 ? 1 - v : 0;
   }
 }

@@ -14,9 +14,16 @@ extension PaymentMethodUi on PaymentMethod {
 
   Color get color => switch (this) {
     PaymentMethod.cashOnDelivery => Brand.success,
-    PaymentMethod.jazzCash => const Color(0xFFD71921),
-    PaymentMethod.easyPaisa => const Color(0xFF00A651),
+    // Exact brand colours, sampled from the official logos.
+    PaymentMethod.jazzCash => const Color(0xFFEE2328),
+    PaymentMethod.easyPaisa => const Color(0xFF00C252),
     PaymentMethod.bankTransfer => const Color(0xFF14427B),
+  };
+
+  /// Second brand colour used for highlights (JazzCash's yellow).
+  Color get accent => switch (this) {
+    PaymentMethod.jazzCash => const Color(0xFFFFC709),
+    _ => Colors.white,
   };
 
   IconData get icon => switch (this) {
@@ -95,12 +102,12 @@ class _Badge extends StatelessWidget {
       PaymentMethod.cashOnDelivery => ('CASH', Brand.success, Colors.white),
       PaymentMethod.jazzCash => (
         'Jazz\nCash',
-        const Color(0xFFD71921),
-        const Color(0xFFFFD200),
+        const Color(0xFFEE2328),
+        const Color(0xFFFFC709),
       ),
       PaymentMethod.easyPaisa => (
         'easy\npaisa',
-        const Color(0xFF00A651),
+        const Color(0xFF00C252),
         Colors.white,
       ),
       PaymentMethod.bankTransfer => (
@@ -255,72 +262,108 @@ class _MethodTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => AnimatedContainer(
-    duration: const Duration(milliseconds: 200),
-    decoration: BoxDecoration(
-      color: selected ? method.color.withValues(alpha: 0.06) : context.pal.card,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(
-        color: selected ? method.color : context.pal.line,
-        width: selected ? 1.8 : 1,
-      ),
-    ),
-    child: Material(
-      type: MaterialType.transparency,
-      child: InkWell(
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    final brand = method.color;
+    // Selected: the tile takes the provider's exact colours, like their app.
+    final fg = selected ? Colors.white : pal.ink;
+    final sub = selected ? Colors.white.withValues(alpha: 0.88) : pal.muted;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      decoration: BoxDecoration(
+        color: selected ? brand : pal.card,
         borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: [
-              PaymentLogo(method),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            method.label,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+        border: Border.all(
+          color: selected ? brand : pal.line,
+          width: selected ? 1.5 : 1,
+        ),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: brand.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                PaymentLogo(method),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              method.label,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: fg,
+                              ),
+                            ),
                           ),
-                        ),
-                        if (recommended) ...[
-                          const SizedBox(width: 6),
-                          Tag(
-                            'Popular',
-                            color: context.pal.tint,
-                            dark: !context.pal.isDark,
-                          ),
+                          if (recommended) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? Colors.white.withValues(alpha: 0.25)
+                                    : brand.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'Popular',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: selected ? Colors.white : brand,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      method.tagline,
-                      style: TextStyle(color: context.pal.muted, fontSize: 12),
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        method.tagline,
+                        style: TextStyle(color: sub, fontSize: 12, height: 1.3),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                child: Icon(
-                  selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                  key: ValueKey(selected),
-                  color: selected ? method.color : context.pal.line,
+                const SizedBox(width: 6),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    selected
+                        ? Icons.check_circle_rounded
+                        : Icons.circle_outlined,
+                    key: ValueKey(selected),
+                    color: selected ? method.accent : pal.line,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// Numbered "how to pay" guide with copyable details and app shortcuts.

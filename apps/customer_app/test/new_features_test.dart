@@ -128,6 +128,13 @@ void main() {
   testWidgets(
     'slide to confirm only fires after a full slide, and resets on failure',
     (tester) async {
+      // The slider's hint chevrons loop forever; they stop when the system
+      // asks for reduced motion, which also lets the test settle.
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
       var calls = 0;
       var ok = false;
       await tester.pumpWidget(
