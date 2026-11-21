@@ -573,7 +573,7 @@ class _StepTracker extends StatelessWidget {
   static const _short = {
     OrderStatus.placed: 'Placed',
     OrderStatus.confirmed: 'Confirmed',
-    OrderStatus.assigned: 'Rider',
+    OrderStatus.assigned: 'Rider ready',
     OrderStatus.outForDelivery: 'On the way',
     OrderStatus.delivered: 'Delivered',
   };
@@ -592,68 +592,75 @@ class _StepTracker extends StatelessWidget {
             Expanded(
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: i == 0
-                            ? const SizedBox()
-                            : Container(
-                                height: 3,
-                                color: i <= current
-                                    ? Brand.blueDark
-                                    : context.pal.line,
-                              ),
-                      ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 400),
-                        width: i == current ? 42 : 34,
-                        height: i == current ? 42 : 34,
-                        decoration: BoxDecoration(
-                          color: i < current
-                              ? Brand.blueDark
-                              : (i == current ? Brand.blueDark : Colors.white),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: i <= current
+                  SizedBox(
+                    height: 46,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: i == 0
+                              ? const SizedBox()
+                              : Container(
+                                  height: 3,
+                                  color: i <= current
+                                      ? Brand.blueDark
+                                      : context.pal.line,
+                                ),
+                        ),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 400),
+                          width: i == current ? 42 : 34,
+                          height: i == current ? 42 : 34,
+                          decoration: BoxDecoration(
+                            color: i < current
                                 ? Brand.blueDark
-                                : context.pal.line,
-                            width: 2,
+                                : (i == current
+                                      ? Brand.blueDark
+                                      : Colors.white),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: i <= current
+                                  ? Brand.blueDark
+                                  : context.pal.line,
+                              width: 2,
+                            ),
+                            boxShadow: i == current
+                                ? [
+                                    BoxShadow(
+                                      color: Brand.blue.withValues(alpha: 0.45),
+                                      blurRadius: 14,
+                                    ),
+                                  ]
+                                : null,
                           ),
-                          boxShadow: i == current
-                              ? [
-                                  BoxShadow(
-                                    color: Brand.blue.withValues(alpha: 0.45),
-                                    blurRadius: 14,
-                                  ),
-                                ]
-                              : null,
+                          child: Icon(
+                            i < current
+                                ? Icons.check_rounded
+                                : _icons[steps[i]],
+                            size: i == current ? 22 : 18,
+                            color: i <= current
+                                ? Colors.white
+                                : context.pal.muted,
+                          ),
                         ),
-                        child: Icon(
-                          i < current ? Icons.check_rounded : _icons[steps[i]],
-                          size: i == current ? 22 : 18,
-                          color: i <= current
-                              ? Colors.white
-                              : context.pal.muted,
+                        Expanded(
+                          child: i == steps.length - 1
+                              ? const SizedBox()
+                              : Container(
+                                  height: 3,
+                                  color: i < current
+                                      ? Brand.blueDark
+                                      : context.pal.line,
+                                ),
                         ),
-                      ),
-                      Expanded(
-                        child: i == steps.length - 1
-                            ? const SizedBox()
-                            : Container(
-                                height: 3,
-                                color: i < current
-                                    ? Brand.blueDark
-                                    : context.pal.line,
-                              ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     _short[steps[i]]!,
                     textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    softWrap: true,
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: i == current
