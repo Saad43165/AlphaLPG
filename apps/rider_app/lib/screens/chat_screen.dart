@@ -44,6 +44,7 @@ class _JobChatScreenState extends State<JobChatScreen> {
               text: m.text,
               name: m.role == MessageRole.admin ? 'Alpha LPG' : m.name,
               mine: m.role == MessageRole.rider,
+              badge: m.role.badge,
               at: m.createdAt,
               seen:
                   m.role == MessageRole.rider &&

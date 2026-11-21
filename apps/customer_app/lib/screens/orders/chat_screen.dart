@@ -55,6 +55,7 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
                       ? '${m.name} (rider)'
                       : (m.name.isEmpty ? m.role.fallbackName : m.name),
                   mine: m.role == MessageRole.customer,
+                  badge: m.role.badge,
                   at: m.createdAt,
                   seen:
                       m.role == MessageRole.customer &&

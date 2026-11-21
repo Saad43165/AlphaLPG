@@ -106,6 +106,7 @@ abstract interface class OrderRepository {
     String riderId, {
     required int cashCollected,
     required int emptiesCollected,
+    bool markPaid = true,
   });
 
   /// A rider's finished and cancelled orders, newest first.
@@ -243,7 +244,10 @@ class _FirestoreOrders implements OrderRepository {
   @override
   Future<void> sendPaymentRequest(String orderId, PaymentRequest r) =>
       _orders.doc(orderId).update({
-        'paymentRequest': {...r.toMap(), 'sentAt': FieldValue.serverTimestamp()},
+        'paymentRequest': {
+          ...r.toMap(),
+          'sentAt': FieldValue.serverTimestamp(),
+        },
         'paymentIssue': '',
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -283,9 +287,7 @@ class _FirestoreOrders implements OrderRepository {
       .orderBy('createdAt')
       .snapshots()
       .map(
-        (s) => [
-          for (final d in s.docs) PaymentReceipt.fromMap(d.id, d.data()),
-        ],
+        (s) => [for (final d in s.docs) PaymentReceipt.fromMap(d.id, d.data())],
       );
 
   @override
@@ -410,6 +412,7 @@ class _FirestoreOrders implements OrderRepository {
     String riderId, {
     required int cashCollected,
     required int emptiesCollected,
+    bool markPaid = true,
   }) => _setStatus(
     orderId,
     OrderStatus.delivered,
@@ -417,7 +420,8 @@ class _FirestoreOrders implements OrderRepository {
     extra: {
       'cashCollected': cashCollected,
       'emptiesCollected': emptiesCollected,
-      if (cashCollected > 0) 'paymentStatus': PaymentStatus.paid.name,
+      if (cashCollected > 0 && markPaid)
+        'paymentStatus': PaymentStatus.paid.name,
     },
   );
 
@@ -611,12 +615,11 @@ class _MemoryOrders implements OrderRepository {
       );
 
   @override
-  Future<void> setPaymentIssue(String orderId, String issue) async =>
-      _s.update(
-        _path,
-        orderId,
-        (d) => {...d, 'paymentIssue': issue.trim(), 'updatedAt': DateTime.now()},
-      );
+  Future<void> setPaymentIssue(String orderId, String issue) async => _s.update(
+    _path,
+    orderId,
+    (d) => {...d, 'paymentIssue': issue.trim(), 'updatedAt': DateTime.now()},
+  );
 
   @override
   Future<void> addReceipt(
@@ -644,17 +647,19 @@ class _MemoryOrders implements OrderRepository {
   }
 
   @override
-  Stream<List<PaymentReceipt>> watchReceipts(String orderId) =>
-      _s.watch(FirestorePaths.receipts(orderId), (docs) {
-        final list = [
-          for (final e in docs.entries) PaymentReceipt.fromMap(e.key, e.value),
-        ]..sort(
-            (a, b) => (a.createdAt ?? DateTime(0)).compareTo(
-              b.createdAt ?? DateTime(0),
-            ),
-          );
-        return list;
-      });
+  Stream<List<PaymentReceipt>> watchReceipts(String orderId) => _s.watch(
+    FirestorePaths.receipts(orderId),
+    (docs) {
+      final list =
+          [for (final e in docs.entries) PaymentReceipt.fromMap(e.key, e.value)]
+            ..sort(
+              (a, b) => (a.createdAt ?? DateTime(0)).compareTo(
+                b.createdAt ?? DateTime(0),
+              ),
+            );
+      return list;
+    },
+  );
 
   @override
   Future<void> markPaid(String orderId, String by) async => _s.update(
@@ -770,6 +775,7 @@ class _MemoryOrders implements OrderRepository {
     String riderId, {
     required int cashCollected,
     required int emptiesCollected,
+    bool markPaid = true,
   }) async => _setStatus(
     orderId,
     OrderStatus.delivered,
@@ -777,7 +783,8 @@ class _MemoryOrders implements OrderRepository {
     extra: {
       'cashCollected': cashCollected,
       'emptiesCollected': emptiesCollected,
-      if (cashCollected > 0) 'paymentStatus': PaymentStatus.paid.name,
+      if (cashCollected > 0 && markPaid)
+        'paymentStatus': PaymentStatus.paid.name,
     },
   );
 

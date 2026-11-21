@@ -9,6 +9,13 @@ enum MessageRole {
   static MessageRole parse(String? v) =>
       values.firstWhere((e) => e.name == v, orElse: () => admin);
 
+  /// Small label shown on each bubble so nobody is mistaken for someone else.
+  String get badge => switch (this) {
+    customer => 'CUSTOMER',
+    rider => 'RIDER',
+    admin => 'SHOP',
+  };
+
   /// "Alpha LPG" for the shop, otherwise the sender's own name.
   String get fallbackName => switch (this) {
     customer => 'Customer',

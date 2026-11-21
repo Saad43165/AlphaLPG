@@ -50,6 +50,7 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
                 MessageRole.admin => 'Alpha LPG',
               },
               mine: m.role == MessageRole.admin,
+              badge: m.role.badge,
               at: m.createdAt,
               seen:
                   m.role == MessageRole.admin &&

@@ -412,6 +412,9 @@ class RiderSession extends ChangeNotifier {
     }
   }
 
+  /// Plain-words reason the last [complete] failed, if known.
+  String? completeError;
+
   Future<bool> complete(
     LpgOrder order, {
     required int cash,
@@ -425,10 +428,19 @@ class RiderSession extends ChangeNotifier {
         id,
         cashCollected: cash,
         emptiesCollected: empties,
+        // Only cash-on-delivery money settles the order by itself; for a
+        // wallet or bank order the shop confirms the transfer.
+        markPaid:
+            order.paymentMethod == PaymentMethod.cashOnDelivery &&
+            order.paymentStatus != PaymentStatus.paid,
       );
       if (tracker.orderId == order.id) await tracker.stop();
+      completeError = null;
       return true;
-    } catch (_) {
+    } catch (e) {
+      completeError = '$e'.contains('permission-denied')
+          ? 'The shop has not published the latest database rules yet, so deliveries cannot be saved. Ask Alpha LPG to publish them.'
+          : null;
       return false;
     }
   }

@@ -10,7 +10,11 @@ class ChatMsg {
     required this.mine,
     this.at,
     this.seen = false,
+    this.badge = '',
   });
+
+  /// Who sent it, as a small label: "SHOP", "RIDER" or "CUSTOMER".
+  final String badge;
   final String text;
   final String name;
   final bool mine;
@@ -214,14 +218,45 @@ class _ChatPageState extends State<ChatPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (!m.mine)
-                              Text(
-                                m.name,
-                                style: const TextStyle(
-                                  color: Brand.blueDark,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 12,
-                                ),
+                            if (!m.mine || m.badge.isNotEmpty)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (!m.mine)
+                                    Flexible(
+                                      child: Text(
+                                        m.name,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Brand.blueDark,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  if (m.badge.isNotEmpty) ...[
+                                    if (!m.mine) const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 1,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _badgeColor(m.badge),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        m.badge,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.6,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             Text(
                               m.text,
@@ -330,3 +365,9 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 }
+
+Color _badgeColor(String badge) => switch (badge) {
+  'RIDER' => const Color(0xFF1E8E4E),
+  'CUSTOMER' => const Color(0xFFE8710A),
+  _ => const Color(0xFF14427B),
+};

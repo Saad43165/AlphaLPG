@@ -438,6 +438,33 @@ void _suite(Repos Function() make) {
     expect((await r.orders.watchReceipts(id).first).length, 2);
   });
 
+  test('delivery with money on a wallet order does not mark it paid', () async {
+    final id = await r.orders.place(
+      LpgOrder(
+        customerId: 'u1',
+        customerName: 'Ali',
+        customerPhone: '+923001234567',
+        items: sampleOrder('u1').items,
+        subtotal: 100,
+        deliveryFee: 0,
+        total: 100,
+        paymentMethod: PaymentMethod.easyPaisa,
+        address: const Address(label: 'Home', line1: '1', area: 'DHA'),
+      ),
+    );
+    await r.orders.completeDelivery(
+      id,
+      'r1',
+      cashCollected: 100,
+      emptiesCollected: 1,
+      markPaid: false,
+    );
+    final o = (await r.orders.watchOrder(id).first)!;
+    expect(o.status, OrderStatus.delivered);
+    expect(o.cashCollected, 100);
+    expect(o.paymentStatus, isNot(PaymentStatus.paid));
+  });
+
   test('riders: a cancelled order cannot be accepted', () async {
     final id = await r.orders.place(sampleOrder('u1'));
     await r.orders.updateStatus(id, OrderStatus.cancelled, 'u1');

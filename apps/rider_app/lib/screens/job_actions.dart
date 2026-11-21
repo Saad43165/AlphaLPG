@@ -101,7 +101,8 @@ Future<bool> completeDeliveryFlow(
   } else {
     showMessage(
       context,
-      'Could not save. Check your internet and try again.',
+      session.completeError ??
+          'Could not save. Check your internet and try again.',
       error: true,
     );
   }
