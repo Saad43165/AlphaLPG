@@ -205,7 +205,7 @@ class _TypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: selected ? Brand.blue.withValues(alpha: 0.1) : Colors.white,
+    color: selected ? Brand.blue.withValues(alpha: 0.1) : context.pal.card,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(14),
       side: BorderSide(

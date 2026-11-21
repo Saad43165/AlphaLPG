@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../theme/brand.dart';
 import '../utils/launch.dart';
 import 'common.dart';
+import '../utils/haptics.dart';
 
 extension PaymentMethodUi on PaymentMethod {
   /// Official logo file. Drop the provider's logo at this path to replace
@@ -68,12 +69,13 @@ class PaymentLogo extends StatelessWidget {
     width: width,
     height: height,
     decoration: BoxDecoration(
+      // Provider logos are designed for white backgrounds in both themes.
       color: Colors.white,
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: Brand.line),
+      border: Border.all(color: context.pal.line),
     ),
     clipBehavior: Clip.antiAlias,
-    padding: const EdgeInsets.all(4),
+    padding: const EdgeInsets.all(5),
     child: Image.asset(
       method.logoAsset,
       fit: BoxFit.contain,
@@ -180,7 +182,7 @@ class PaymentMethodPicker extends StatelessWidget {
           selected: m == value,
           recommended: m == PaymentMethod.cashOnDelivery,
           onTap: () {
-            HapticFeedback.selectionClick();
+            Haptics.select();
             onChanged(m);
           },
         ),
@@ -256,10 +258,10 @@ class _MethodTile extends StatelessWidget {
   Widget build(BuildContext context) => AnimatedContainer(
     duration: const Duration(milliseconds: 200),
     decoration: BoxDecoration(
-      color: selected ? method.color.withValues(alpha: 0.06) : Colors.white,
+      color: selected ? method.color.withValues(alpha: 0.06) : context.pal.card,
       borderRadius: BorderRadius.circular(16),
       border: Border.all(
-        color: selected ? method.color : Brand.line,
+        color: selected ? method.color : context.pal.line,
         width: selected ? 1.8 : 1,
       ),
     ),
@@ -288,14 +290,14 @@ class _MethodTile extends StatelessWidget {
                         ),
                         if (recommended) ...[
                           const SizedBox(width: 6),
-                          const Tag('Popular', color: Brand.blueTint),
+                          Tag('Popular', color: context.pal.tint),
                         ],
                       ],
                     ),
                     const SizedBox(height: 2),
                     Text(
                       method.tagline,
-                      style: const TextStyle(color: Brand.muted, fontSize: 12),
+                      style: TextStyle(color: context.pal.muted, fontSize: 12),
                     ),
                   ],
                 ),
@@ -306,7 +308,7 @@ class _MethodTile extends StatelessWidget {
                 child: Icon(
                   selected ? Icons.check_circle_rounded : Icons.circle_outlined,
                   key: ValueKey(selected),
-                  color: selected ? method.color : Brand.line,
+                  color: selected ? method.color : context.pal.line,
                 ),
               ),
             ],
@@ -344,9 +346,9 @@ class PaymentSteps extends StatelessWidget {
         color: method.color,
         title: wallet ? 'Open your ${method.label} app' : 'Open your bank app',
         child: method.appId == null
-            ? const Text(
+            ? Text(
                 'Use Raast or IBAN transfer. Both are instant and free.',
-                style: TextStyle(color: Brand.muted, fontSize: 13),
+                style: TextStyle(color: context.pal.muted, fontSize: 13),
               )
             : Align(
                 alignment: Alignment.centerLeft,
@@ -389,8 +391,8 @@ class PaymentSteps extends StatelessWidget {
               )
             : Text(
                 "We'll send our ${method.label} details on WhatsApp right after you place the order.",
-                style: const TextStyle(
-                  color: Brand.muted,
+                style: TextStyle(
+                  color: context.pal.muted,
                   fontSize: 13,
                   height: 1.35,
                 ),
@@ -411,9 +413,13 @@ class PaymentSteps extends StatelessWidget {
         color: method.color,
         title: 'Save the transaction ID',
         last: true,
-        child: const Text(
+        child: Text(
           'Enter the TID from your receipt below. We confirm your payment within minutes.',
-          style: TextStyle(color: Brand.muted, fontSize: 13, height: 1.35),
+          style: TextStyle(
+            color: context.pal.muted,
+            fontSize: 13,
+            height: 1.35,
+          ),
         ),
       ),
     ];
@@ -421,9 +427,9 @@ class PaymentSteps extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
       decoration: BoxDecoration(
-        color: Brand.surface,
+        color: context.pal.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Brand.line),
+        border: Border.all(color: context.pal.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -539,9 +545,9 @@ class _CopyRow extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 6),
     padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.pal.card,
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: Brand.line),
+      border: Border.all(color: context.pal.line),
     ),
     child: Row(
       children: [
@@ -551,7 +557,7 @@ class _CopyRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(color: Brand.muted, fontSize: 11),
+                style: TextStyle(color: context.pal.muted, fontSize: 11),
               ),
               Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
             ],
@@ -563,7 +569,7 @@ class _CopyRow extends StatelessWidget {
           icon: const Icon(Icons.copy_rounded, size: 18),
           onPressed: () {
             Clipboard.setData(ClipboardData(text: copyValue ?? value));
-            HapticFeedback.lightImpact();
+            Haptics.light();
             showMessage(context, '$label copied');
           },
         ),

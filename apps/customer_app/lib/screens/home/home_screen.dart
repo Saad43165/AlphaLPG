@@ -1,5 +1,4 @@
 import 'package:alpha_core/alpha_core.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -10,10 +9,13 @@ import '../../state/cart.dart';
 import '../../theme/brand.dart';
 import '../../utils/launch.dart';
 import '../../widgets/address_picker.dart';
+import '../../widgets/app_drawer.dart';
 import '../../widgets/common.dart';
+import '../../widgets/gas_meter_card.dart';
 import '../../widgets/live.dart';
 import '../info/safety_screen.dart';
 import 'product_sheet.dart';
+import '../../utils/haptics.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return AnnotatedRegion(
       value: Brand.lightStatusBar,
       child: Scaffold(
+        drawer: const AppDrawer(),
         bottomNavigationBar: const CartBar(),
         body: CustomScrollView(
           slivers: [
@@ -112,10 +115,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       _HelpCard(settings: state.settings),
                       if (context.read<Backend>().isDemo) ...[
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Demo mode: nothing is saved, and orders move through each status automatically so you can see tracking.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: Brand.muted),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.pal.muted,
+                          ),
                         ),
                       ],
                     ],
@@ -174,7 +180,18 @@ class _Header extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const BrandLogo(height: 42, white: true),
+                        Builder(
+                          builder: (context) => IconButton(
+                            tooltip: 'Menu',
+                            onPressed: () => Scaffold.of(context).openDrawer(),
+                            icon: const Icon(
+                              Icons.menu_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const BrandLogo(height: 38, white: true),
                         const Spacer(),
                         IconTheme(
                           data: const IconThemeData(color: Colors.white),
@@ -188,7 +205,7 @@ class _Header extends StatelessWidget {
                       child: _DeliverToPill(
                         title: address == null
                             ? (state.signedIn
-                                  ? 'Add delivery address'
+                                  ? 'Set delivery location'
                                   : 'Lahore')
                             : '${address.label} · ${address.area}',
                         onTap: () => showAddressPicker(context),
@@ -369,9 +386,9 @@ class _ProductCard extends StatelessWidget {
     final qty = cart.quantityOf(product.id, PurchaseType.refill);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: Brand.shadow,
+        boxShadow: context.pal.shadow,
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -386,7 +403,7 @@ class _ProductCard extends StatelessWidget {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Brand.blueTint,
+                      color: context.pal.tint,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Stack(
@@ -448,7 +465,7 @@ class _ProductCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 11,
                                 color: product.inStock
-                                    ? Brand.muted
+                                    ? context.pal.muted
                                     : Brand.danger,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -461,7 +478,7 @@ class _ProductCard extends StatelessWidget {
                           enabled: product.inStock,
                           tooltip: 'Add ${product.name}',
                           onTap: () {
-                            HapticFeedback.lightImpact();
+                            Haptics.light();
                             cart.add(product.id, PurchaseType.refill);
                           },
                         )
@@ -469,7 +486,7 @@ class _ProductCard extends StatelessWidget {
                         _MiniStepper(
                           qty: qty,
                           onChanged: (q) {
-                            HapticFeedback.selectionClick();
+                            Haptics.select();
                             cart.setQuantity(
                               product.id,
                               PurchaseType.refill,
@@ -503,7 +520,7 @@ class _RoundAdd extends StatelessWidget {
   Widget build(BuildContext context) => Tooltip(
     message: tooltip,
     child: Material(
-      color: enabled ? Brand.blueDark : Brand.line,
+      color: enabled ? Brand.blueDark : context.pal.line,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -587,8 +604,8 @@ class _ClosedBanner extends StatelessWidget {
   );
 }
 
-/// Live tracking card for an in-progress order, or a one-tap reorder of the
-/// last completed one.
+/// Live tracking card for an in-progress order, plus the gas meter once the
+/// customer has had a delivery.
 class _OrderStrip extends StatelessWidget {
   const _OrderStrip();
 
@@ -596,24 +613,31 @@ class _OrderStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final backend = context.read<Backend>();
     final uid = context.select<AppState, String?>((s) => s.uid);
+    final cycle = context.select<AppState, int?>((s) => s.cycleDaysOverride);
     if (uid == null) return const SizedBox.shrink();
     return Live<List<LpgOrder>>(
       cacheKey: uid,
-      stream: () => backend.orders.watchCustomerOrders(uid, limit: 5),
+      stream: () => backend.orders.watchCustomerOrders(uid, limit: 12),
       builder: (context, snap) {
         final orders = snap.data ?? const <LpgOrder>[];
         if (orders.isEmpty) return const SizedBox.shrink();
         final active = orders.where((o) => o.status.isActive).toList();
+        final gauge = CylinderGauge.from(orders, cycleDaysOverride: cycle);
+        final lastDelivered = orders.where(
+          (o) => o.status == OrderStatus.delivered,
+        );
         return Padding(
           padding: const EdgeInsets.only(bottom: 20),
-          child: active.isNotEmpty
-              ? _TrackingCard(active.first)
-              : _ReorderCard(
-                  orders.firstWhere(
-                    (o) => o.status == OrderStatus.delivered,
-                    orElse: () => orders.first,
-                  ),
-                ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (active.isNotEmpty) _TrackingCard(active.first),
+              if (active.isNotEmpty && gauge != null)
+                const SizedBox(height: 14),
+              if (gauge != null && lastDelivered.isNotEmpty)
+                GasMeterCard(gauge: gauge, lastOrder: lastDelivered.first),
+            ],
+          ),
         );
       },
     );
@@ -629,9 +653,9 @@ class _TrackingCard extends StatelessWidget {
     final step = OrderStatus.journey.indexOf(o.status);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: Brand.shadow,
+        boxShadow: context.pal.shadow,
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -648,7 +672,7 @@ class _TrackingCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Brand.blueTint,
+                        color: context.pal.tint,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -670,8 +694,8 @@ class _TrackingCard extends StatelessWidget {
                           ),
                           Text(
                             'Order ${o.displayNumber}',
-                            style: const TextStyle(
-                              color: Brand.muted,
+                            style: TextStyle(
+                              color: context.pal.muted,
                               fontSize: 12,
                             ),
                           ),
@@ -700,7 +724,9 @@ class _TrackingCard extends StatelessWidget {
                           duration: const Duration(milliseconds: 400),
                           height: 6,
                           decoration: BoxDecoration(
-                            color: i <= step ? Brand.blueDark : Brand.line,
+                            color: i <= step
+                                ? Brand.blueDark
+                                : context.pal.line,
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -713,7 +739,7 @@ class _TrackingCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   o.status.description,
-                  style: const TextStyle(color: Brand.muted),
+                  style: TextStyle(color: context.pal.muted),
                 ),
               ],
             ),
@@ -722,67 +748,6 @@ class _TrackingCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ReorderCard extends StatelessWidget {
-  const _ReorderCard(this.o);
-  final LpgOrder o;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(Brand.radius),
-      boxShadow: Brand.shadow,
-    ),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Brand.flame.withValues(alpha: 0.25),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.history_rounded, color: Brand.navy),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Order again',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              Text(
-                o.items
-                    .map(
-                      (i) =>
-                          '${i.quantity}× ${i.sizeKg == i.sizeKg.roundToDouble() ? i.sizeKg.toInt() : i.sizeKg}kg',
-                    )
-                    .join(', '),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Brand.muted, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(0, 40),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-          onPressed: () {
-            context.read<Cart>().reorder(o);
-            context.push('/cart');
-          },
-          child: const Text('Reorder'),
-        ),
-      ],
-    ),
-  );
 }
 
 class _BusinessCard extends StatelessWidget {
@@ -871,9 +836,9 @@ class _HelpCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.pal.card,
       borderRadius: BorderRadius.circular(Brand.radius),
-      boxShadow: Brand.shadow,
+      boxShadow: context.pal.shadow,
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -883,7 +848,7 @@ class _HelpCard extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
         ),
         const SizedBox(height: 2),
-        Text(settings.openingHours, style: const TextStyle(color: Brand.muted)),
+        Text(settings.openingHours, style: TextStyle(color: context.pal.muted)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -959,7 +924,7 @@ class _LinkRow extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
-        const Icon(Icons.chevron_right_rounded, color: Brand.muted),
+        Icon(Icons.chevron_right_rounded, color: context.pal.muted),
       ],
     ),
   );
@@ -1003,9 +968,9 @@ class _SafetyStrip extends StatelessWidget {
                 width: 148,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.pal.card,
                   borderRadius: BorderRadius.circular(Brand.radius),
-                  boxShadow: Brand.shadow,
+                  boxShadow: context.pal.shadow,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1016,7 +981,7 @@ class _SafetyStrip extends StatelessWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Brand.blueTint,
+                            color: context.pal.tint,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(icon, color: Brand.blueDark),
@@ -1052,7 +1017,7 @@ class _AboutBanner extends StatelessWidget {
       height: 170,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: Brand.shadow,
+        boxShadow: context.pal.shadow,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(

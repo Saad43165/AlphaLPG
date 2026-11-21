@@ -1,5 +1,4 @@
 import 'package:alpha_core/alpha_core.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -9,8 +8,8 @@ import '../../state/app_state.dart';
 import '../../state/cart.dart';
 import '../../theme/brand.dart';
 import '../../utils/format.dart';
-import '../../widgets/address_fields.dart';
 import '../../widgets/common.dart';
+import '../../utils/haptics.dart';
 
 /// First-time account setup after phone verification:
 ///  1. About you      → customers/{uid}.name, email
@@ -29,7 +28,7 @@ class _SetupScreenState extends State<SetupScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _business = TextEditingController();
-  final _address = AddressDraft();
+  Address? _picked;
   CustomerSegment _type = CustomerSegment.home;
   String _businessType = QuoteRequest.businessTypes.first;
   int _step = 0;
@@ -44,7 +43,7 @@ class _SetupScreenState extends State<SetupScreen> {
       'Who are you ordering for?',
       'We tailor sizes, delivery and billing to you.',
     ),
-    ('Where should we deliver?', 'Save your address now for faster checkout.'),
+    ('Where should we deliver?', 'Share your location once. No typing needed.'),
   ];
 
   @override
@@ -52,7 +51,6 @@ class _SetupScreenState extends State<SetupScreen> {
     for (final c in [_name, _email, _business]) {
       c.dispose();
     }
-    _address.dispose();
     _pages.dispose();
     super.dispose();
   }
@@ -69,24 +67,24 @@ class _SetupScreenState extends State<SetupScreen> {
 
   void _next() {
     if (!_forms[_step].currentState!.validate()) return;
-    HapticFeedback.selectionClick();
+    Haptics.select();
     _goTo(_step + 1);
   }
 
-  Future<void> _finish({required bool withAddress}) async {
-    if (withAddress && !_forms[2].currentState!.validate()) return;
+  /// Opens the map picker; it saves the address itself and returns it.
+  Future<void> _pickLocation() async {
+    // The profile does not exist yet, so the picker saves the address on its
+    // own under the signed-in user.
+    final a = await context.push<Address>('/location');
+    if (a != null && mounted) setState(() => _picked = a);
+  }
+
+  Future<void> _finish() async {
     final backend = context.read<Backend>();
     final state = context.read<AppState>();
     final goCheckout = !context.read<Cart>().isEmpty;
     setState(() => _saving = true);
     try {
-      if (withAddress) {
-        final a = await backend.profiles.saveAddress(
-          state.uid!,
-          _address.toAddress(),
-        );
-        state.selectAddress(a.id);
-      }
       await backend.profiles.saveProfile(
         CustomerProfile(
           uid: state.uid!,
@@ -145,7 +143,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         duration: const Duration(milliseconds: 300),
                         height: 4,
                         decoration: BoxDecoration(
-                          color: i <= _step ? Brand.blueDark : Brand.line,
+                          color: i <= _step ? Brand.blueDark : context.pal.line,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -177,7 +175,7 @@ class _SetupScreenState extends State<SetupScreen> {
                       const SizedBox(height: 6),
                       Text(
                         subtitle,
-                        style: const TextStyle(color: Brand.muted),
+                        style: TextStyle(color: context.pal.muted),
                       ),
                     ],
                   ),
@@ -314,7 +312,9 @@ class _SetupScreenState extends State<SetupScreen> {
                             : const SizedBox(width: double.infinity),
                       ),
                     ]),
-                    _page(2, [AddressFields(draft: _address)]),
+                    _page(2, [
+                      _LocationStep(picked: _picked, onPick: _pickLocation),
+                    ]),
                   ],
                 ),
               ),
@@ -331,18 +331,21 @@ class _SetupScreenState extends State<SetupScreen> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            FilledButton(
-                              onPressed: _saving
-                                  ? null
-                                  : () => _finish(withAddress: true),
-                              child: const Text('Save & finish'),
-                            ),
-                            TextButton(
-                              onPressed: _saving
-                                  ? null
-                                  : () => _finish(withAddress: false),
-                              child: const Text('Skip for now'),
-                            ),
+                            if (_picked == null) ...[
+                              FilledButton.icon(
+                                onPressed: _saving ? null : _pickLocation,
+                                icon: const Icon(Icons.my_location_rounded),
+                                label: const Text('Use my current location'),
+                              ),
+                              TextButton(
+                                onPressed: _saving ? null : _finish,
+                                child: const Text('Skip for now'),
+                              ),
+                            ] else
+                              FilledButton(
+                                onPressed: _saving ? null : _finish,
+                                child: const Text('Save & finish'),
+                              ),
                           ],
                         ),
                 ),
@@ -380,11 +383,11 @@ class _TypeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: selected ? Brand.blueTint : Colors.white,
+    color: selected ? context.pal.tint : context.pal.card,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(Brand.radius),
       side: BorderSide(
-        color: selected ? Brand.blueDark : Brand.line,
+        color: selected ? Brand.blueDark : context.pal.line,
         width: selected ? 2 : 1,
       ),
     ),
@@ -398,7 +401,7 @@ class _TypeOption extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: selected ? Brand.blueDark : Brand.surface,
+                color: selected ? Brand.blueDark : context.pal.surface,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
@@ -421,7 +424,7 @@ class _TypeOption extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(color: Brand.muted, fontSize: 13),
+                    style: TextStyle(color: context.pal.muted, fontSize: 13),
                   ),
                 ],
               ),
@@ -430,11 +433,140 @@ class _TypeOption extends StatelessWidget {
               selected
                   ? Icons.check_circle_rounded
                   : Icons.radio_button_unchecked_rounded,
-              color: selected ? Brand.blueDark : Brand.line,
+              color: selected ? Brand.blueDark : context.pal.line,
             ),
           ],
         ),
       ),
+    ),
+  );
+}
+
+/// Step 3: one big card instead of a form.
+class _LocationStep extends StatelessWidget {
+  const _LocationStep({required this.picked, required this.onPick});
+  final Address? picked;
+  final VoidCallback onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    if (picked != null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: pal.card,
+          borderRadius: BorderRadius.circular(Brand.radius),
+          border: Border.all(color: Brand.success, width: 1.5),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const CircleAvatar(
+              backgroundColor: Color(0x1F1E9E5A),
+              child: Icon(Icons.check_rounded, color: Brand.success),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    picked!.label,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(picked!.oneLine, style: TextStyle(color: pal.muted)),
+                ],
+              ),
+            ),
+            TextButton(onPressed: onPick, child: const Text('Change')),
+          ],
+        ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+      decoration: BoxDecoration(
+        gradient: Brand.headerGradient,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 84,
+            height: 84,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.my_location_rounded,
+              size: 44,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'Find me on the map',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'We pin your location and fill in the address for you. You only confirm.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              _StepChip(Icons.touch_app_rounded, 'One tap'),
+              _StepChip(Icons.edit_off_rounded, 'No typing'),
+              _StepChip(Icons.delivery_dining_rounded, 'Rider finds you'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepChip extends StatelessWidget {
+  const _StepChip(this.icon, this.label);
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.16),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 15, color: Brand.flame),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     ),
   );
 }

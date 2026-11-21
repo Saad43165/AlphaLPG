@@ -37,6 +37,18 @@ and an **admin app** can share the same data model and backend.
   - Reorder in one tap.
   - WhatsApp help, with the order number filled in.
 - **Bulk / commercial quote** form for restaurants, hotels and factories.
+- **Map location picker** (Foodpanda / inDrive style):
+  - Finds the phone's GPS automatically.
+  - A fixed pin sits in the middle of a full-screen map. The customer drags the map under it.
+  - The street and area are filled in automatically. The customer only adds an optional flat or landmark note.
+  - Search, saved places, and a "my location" button.
+  - Blocks pins outside Lahore.
+  - Map tiles come from OpenStreetMap (free, no key). The street and area come from the phone's own geocoder.
+  - OSM's tile policy suits small apps. For heavy traffic, switch to a paid tile provider by changing the URL in `location_picker_screen.dart`.
+- **Gas meter** on the home screen: a live animated cylinder estimates days of gas left from past orders, and offers a one-tap refill.
+- **Slide to order**: checkout is confirmed with a slide, so a gas order is never placed by accident.
+- **Dark and light mode** with a live switch, plus a **side drawer** and **Settings** (theme, vibration, how long a cylinder lasts).
+- **Splash screen**: the Alpha LPG sky image, then a rounded panel with an animated filling cylinder.
 - **First-time setup**, 3 steps after sign-in:
   1. Name and optional email.
   2. Home or business. Businesses add their business name and type.

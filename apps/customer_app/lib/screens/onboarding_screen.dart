@@ -1,10 +1,10 @@
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
 import '../theme/brand.dart';
 import '../widgets/common.dart';
+import '../utils/haptics.dart';
 
 /// Three-slide welcome shown on first launch.
 class OnboardingScreen extends StatefulWidget {
@@ -44,7 +44,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool get _last => _index == _slides.length - 1;
 
   void _finish() {
-    HapticFeedback.lightImpact();
+    Haptics.light();
     context.read<AppState>().completeOnboarding();
   }
 
@@ -67,7 +67,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return AnnotatedRegion(
       value: Brand.darkStatusBar,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: context.pal.card,
         body: SafeArea(
           child: Constrained(
             maxWidth: 520,
@@ -109,7 +109,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           width: i == _index ? 26 : 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: i == _index ? Brand.blueDark : Brand.line,
+                            color: i == _index
+                                ? Brand.blueDark
+                                : context.pal.line,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -184,7 +186,7 @@ class _SlideView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Brand.blueTint,
+                  color: context.pal.tint,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: Brand.blueDark),
@@ -202,10 +204,10 @@ class _SlideView extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 body,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   height: 1.45,
-                  color: Brand.muted,
+                  color: context.pal.muted,
                 ),
               ),
             ],

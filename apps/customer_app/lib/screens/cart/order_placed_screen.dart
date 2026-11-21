@@ -70,8 +70,8 @@ class OrderPlacedScreen extends StatelessWidget {
                   Text(
                     o == null ? '' : 'Order ${o.displayNumber}',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Brand.muted,
+                    style: TextStyle(
+                      color: context.pal.muted,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -80,9 +80,9 @@ class OrderPlacedScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.pal.card,
                         borderRadius: BorderRadius.circular(Brand.radius),
-                        boxShadow: Brand.shadow,
+                        boxShadow: context.pal.shadow,
                       ),
                       child: Column(
                         children: [
@@ -190,7 +190,7 @@ class _InfoRow extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Brand.blueTint,
+          color: context.pal.tint,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: Brand.blueDark, size: 20),
@@ -204,8 +204,8 @@ class _InfoRow extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: const TextStyle(
-                color: Brand.muted,
+              style: TextStyle(
+                color: context.pal.muted,
                 fontSize: 13,
                 height: 1.35,
               ),

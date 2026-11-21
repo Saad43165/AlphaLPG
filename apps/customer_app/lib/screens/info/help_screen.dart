@@ -66,48 +66,51 @@ class HelpScreen extends StatelessWidget {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.pal.card,
                 borderRadius: BorderRadius.circular(Brand.radius),
-                boxShadow: Brand.shadow,
+                boxShadow: context.pal.shadow,
               ),
               clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  for (final (i, (q, a)) in faqs.indexed) ...[
-                    if (i > 0) const Divider(indent: 16, endIndent: 16),
-                    Theme(
-                      data: Theme.of(context)
-                          .copyWith(dividerColor: Colors.transparent),
-                      child: ExpansionTile(
-                        shape: const Border(),
-                        collapsedShape: const Border(),
-                        title: Text(
-                          q,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
-                        childrenPadding: const EdgeInsets.fromLTRB(
-                          16,
-                          0,
-                          16,
-                          16,
-                        ),
-                        expandedAlignment: Alignment.topLeft,
-                        children: [
-                          Text(
-                            a,
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
+                  children: [
+                    for (final (i, (q, a)) in faqs.indexed) ...[
+                      if (i > 0) const Divider(indent: 16, endIndent: 16),
+                      Theme(
+                        data: Theme.of(context)
+                            .copyWith(dividerColor: Colors.transparent),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          title: Text(
+                            q,
                             style: const TextStyle(
-                              color: Brand.muted,
-                              height: 1.45,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
                             ),
                           ),
-                        ],
+                          childrenPadding: const EdgeInsets.fromLTRB(
+                            16,
+                            0,
+                            16,
+                            16,
+                          ),
+                          expandedAlignment: Alignment.topLeft,
+                          children: [
+                            Text(
+                              a,
+                              style: TextStyle(
+                                color: context.pal.muted,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
             const SectionTitle('Still need help?'),

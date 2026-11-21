@@ -1,4 +1,6 @@
 import 'package:alpha_customer/app.dart';
+import 'package:alpha_customer/services/location_service.dart';
+import 'package:alpha_customer/widgets/slide_to_confirm.dart';
 import 'package:alpha_customer/services/backend.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -10,12 +12,21 @@ Future<void> pumpApp(
   WidgetTester tester,
   Backend backend, {
   bool showOnboarding = false,
+  LocationService? location,
 }) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 2.6;
   addTearDown(tester.view.reset);
+  // No looping animations in tests (also what "remove animations" does).
+  tester.platformDispatcher.accessibilityFeaturesTestValue =
+      const FakeAccessibilityFeatures(disableAnimations: true);
+  addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
   await tester.pumpWidget(
-    AlphaApp(backend: backend, showOnboarding: showOnboarding),
+    AlphaApp(
+      backend: backend,
+      showOnboarding: showOnboarding,
+      location: location ?? FakeLocationService(),
+    ),
   );
   await tester.pumpAndSettle();
 }
@@ -42,5 +53,11 @@ Future<void> scrollTo(WidgetTester tester, Finder finder) async {
         .hitTestable()
         .first,
   );
+  await tester.pumpAndSettle();
+}
+
+/// Drags the "slide to order" control all the way across.
+Future<void> slideToOrder(WidgetTester tester) async {
+  await tester.drag(find.byType(SlideToConfirm), const Offset(700, 0));
   await tester.pumpAndSettle();
 }

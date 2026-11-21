@@ -143,6 +143,12 @@ class AccountScreen extends StatelessWidget {
                   ),
                   _tile(
                     context,
+                    Icons.settings_rounded,
+                    'Settings',
+                    '/settings',
+                  ),
+                  _tile(
+                    context,
                     Icons.help_outline_rounded,
                     'Help & FAQs',
                     '/help',

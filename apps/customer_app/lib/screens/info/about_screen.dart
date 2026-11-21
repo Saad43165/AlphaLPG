@@ -48,7 +48,7 @@ class AboutScreen extends StatelessWidget {
                   height: 240,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: Brand.shadow,
+                    boxShadow: context.pal.shadow,
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Stack(
@@ -97,12 +97,12 @@ class AboutScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
+                    Text(
                       'Safe cylinders, straightforward ordering, and convenient delivery when you need it.',
                       style: TextStyle(
                         fontSize: 16,
                         height: 1.45,
-                        color: Brand.muted,
+                        color: context.pal.muted,
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -122,9 +122,9 @@ class AboutScreen extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.pal.card,
                             borderRadius: BorderRadius.circular(Brand.radius),
-                            boxShadow: Brand.shadow,
+                            boxShadow: context.pal.shadow,
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +132,7 @@ class AboutScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Brand.blueTint,
+                                  color: context.pal.tint,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(icon, color: Brand.blueDark),
@@ -152,8 +152,8 @@ class AboutScreen extends StatelessWidget {
                                     const SizedBox(height: 2),
                                     Text(
                                       body,
-                                      style: const TextStyle(
-                                        color: Brand.muted,
+                                      style: TextStyle(
+                                        color: context.pal.muted,
                                         height: 1.35,
                                       ),
                                     ),

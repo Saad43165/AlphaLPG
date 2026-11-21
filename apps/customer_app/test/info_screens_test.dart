@@ -103,8 +103,9 @@ void main() {
       await backend.orders.updateStatus(id, OrderStatus.delivered, 'r1');
     });
     await pumpApp(tester, backend);
-    // Home shows one-tap reorder for the delivered order.
-    expect(find.text('Reorder'), findsOneWidget);
+    // Home shows the gas meter with a one-tap refill for the delivered order.
+    expect(find.text('YOUR GAS METER'), findsOneWidget);
+    expect(find.text('Refill early'), findsOneWidget);
 
     await tapText(tester, 'My orders');
     await tapText(tester, '1× 11.8kg Gas Cylinder');

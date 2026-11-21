@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'screens/account/account_screen.dart';
-import 'screens/account/address_form_screen.dart';
+import 'screens/location/location_picker_screen.dart';
 import 'screens/account/addresses_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
@@ -14,6 +14,7 @@ import 'screens/cart/checkout_screen.dart';
 import 'screens/cart/order_placed_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/info/about_screen.dart';
+import 'screens/settings/settings_screen.dart';
 import 'screens/info/help_screen.dart';
 import 'screens/info/safety_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -29,6 +30,7 @@ const _protected = [
   '/account/',
   '/order-placed',
   '/invoice',
+  '/location',
 ];
 
 GoRouter buildRouter(AppState state) => GoRouter(
@@ -44,7 +46,9 @@ GoRouter buildRouter(AppState state) => GoRouter(
     if (state.signedIn && path == '/login') {
       return s.uri.queryParameters['from'] ?? '/';
     }
-    if (state.needsProfile && path != '/setup') return '/setup';
+    if (state.needsProfile && path != '/setup' && path != '/location') {
+      return '/setup';
+    }
     return null;
   },
   routes: [
@@ -90,12 +94,8 @@ GoRouter buildRouter(AppState state) => GoRouter(
       builder: (_, _) => const AddressesScreen(),
     ),
     GoRoute(
-      path: '/account/addresses/new',
-      builder: (_, _) => const AddressFormScreen(),
-    ),
-    GoRoute(
-      path: '/account/addresses/edit',
-      builder: (_, s) => AddressFormScreen(initial: s.extra as Address?),
+      path: '/location',
+      builder: (_, s) => LocationPickerScreen(initial: s.extra as Address?),
     ),
     GoRoute(path: '/bulk-quote', builder: (_, _) => const BulkQuoteScreen()),
     GoRoute(path: '/safety', builder: (_, _) => const SafetyScreen()),
@@ -104,6 +104,7 @@ GoRouter buildRouter(AppState state) => GoRouter(
       builder: (_, _) => const SafetyPosterScreen(),
     ),
     GoRoute(path: '/about', builder: (_, _) => const AboutScreen()),
+    GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
     GoRoute(
       path: '/invoice',
       builder: (_, s) => InvoiceScreen(order: s.extra! as LpgOrder),

@@ -1,5 +1,4 @@
 import 'package:alpha_core/alpha_core.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +7,7 @@ import '../../state/app_state.dart';
 import '../../state/cart.dart';
 import '../../theme/brand.dart';
 import '../../widgets/common.dart';
+import '../../utils/haptics.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -102,18 +102,21 @@ class CartScreen extends StatelessWidget {
                   const SectionTitle('Bill details'),
                   PriceSummary(price: price, settings: state.settings),
                   const SizedBox(height: 12),
-                  const Row(
+                  Row(
                     children: [
                       Icon(
                         Icons.lock_outline_rounded,
                         size: 16,
-                        color: Brand.muted,
+                        color: context.pal.muted,
                       ),
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Prices are confirmed by Alpha LPG when your order is accepted.',
-                          style: TextStyle(fontSize: 12, color: Brand.muted),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.pal.muted,
+                          ),
                         ),
                       ),
                     ],
@@ -168,7 +171,7 @@ class CheckoutBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.pal.card,
       boxShadow: [
         BoxShadow(
           color: Brand.navy.withValues(alpha: 0.08),
@@ -213,8 +216,8 @@ class CheckoutBar extends StatelessWidget {
                       ),
                       Text(
                         caption,
-                        style: const TextStyle(
-                          color: Brand.muted,
+                        style: TextStyle(
+                          color: context.pal.muted,
                           fontSize: 12,
                         ),
                       ),
@@ -277,7 +280,7 @@ class FreeDeliveryMeter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: done ? Brand.success.withValues(alpha: 0.1) : Brand.blueTint,
+        color: done ? Brand.success.withValues(alpha: 0.1) : context.pal.tint,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -326,7 +329,7 @@ class FreeDeliveryMeter extends StatelessWidget {
                 value: v,
                 minHeight: 6,
                 color: done ? Brand.success : Brand.blueDark,
-                backgroundColor: Colors.white,
+                backgroundColor: context.pal.card,
               ),
             ),
           ),
@@ -344,7 +347,7 @@ class _CartLineTile extends StatelessWidget {
   void _remove(BuildContext context) {
     final cart = context.read<Cart>();
     cart.setQuantity(line.productId, line.type, 0);
-    HapticFeedback.mediumImpact();
+    Haptics.medium();
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -380,9 +383,9 @@ class _CartLineTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.pal.card,
           borderRadius: BorderRadius.circular(Brand.radius),
-          boxShadow: Brand.shadow,
+          boxShadow: context.pal.shadow,
         ),
         child: Row(
           children: [
@@ -390,7 +393,7 @@ class _CartLineTile extends StatelessWidget {
               width: 72,
               height: 84,
               decoration: BoxDecoration(
-                color: Brand.blueTint,
+                color: context.pal.tint,
                 borderRadius: BorderRadius.circular(14),
               ),
               padding: const EdgeInsets.all(6),
@@ -408,12 +411,12 @@ class _CartLineTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Tag(line.type.label, color: Brand.blueTint),
+                      Tag(line.type.label, color: context.pal.tint),
                       const SizedBox(width: 6),
                       Text(
                         '${formatRupees(unit)} each',
-                        style: const TextStyle(
-                          color: Brand.muted,
+                        style: TextStyle(
+                          color: context.pal.muted,
                           fontSize: 12,
                         ),
                       ),
@@ -442,7 +445,7 @@ class _CartLineTile extends StatelessWidget {
                       QuantityStepper(
                         value: line.quantity,
                         onChanged: (q) {
-                          HapticFeedback.selectionClick();
+                          Haptics.select();
                           if (q == 0) {
                             _remove(context);
                           } else {
@@ -471,9 +474,9 @@ class _SuggestionCard extends StatelessWidget {
     width: 220,
     padding: const EdgeInsets.all(10),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.pal.card,
       borderRadius: BorderRadius.circular(Brand.radius),
-      boxShadow: Brand.shadow,
+      boxShadow: context.pal.shadow,
     ),
     child: Row(
       children: [
@@ -481,7 +484,7 @@ class _SuggestionCard extends StatelessWidget {
           width: 64,
           height: double.infinity,
           decoration: BoxDecoration(
-            color: Brand.blueTint,
+            color: context.pal.tint,
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.all(6),
@@ -499,7 +502,7 @@ class _SuggestionCard extends StatelessWidget {
               ),
               Text(
                 formatRupees(p.refillPrice),
-                style: const TextStyle(color: Brand.muted, fontSize: 13),
+                style: TextStyle(color: context.pal.muted, fontSize: 13),
               ),
               const SizedBox(height: 6),
               SizedBox(
@@ -512,7 +515,7 @@ class _SuggestionCard extends StatelessWidget {
                     foregroundColor: Brand.blueDark,
                   ),
                   onPressed: () {
-                    HapticFeedback.lightImpact();
+                    Haptics.light();
                     context.read<Cart>().add(p.id, PurchaseType.refill);
                   },
                   icon: const Icon(Icons.add_rounded, size: 18),
@@ -536,15 +539,20 @@ class PriceSummary extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.pal.card,
       borderRadius: BorderRadius.circular(Brand.radius),
-      boxShadow: Brand.shadow,
+      boxShadow: context.pal.shadow,
     ),
     child: Column(
       children: [
-        _row('Cylinders (${price.cylinders})', formatRupees(price.subtotal)),
+        _row(
+          context,
+          'Cylinders (${price.cylinders})',
+          formatRupees(price.subtotal),
+        ),
         const SizedBox(height: 8),
         _row(
+          context,
           'Delivery fee',
           price.freeDelivery ? 'FREE' : formatRupees(price.deliveryFee),
           valueColor: price.freeDelivery ? Brand.success : null,
@@ -556,12 +564,13 @@ class PriceSummary extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: 12),
           child: Divider(),
         ),
-        _row('To pay', formatRupees(price.total), bold: true),
+        _row(context, 'To pay', formatRupees(price.total), bold: true),
       ],
     ),
   );
 
   Widget _row(
+    BuildContext context,
     String label,
     String value, {
     bool bold = false,
@@ -578,8 +587,8 @@ class PriceSummary extends StatelessWidget {
         if (strike != null) ...[
           Text(
             strike,
-            style: const TextStyle(
-              color: Brand.muted,
+            style: TextStyle(
+              color: context.pal.muted,
               decoration: TextDecoration.lineThrough,
               fontSize: 13,
             ),

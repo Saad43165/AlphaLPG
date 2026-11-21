@@ -188,9 +188,9 @@ class _SafetyScreenState extends State<SafetyScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.pal.card,
                 borderRadius: BorderRadius.circular(Brand.radius),
-                boxShadow: Brand.shadow,
+                boxShadow: context.pal.shadow,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,8 +214,8 @@ class _SafetyScreenState extends State<SafetyScreen> {
                           Text(
                             body,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Brand.muted,
+                            style: TextStyle(
+                              color: context.pal.muted,
                               fontSize: 12,
                               height: 1.3,
                             ),
@@ -343,11 +343,11 @@ class _Kicker extends StatelessWidget {
       children: [
         Text(
           kicker,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             letterSpacing: 2,
             fontWeight: FontWeight.w700,
-            color: Brand.muted,
+            color: context.pal.muted,
           ),
         ),
         const SizedBox(height: 4),
@@ -399,9 +399,9 @@ class _EmergencyCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Stay calm and follow these steps:',
-          style: TextStyle(color: Brand.muted),
+          style: TextStyle(color: context.pal.muted),
         ),
         const SizedBox(height: 12),
         for (final (i, (icon, title, body)) in steps.indexed)
@@ -414,7 +414,7 @@ class _EmergencyCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.pal.card,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -434,8 +434,8 @@ class _EmergencyCard extends StatelessWidget {
                       ),
                       Text(
                         body,
-                        style: const TextStyle(
-                          color: Brand.muted,
+                        style: TextStyle(
+                          color: context.pal.muted,
                           fontSize: 13,
                           height: 1.35,
                         ),
@@ -490,9 +490,9 @@ class _EssentialCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: Brand.shadow,
+        boxShadow: context.pal.shadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,8 +521,8 @@ class _EssentialCard extends StatelessWidget {
             child: Text(
               body,
               overflow: TextOverflow.fade,
-              style: const TextStyle(
-                color: Brand.muted,
+              style: TextStyle(
+                color: context.pal.muted,
                 fontSize: 12.5,
                 height: 1.35,
               ),
@@ -546,9 +546,9 @@ class _HabitRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: Brand.shadow,
+        boxShadow: context.pal.shadow,
       ),
       child: Row(
         children: [
@@ -564,8 +564,8 @@ class _HabitRow extends StatelessWidget {
                 right: -4,
                 bottom: -4,
                 child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: context.pal.card,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -602,7 +602,7 @@ class _HabitRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   body,
-                  style: const TextStyle(color: Brand.muted, fontSize: 13),
+                  style: TextStyle(color: context.pal.muted, fontSize: 13),
                 ),
               ],
             ),

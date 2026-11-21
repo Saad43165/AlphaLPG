@@ -3,6 +3,7 @@ library;
 
 export 'src/dates.dart';
 export 'src/firestore_paths.dart';
+export 'src/gauge.dart';
 export 'src/models/address.dart';
 export 'src/models/app_settings.dart';
 export 'src/models/customer_profile.dart';

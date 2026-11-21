@@ -17,7 +17,7 @@ class AddressesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Saved addresses')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/account/addresses/new'),
+        onPressed: () => context.push('/location'),
         icon: const Icon(Icons.add_location_alt_outlined),
         label: const Text('Add address'),
       ),
@@ -56,7 +56,7 @@ class _AddressCard extends StatelessWidget {
       trailing: PopupMenuButton<String>(
         onSelected: (v) async {
           if (v == 'edit') {
-            context.push('/account/addresses/edit', extra: a);
+            context.push('/location', extra: a);
           } else {
             final uid = context.read<AppState>().uid!;
             await context.read<Backend>().profiles.deleteAddress(uid, a.id);

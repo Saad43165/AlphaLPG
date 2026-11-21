@@ -13,6 +13,7 @@ import '../../utils/launch.dart';
 import '../../widgets/common.dart';
 import '../../widgets/live.dart';
 import '../../widgets/payment.dart';
+import '../../utils/haptics.dart';
 
 /// Live order tracking: status header with ETA and route, step tracker,
 /// rider, items, payment and delivery details.
@@ -258,8 +259,8 @@ class _TrackingView extends StatelessWidget {
                         Text(
                           'Placed ${formatDateTime(o.createdAt!)} · ${o.displayNumber}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Brand.muted,
+                          style: TextStyle(
+                            color: context.pal.muted,
                             fontSize: 12,
                           ),
                         ),
@@ -290,10 +291,10 @@ class _Heading extends StatelessWidget {
   );
 }
 
-BoxDecoration _cardDecoration() => BoxDecoration(
-  color: Colors.white,
+BoxDecoration _cardDecoration(BuildContext context) => BoxDecoration(
+  color: context.pal.card,
   borderRadius: BorderRadius.circular(Brand.radius),
-  boxShadow: Brand.shadow,
+  boxShadow: context.pal.shadow,
 );
 
 // ---------------------------------------------------------------------------
@@ -452,7 +453,7 @@ class _Route extends StatelessWidget {
                             width: truck,
                             height: truck,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.pal.card,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
@@ -581,7 +582,7 @@ class _StepTracker extends StatelessWidget {
     final steps = OrderStatus.journey;
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 16, 10, 14),
-      decoration: _cardDecoration(),
+      decoration: _cardDecoration(context),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -598,7 +599,7 @@ class _StepTracker extends StatelessWidget {
                                 height: 3,
                                 color: i <= current
                                     ? Brand.blueDark
-                                    : Brand.line,
+                                    : context.pal.line,
                               ),
                       ),
                       AnimatedContainer(
@@ -611,7 +612,9 @@ class _StepTracker extends StatelessWidget {
                               : (i == current ? Brand.blueDark : Colors.white),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: i <= current ? Brand.blueDark : Brand.line,
+                            color: i <= current
+                                ? Brand.blueDark
+                                : context.pal.line,
                             width: 2,
                           ),
                           boxShadow: i == current
@@ -626,7 +629,9 @@ class _StepTracker extends StatelessWidget {
                         child: Icon(
                           i < current ? Icons.check_rounded : _icons[steps[i]],
                           size: i == current ? 22 : 18,
-                          color: i <= current ? Colors.white : Brand.muted,
+                          color: i <= current
+                              ? Colors.white
+                              : context.pal.muted,
                         ),
                       ),
                       Expanded(
@@ -636,7 +641,7 @@ class _StepTracker extends StatelessWidget {
                                 height: 3,
                                 color: i < current
                                     ? Brand.blueDark
-                                    : Brand.line,
+                                    : context.pal.line,
                               ),
                       ),
                     ],
@@ -652,15 +657,15 @@ class _StepTracker extends StatelessWidget {
                       fontWeight: i == current
                           ? FontWeight.w800
                           : FontWeight.w500,
-                      color: i <= current ? Brand.navy : Brand.muted,
+                      color: i <= current ? context.pal.ink : context.pal.muted,
                     ),
                   ),
                   if (o.timeOf(steps[i]) case final at?)
                     Text(
                       formatTime(at),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10.5,
-                        color: Brand.muted,
+                        color: context.pal.muted,
                       ),
                     ),
                 ],
@@ -679,7 +684,7 @@ class _CancelledCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
-    decoration: _cardDecoration(),
+    decoration: _cardDecoration(context),
     child: Row(
       children: [
         const CircleAvatar(
@@ -698,7 +703,7 @@ class _CancelledCard extends StatelessWidget {
               if (o.cancelReason.isNotEmpty)
                 Text(
                   o.cancelReason,
-                  style: const TextStyle(color: Brand.muted),
+                  style: TextStyle(color: context.pal.muted),
                 ),
             ],
           ),
@@ -726,7 +731,7 @@ class _RiderCard extends StatelessWidget {
         : normalizePkMobile(o.riderPhone!)?.substring(1);
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(),
+      decoration: _cardDecoration(context),
       child: Row(
         children: [
           Stack(
@@ -748,8 +753,8 @@ class _RiderCard extends StatelessWidget {
                 bottom: -2,
                 child: Container(
                   padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: context.pal.card,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -778,7 +783,7 @@ class _RiderCard extends StatelessWidget {
                   o.status == OrderStatus.outForDelivery
                       ? 'Heading to you · Alpha LPG rider'
                       : 'Loading your cylinders · Alpha LPG rider',
-                  style: const TextStyle(color: Brand.muted, fontSize: 12.5),
+                  style: TextStyle(color: context.pal.muted, fontSize: 12.5),
                 ),
               ],
             ),
@@ -847,7 +852,7 @@ class _ItemsCard extends StatelessWidget {
     final state = context.watch<AppState>();
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(),
+      decoration: _cardDecoration(context),
       child: Column(
         children: [
           for (final i in o.items)
@@ -860,7 +865,7 @@ class _ItemsCard extends StatelessWidget {
                     height: 54,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Brand.blueTint,
+                      color: context.pal.tint,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: switch (state.productById(i.productId)) {
@@ -882,8 +887,8 @@ class _ItemsCard extends StatelessWidget {
                         ),
                         Text(
                           '${i.type.label} · ${formatRupees(i.unitPrice)} each',
-                          style: const TextStyle(
-                            color: Brand.muted,
+                          style: TextStyle(
+                            color: context.pal.muted,
                             fontSize: 12,
                           ),
                         ),
@@ -940,52 +945,55 @@ class _DeliveryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(vertical: 6),
-    decoration: _cardDecoration(),
-    child: Column(
-      children: [
-        ListTile(
-          leading: const Icon(Icons.location_on_rounded),
-          title: Text(
-            o.address.label,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          subtitle: Text(o.address.oneLine),
-          trailing: o.address.hasLocation
-              ? IconButton(
-                  tooltip: 'Open in maps',
-                  icon: const Icon(Icons.map_rounded),
-                  onPressed: () =>
-                      Launch.maps(lat: o.address.lat, lng: o.address.lng),
-                )
-              : null,
-        ),
-        ListTile(
-          leading: const Icon(Icons.schedule_rounded),
-          title: Text(
-            o.scheduledFor == null
-                ? 'As soon as possible'
-                : formatDay(o.scheduledFor!),
-          ),
-          subtitle: o.notes.isEmpty ? null : Text(o.notes),
-        ),
-        if (o.emptiesToCollect > 0)
+    decoration: _cardDecoration(context),
+    child: Material(
+      type: MaterialType.transparency,
+      child: Column(
+        children: [
           ListTile(
-            leading: const Icon(Icons.autorenew_rounded),
+            leading: const Icon(Icons.location_on_rounded),
             title: Text(
-              'Keep ${o.emptiesToCollect} empty cylinder${o.emptiesToCollect == 1 ? '' : 's'} ready',
+              o.address.label,
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
-            subtitle: const Text('Our rider swaps them for full ones'),
+            subtitle: Text(o.address.oneLine),
+            trailing: o.address.hasLocation
+                ? IconButton(
+                    tooltip: 'Open in maps',
+                    icon: const Icon(Icons.map_rounded),
+                    onPressed: () =>
+                        Launch.maps(lat: o.address.lat, lng: o.address.lng),
+                  )
+                : null,
           ),
-        ListTile(
-          leading: const Icon(Icons.person_rounded),
-          title: Text(
-            o.businessName.isEmpty
-                ? o.customerName
-                : '${o.customerName} · ${o.businessName}',
+          ListTile(
+            leading: const Icon(Icons.schedule_rounded),
+            title: Text(
+              o.scheduledFor == null
+                  ? 'As soon as possible'
+                  : formatDay(o.scheduledFor!),
+            ),
+            subtitle: o.notes.isEmpty ? null : Text(o.notes),
           ),
-          subtitle: Text(prettyPkMobile(o.customerPhone)),
-        ),
-      ],
+          if (o.emptiesToCollect > 0)
+            ListTile(
+              leading: const Icon(Icons.autorenew_rounded),
+              title: Text(
+                'Keep ${o.emptiesToCollect} empty cylinder${o.emptiesToCollect == 1 ? '' : 's'} ready',
+              ),
+              subtitle: const Text('Our rider swaps them for full ones'),
+            ),
+          ListTile(
+            leading: const Icon(Icons.person_rounded),
+            title: Text(
+              o.businessName.isEmpty
+                  ? o.customerName
+                  : '${o.customerName} · ${o.businessName}',
+            ),
+            subtitle: Text(prettyPkMobile(o.customerPhone)),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -1091,9 +1099,9 @@ class _RateCardState extends State<_RateCard> {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.pal.card,
       borderRadius: BorderRadius.circular(Brand.radius),
-      boxShadow: Brand.shadow,
+      boxShadow: context.pal.shadow,
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1110,12 +1118,12 @@ class _RateCardState extends State<_RateCard> {
                 tooltip: '$i star${i == 1 ? '' : 's'}',
                 visualDensity: VisualDensity.compact,
                 onPressed: () {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() => _stars = i);
                 },
                 icon: Icon(
                   i <= _stars ? Icons.star_rounded : Icons.star_outline_rounded,
-                  color: i <= _stars ? Brand.flame : Brand.muted,
+                  color: i <= _stars ? Brand.flame : context.pal.muted,
                   size: 34,
                 ),
               ),
@@ -1236,9 +1244,9 @@ class _PaymentCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: Brand.shadow,
+        boxShadow: context.pal.shadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1257,7 +1265,7 @@ class _PaymentCard extends StatelessWidget {
                     ),
                     Text(
                       formatRupees(o.total),
-                      style: const TextStyle(color: Brand.muted),
+                      style: TextStyle(color: context.pal.muted),
                     ),
                   ],
                 ),

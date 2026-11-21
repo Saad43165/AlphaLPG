@@ -6,4 +6,10 @@
 abstract final class Env {
   static const forceDemo = bool.fromEnvironment('DEMO');
   static const demoOtp = '123456';
+
+  /// Screenshots/demos on machines without GPS or map access.
+  static const fakeLocation = bool.fromEnvironment('FAKE_LOCATION');
 }
+
+/// Shown in Settings and the drawer. Keep in sync with pubspec.yaml.
+const kAppVersion = '1.4.0';

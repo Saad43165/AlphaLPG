@@ -1,15 +1,28 @@
 import 'dart:async';
 
 import 'package:alpha_core/alpha_core.dart';
+import 'package:material_ui/material_ui.dart' show ThemeMode;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/backend.dart';
+import '../utils/haptics.dart';
 
 /// Live data shared by every screen: catalogue, settings, and (when signed
 /// in) the customer's profile and saved addresses.
 class AppState extends ChangeNotifier {
   AppState(this.backend, {this.prefs, this.onboarded = true}) {
+    final p = prefs;
+    if (p != null) {
+      themeMode.value = switch (p.getString('theme')) {
+        'light' => ThemeMode.light,
+        'dark' => ThemeMode.dark,
+        _ => ThemeMode.system,
+      };
+      haptics = p.getBool('haptics') ?? true;
+      cycleDaysOverride = p.getInt('cycleDays');
+    }
+    Haptics.enabled = haptics;
     _subs.add(
       backend.catalog.watchProducts().listen((p) {
         products = p;
@@ -29,6 +42,36 @@ class AppState extends ChangeNotifier {
 
   final Backend backend;
   final SharedPreferences? prefs;
+
+  // ---- Settings (saved on this device) ------------------------------------
+
+  final themeMode = ValueNotifier<ThemeMode>(ThemeMode.system);
+  bool haptics = true;
+
+  /// How long a cylinder lasts for this household, if the customer set it.
+  int? cycleDaysOverride;
+
+  void setThemeMode(ThemeMode m) {
+    themeMode.value = m;
+    prefs?.setString('theme', m.name);
+  }
+
+  void setHaptics(bool v) {
+    haptics = v;
+    Haptics.enabled = v;
+    prefs?.setBool('haptics', v);
+    notifyListeners();
+  }
+
+  void setCycleDays(int? days) {
+    cycleDaysOverride = days;
+    if (days == null) {
+      prefs?.remove('cycleDays');
+    } else {
+      prefs?.setInt('cycleDays', days);
+    }
+    notifyListeners();
+  }
 
   /// False until the first-launch welcome slides have been completed.
   bool onboarded;
@@ -121,6 +164,7 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     routeSignal.dispose();
+    themeMode.dispose();
     backend.auth.removeListener(_onAuth);
     for (final s in [..._subs, ..._userSubs]) {
       s.cancel();

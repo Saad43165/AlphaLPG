@@ -67,26 +67,19 @@ void main() {
     await tapText(tester, 'Continue');
 
     expect(find.text('Step 3 of 3'), findsOneWidget);
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'House / shop no., street, block'),
-      'Shop 3, MM Alam Road',
-    );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Area / society'),
-      'Gulb',
-    );
-    await tester.pumpAndSettle();
-    // Typing filters the Lahore area shortcuts; tap the match.
-    await tester.tap(find.widgetWithText(ActionChip, 'Gulberg'));
-    await tester.pumpAndSettle();
+    // No typing: one tap finds the phone, the map pins it, the address is filled in.
+    await tapText(tester, 'Use my current location');
+    expect(find.text('DELIVER TO THIS SPOT'), findsOneWidget);
+    expect(find.text('Main Boulevard'), findsOneWidget);
+    expect(find.text('Gulberg III, Lahore'), findsOneWidget);
+    await tapText(tester, 'Shop');
+    await tapText(tester, 'Confirm location');
+    expect(find.text('Shop'), findsOneWidget);
     await tapText(tester, 'Save & finish');
 
-    // Straight back to checkout, cart intact, new address selected.
+    // Straight back to checkout, cart intact, location already selected.
     expect(find.text('Checkout'), findsOneWidget);
-    expect(
-      find.textContaining('Shop 3, MM Alam Road, Gulberg'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Main Boulevard, Gulberg III'), findsOneWidget);
     expect(find.textContaining('Bilal Ahmed'), findsOneWidget);
 
     // Pay by JazzCash with a transaction ID.
@@ -96,7 +89,7 @@ void main() {
       find.widgetWithText(TextField, 'Transaction ID (TID)'),
       'TX12345',
     );
-    await tapText(tester, 'Place order');
+    await slideToOrder(tester);
     expect(find.text('Order placed!'), findsOneWidget);
     expect(find.text('Transaction ID TX12345'), findsOneWidget);
     expect(find.text('Keep 2 empty cylinders ready'), findsOneWidget);

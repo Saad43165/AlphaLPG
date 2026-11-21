@@ -125,7 +125,7 @@ class CartButton extends StatelessWidget {
         textColor: onDark ? Brand.navy : Colors.white,
         child: Icon(
           Icons.shopping_bag_outlined,
-          color: onDark ? Colors.white : Brand.navy,
+          color: onDark ? Colors.white : context.pal.ink,
         ),
       ),
     );
@@ -356,7 +356,7 @@ void showMessage(BuildContext context, String message, {bool error = false}) {
     ..showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: error ? const Color(0xFFB3261E) : Brand.navy,
+        backgroundColor: error ? const Color(0xFFB3261E) : null,
       ),
     );
 }

@@ -1,18 +1,18 @@
 import 'package:alpha_core/alpha_core.dart';
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/cart.dart';
 import '../../theme/brand.dart';
 import '../../widgets/common.dart';
+import '../../utils/haptics.dart';
 
 Future<void> showProductSheet(BuildContext context, Product product) =>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.pal.card,
       constraints: const BoxConstraints(maxWidth: 560),
       builder: (_) => _ProductSheet(product),
     );
@@ -47,7 +47,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                   width: 120,
                   height: 140,
                   decoration: BoxDecoration(
-                    color: Brand.surface,
+                    color: context.pal.surface,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   padding: const EdgeInsets.all(10),
@@ -123,7 +123,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                   child: FilledButton(
                     onPressed: p.inStock
                         ? () {
-                            HapticFeedback.mediumImpact();
+                            Haptics.medium();
                             context.read<Cart>().add(p.id, _type, _qty);
                             Navigator.pop(context);
                           }

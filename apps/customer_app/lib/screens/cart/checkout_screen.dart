@@ -1,5 +1,4 @@
 import 'package:alpha_core/alpha_core.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +11,9 @@ import '../../utils/format.dart';
 import '../../widgets/address_picker.dart';
 import '../../widgets/common.dart';
 import '../../widgets/payment.dart';
+import '../../widgets/slide_to_confirm.dart';
 import 'cart_screen.dart';
+import '../../utils/haptics.dart';
 
 enum DeliverySlot {
   morning('Morning', 9, 12),
@@ -42,7 +43,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   PaymentMethod _payment = PaymentMethod.cashOnDelivery;
   final _reference = TextEditingController();
   final _notes = TextEditingController();
-  bool _placing = false;
 
   @override
   void dispose() {
@@ -53,38 +53,37 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Future<void> _addAddress() async {
     final state = context.read<AppState>();
-    final a = await context.push<Address>('/account/addresses/new');
+    final a = await context.push<Address>('/location');
     if (a != null) state.selectAddress(a.id);
   }
 
-  Future<void> _place() async {
+  Future<bool> _place() async {
     final state = context.read<AppState>();
     final backend = context.read<Backend>();
     final cart = context.read<Cart>();
     final profile = state.profile;
     final address = state.selectedAddress;
-    if (profile == null) return;
+    if (profile == null) return false;
     if (address == null) {
-      showMessage(context, 'Please add a delivery address', error: true);
-      return;
+      showMessage(context, 'Please set your delivery location', error: true);
+      return false;
     }
     final items = cart.toOrderItems(state.productById);
     final price = PriceBreakdown.of(items, state.settings);
     final problem = price.problem(state.settings);
     if (problem != null) {
       showMessage(context, problem, error: true);
-      return;
+      return false;
     }
 
     if (_payment.isPrepaid) {
       final tidProblem = validateTransactionId(_reference.text);
       if (tidProblem != null) {
         showMessage(context, tidProblem, error: true);
-        return;
+        return false;
       }
     }
-    HapticFeedback.mediumImpact();
-    setState(() => _placing = true);
+    Haptics.medium();
     try {
       final id = await backend.orders.place(
         LpgOrder(
@@ -111,6 +110,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
       cart.clear();
       if (mounted) context.go('/order-placed/$id');
+      return true;
     } catch (e) {
       if (mounted) {
         showMessage(
@@ -119,9 +119,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           error: true,
         );
       }
-    } finally {
-      if (mounted) setState(() => _placing = false);
     }
+    return false;
   }
 
   @override
@@ -156,8 +155,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: address == null
                   ? ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const CircleAvatar(
-                        backgroundColor: Brand.blueTint,
+                      leading: CircleAvatar(
+                        backgroundColor: context.pal.tint,
                         child: Icon(
                           Icons.add_location_alt_rounded,
                           color: Brand.blueDark,
@@ -194,13 +193,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               ),
                               Text(
                                 address.oneLine,
-                                style: const TextStyle(color: Brand.muted),
+                                style: TextStyle(color: context.pal.muted),
                               ),
                               if (state.profile != null)
                                 Text(
                                   '${state.profile!.name} · ${prettyPkMobile(state.profile!.phone)}',
-                                  style: const TextStyle(
-                                    color: Brand.muted,
+                                  style: TextStyle(
+                                    color: context.pal.muted,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -310,9 +309,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 4),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.pal.card,
                 borderRadius: BorderRadius.circular(Brand.radius),
-                boxShadow: Brand.shadow,
+                boxShadow: context.pal.shadow,
               ),
               clipBehavior: Clip.antiAlias,
               child: Theme(
@@ -352,21 +351,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 12),
             PriceSummary(price: price, settings: state.settings),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'By placing this order you agree to keep empty cylinders ready for refill orders. '
               'Alpha LPG will confirm your order and final price.',
-              style: TextStyle(fontSize: 12, color: Brand.muted),
+              style: TextStyle(fontSize: 12, color: context.pal.muted),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: CheckoutBar(
+      bottomNavigationBar: _SlideBar(
         total: price.total,
         caption: _payment.label,
-        label: 'Place order',
-        busy: _placing,
         problem: items.isEmpty ? 'Your cart is empty.' : null,
-        onPressed: _place,
+        onConfirmed: _place,
       ),
     );
   }
@@ -394,9 +391,9 @@ class _Section extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 12, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: Brand.shadow,
+        boxShadow: context.pal.shadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -456,11 +453,11 @@ class _ChoiceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: selected ? Brand.blueTint : Colors.white,
+    color: selected ? context.pal.tint : context.pal.card,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(14),
       side: BorderSide(
-        color: selected ? Brand.blueDark : Brand.line,
+        color: selected ? Brand.blueDark : context.pal.line,
         width: selected ? 1.5 : 1,
       ),
     ),
@@ -471,7 +468,7 @@ class _ChoiceTile extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Icon(icon, color: selected ? Brand.blueDark : Brand.muted),
+            Icon(icon, color: selected ? Brand.blueDark : context.pal.muted),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -483,12 +480,105 @@ class _ChoiceTile extends StatelessWidget {
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(color: Brand.muted, fontSize: 12),
+                    style: TextStyle(color: context.pal.muted, fontSize: 12),
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// Sticky bottom bar: the total, and a slide-to-order control.
+class _SlideBar extends StatelessWidget {
+  const _SlideBar({
+    required this.total,
+    required this.caption,
+    required this.onConfirmed,
+    this.problem,
+  });
+
+  final int total;
+  final String caption;
+  final String? problem;
+  final Future<bool> Function() onConfirmed;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: context.pal.card,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(
+            alpha: context.pal.isDark ? 0.4 : 0.08,
+          ),
+          blurRadius: 20,
+          offset: const Offset(0, -4),
+        ),
+      ],
+    ),
+    child: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Constrained(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (problem != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    problem!,
+                    style: const TextStyle(
+                      color: Brand.danger,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        formatRupees(total),
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 96,
+                        child: Text(
+                          caption,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.pal.muted,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SlideToConfirm(
+                      label: 'Slide to order',
+                      enabled: problem == null,
+                      onConfirmed: onConfirmed,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     ),

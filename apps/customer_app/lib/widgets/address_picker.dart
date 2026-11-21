@@ -13,6 +13,11 @@ Future<void> showAddressPicker(BuildContext context) {
     context.push('/login?from=/');
     return Future.value();
   }
+  if (state.addresses.isEmpty) {
+    // Nothing saved yet: go straight to the map.
+    context.push<Address>('/location');
+    return Future.value();
+  }
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -44,7 +49,7 @@ Future<void> showAddressPicker(BuildContext context) {
               OutlinedButton.icon(
                 onPressed: () {
                   Navigator.pop(sheet);
-                  context.push<Address>('/account/addresses/new').then((a) {
+                  context.push<Address>('/location').then((a) {
                     if (a != null) state.selectAddress(a.id);
                   });
                 },
@@ -74,11 +79,11 @@ class _AddressOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: selected ? Brand.blueTint : Colors.white,
+    color: selected ? context.pal.tint : context.pal.card,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
       side: BorderSide(
-        color: selected ? Brand.blueDark : Brand.line,
+        color: selected ? Brand.blueDark : context.pal.line,
         width: selected ? 1.5 : 1,
       ),
     ),
@@ -91,7 +96,7 @@ class _AddressOption extends StatelessWidget {
           children: [
             Icon(
               selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? Brand.blueDark : Brand.muted,
+              color: selected ? Brand.blueDark : context.pal.muted,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -102,7 +107,7 @@ class _AddressOption extends StatelessWidget {
                     title,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                  Text(subtitle, style: const TextStyle(color: Brand.muted)),
+                  Text(subtitle, style: TextStyle(color: context.pal.muted)),
                 ],
               ),
             ),
