@@ -1,0 +1,359 @@
+import 'package:alpha_core/alpha_core.dart';
+import 'package:alpha_rider/app.dart';
+import 'package:alpha_rider/services/backend.dart';
+import 'package:alpha_rider/services/location_tracker.dart';
+import 'package:alpha_rider/services/rider_auth.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
+class FakeAuth extends RiderAuth {
+  FakeAuth({this.accounts = const {}});
+  final Map<String, ({String uid, String password})> accounts;
+  String? _uid;
+  String? _email;
+
+  @override
+  String? get uid => _uid;
+  @override
+  String? get email => _email;
+
+  @override
+  Future<void> signIn(String email, String password) async {
+    final a = accounts[email.trim()];
+    if (a == null || a.password != password) {
+      throw AuthFailure('Email or password is incorrect.');
+    }
+    _uid = a.uid;
+    _email = email.trim();
+    notifyListeners();
+  }
+
+  @override
+  Future<void> sendPasswordReset(String email) async {}
+
+  @override
+  Future<void> signOut() async {
+    _uid = null;
+    notifyListeners();
+  }
+}
+
+class FakeTracker extends LocationTracker {
+  FakeTracker({this.access = TrackerAccess.granted});
+  TrackerAccess access;
+  String? _id;
+
+  @override
+  String? get orderId => _id;
+  @override
+  DateTime? get lastShared => null;
+  @override
+  Future<TrackerAccess> ensureAccess() async => access;
+  @override
+  Future<void> start(String orderId, OrderRepository orders) async {
+    _id = orderId;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> stop() async {
+    if (_id != null) {
+      _id = null;
+      notifyListeners();
+    }
+  }
+
+  @override
+  Future<void> openSettings() async {}
+}
+
+LpgOrder sampleOrder({
+  String customer = 'u1',
+  PaymentMethod method = PaymentMethod.cashOnDelivery,
+  int qty = 2,
+}) => LpgOrder(
+  customerId: customer,
+  customerName: 'Bilal Ahmed',
+  customerPhone: '+923001234567',
+  items: [
+    OrderItem(
+      productId: 'cyl-11-8kg',
+      name: '11.8kg Gas Cylinder',
+      sizeKg: 11.8,
+      type: PurchaseType.refill,
+      unitPrice: 3296,
+      quantity: qty,
+    ),
+  ],
+  subtotal: 3296 * qty,
+  deliveryFee: 0,
+  total: 3296 * qty,
+  paymentMethod: method,
+  address: const Address(
+    label: 'Home',
+    line1: 'Main Boulevard',
+    area: 'Gulberg III',
+    lat: 31.5107,
+    lng: 74.3445,
+  ),
+);
+
+class Rig {
+  Rig({this.tracker})
+    : store = MemoryStore(),
+      auth = FakeAuth(
+        accounts: {'imran@alphalpg.pk': (uid: 'r1', password: 'secret1')},
+      );
+
+  final MemoryStore store;
+  final FakeAuth auth;
+  FakeTracker? tracker;
+
+  late final backend = RiderBackend(
+    auth: auth,
+    orders: OrderRepository.memory(store),
+    riders: RiderRepository.memory(store),
+    catalog: CatalogRepository.memory(store),
+    tracker: tracker ??= FakeTracker(),
+  );
+}
+
+Future<void> pumpRider(WidgetTester tester, Rig rig) async {
+  tester.view.physicalSize = const Size(1080, 2400);
+  tester.view.devicePixelRatio = 2.6;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(RiderApp(backend: rig.backend));
+  await tester.pumpAndSettle();
+}
+
+Future<void> tapText(WidgetTester tester, String text) async {
+  final f = find.text(text).last;
+  await tester.ensureVisible(f);
+  await tester.pumpAndSettle();
+  await tester.tap(f);
+  await tester.pumpAndSettle();
+}
+
+Future<void> signIn(
+  WidgetTester tester, {
+  String email = 'imran@alphalpg.pk',
+  String password = 'secret1',
+}) async {
+  await tester.enterText(find.widgetWithText(TextFormField, 'Email'), email);
+  await tester.enterText(
+    find.widgetWithText(TextFormField, 'Password'),
+    password,
+  );
+  await tapText(tester, 'Sign in');
+}
+
+Future<void> addRider(WidgetTester tester, Rig rig, {bool active = true}) =>
+    tester.runAsync(
+      () => rig.backend.riders.saveRider(
+        RiderProfile(
+          uid: 'r1',
+          name: 'Imran Khan',
+          phone: '+923005550001',
+          active: active,
+        ),
+      ),
+    );
+
+Future<LpgOrder> orderOf(WidgetTester tester, Rig rig, String id) async =>
+    (await tester.runAsync(() => rig.backend.orders.watchOrder(id).first))!;
+
+Future<String> placeOrder(
+  WidgetTester tester,
+  Rig rig, {
+  PaymentMethod method = PaymentMethod.cashOnDelivery,
+}) async => (await tester.runAsync(
+  () => rig.backend.orders.place(sampleOrder(method: method)),
+))!;
+
+void main() {
+  testWidgets('wrong password is refused with a clear message', (tester) async {
+    final rig = Rig();
+    await pumpRider(tester, rig);
+    await signIn(tester, password: 'nope');
+    expect(find.text('Email or password is incorrect.'), findsOneWidget);
+    expect(find.text('Sign in'), findsWidgets);
+  });
+
+  testWidgets(
+    'a signed-in account that is not a rider is told so, and can sign out',
+    (tester) async {
+      final rig = Rig();
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      expect(
+        find.text('This account is not set up as a rider'),
+        findsOneWidget,
+      );
+      await tapText(tester, 'Sign out');
+      expect(find.text('Rider'.toUpperCase()), findsOneWidget);
+    },
+  );
+
+  testWidgets('a blocked rider cannot get in', (tester) async {
+    final rig = Rig();
+    await addRider(tester, rig, active: false);
+    await pumpRider(tester, rig);
+    await signIn(tester);
+    expect(find.text('Your rider account is switched off'), findsOneWidget);
+  });
+
+  testWidgets(
+    'online → accept a job → start delivery shares location → deliver with cash',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      final id = await placeOrder(tester, rig);
+      await pumpRider(tester, rig);
+      await signIn(tester);
+
+      // Offline riders cannot take jobs.
+      expect(find.text('You are offline'), findsOneWidget);
+      await tapText(tester, 'New');
+      expect(
+        find.text('You are offline, so you cannot accept orders.'),
+        findsOneWidget,
+      );
+      await tapText(tester, 'Accept job');
+      expect(find.textContaining('Go online first'), findsOneWidget);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(find.text('You are online and can take orders'), findsOneWidget);
+      await tapText(tester, 'Accept job');
+      expect(find.text('Job accepted. Find it in "My jobs".'), findsOneWidget);
+
+      // It moved to My jobs, with the cash to collect shown.
+      expect(find.text('Collect Rs. 6,592'), findsOneWidget);
+      expect(find.text('Ready to go'), findsOneWidget);
+      var o = await orderOf(tester, rig, id);
+      expect(o.riderId, 'r1');
+      expect(o.status, OrderStatus.assigned);
+
+      // Start: status changes and location sharing begins.
+      await tapText(tester, 'Start delivery');
+      expect(rig.tracker!.orderId, id);
+      expect(
+        find.text('Sharing your location with the customer'),
+        findsOneWidget,
+      );
+      o = await orderOf(tester, rig, id);
+      expect(o.status, OrderStatus.outForDelivery);
+
+      // Deliver: cash prefilled with the amount due.
+      await tapText(tester, 'Mark delivered');
+      expect(find.text('Confirm delivery'), findsOneWidget);
+      expect(find.widgetWithText(TextField, '6592'), findsOneWidget);
+      await tapText(tester, 'Mark as delivered');
+      expect(find.text('Delivered. Well done!'), findsOneWidget);
+      expect(
+        rig.tracker!.orderId,
+        isNull,
+        reason: 'location sharing stops when delivered',
+      );
+      o = await orderOf(tester, rig, id);
+      expect(o.status, OrderStatus.delivered);
+      expect(o.paymentStatus, PaymentStatus.paid);
+      expect(o.cashCollected, 6592);
+      expect(o.emptiesCollected, 2);
+
+      // Today's totals on the History tab.
+      await tapText(tester, 'History');
+      expect(find.text('Rs. 6,592'), findsWidgets);
+      expect(find.text('Cash to hand in'), findsOneWidget);
+      expect(find.text('Delivered today'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'without location permission a delivery cannot start (customers could not follow)',
+    (tester) async {
+      final rig = Rig(tracker: FakeTracker(access: TrackerAccess.denied));
+      await addRider(tester, rig);
+      final id = await placeOrder(tester, rig);
+      await tester.runAsync(() => rig.backend.riders.setOnline('r1', true));
+      await tester.runAsync(
+        () => rig.backend.orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran Khan',
+          phone: '0300',
+        ),
+      );
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      await tapText(tester, 'Start delivery');
+      expect(find.textContaining('Allow location to start'), findsOneWidget);
+      final o = await orderOf(tester, rig, id);
+      expect(
+        o.status,
+        OrderStatus.assigned,
+        reason: 'status must not change without location',
+      );
+      expect(rig.tracker!.isTracking, isFalse);
+    },
+  );
+
+  testWidgets('another rider took the order first', (tester) async {
+    final rig = Rig();
+    await addRider(tester, rig);
+    final id = await placeOrder(tester, rig);
+    await tester.runAsync(() => rig.backend.riders.setOnline('r1', true));
+    await pumpRider(tester, rig);
+    await signIn(tester);
+    await tapText(tester, 'New');
+    // Someone else accepts while this rider is looking at the list.
+    await tester.runAsync(
+      () => rig.backend.orders.acceptOrder(
+        id,
+        riderId: 'r2',
+        name: 'Bilal',
+        phone: '0301',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('No new orders'), findsOneWidget);
+  });
+
+  testWidgets('app reopened mid-delivery resumes location sharing', (
+    tester,
+  ) async {
+    final rig = Rig();
+    await addRider(tester, rig);
+    final id = await placeOrder(tester, rig);
+    await tester.runAsync(() async {
+      await rig.backend.orders.acceptOrder(
+        id,
+        riderId: 'r1',
+        name: 'Imran Khan',
+        phone: '0300',
+      );
+      await rig.backend.orders.startDelivery(id, 'r1');
+    });
+    await pumpRider(tester, rig);
+    await signIn(tester);
+    expect(rig.tracker!.orderId, id);
+    expect(
+      find.text('Sharing your location with the customer'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('prepaid orders are not shown as cash to collect', (
+    tester,
+  ) async {
+    final rig = Rig();
+    await addRider(tester, rig);
+    await placeOrder(tester, rig, method: PaymentMethod.jazzCash);
+    await tester.runAsync(() => rig.backend.riders.setOnline('r1', true));
+    await pumpRider(tester, rig);
+    await signIn(tester);
+    await tapText(tester, 'New');
+    expect(find.textContaining('Collect Rs.'), findsNothing);
+    expect(find.textContaining('JazzCash: awaiting'), findsOneWidget);
+  });
+}

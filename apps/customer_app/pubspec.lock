@@ -16,6 +16,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  alpha_ui:
+    dependency: "direct main"
+    description:
+      path: "../../packages/alpha_ui"
+      relative: true
+    source: path
+    version: "0.1.0"
   ansicolor:
     dependency: transitive
     description:

@@ -107,6 +107,49 @@ and an **admin app** can share the same data model and backend.
   - A sticky cart bar.
   - Live status tracking.
 
+## Rider app (`apps/rider_app`)
+
+A separate app for delivery riders (kept apart from the customer app so the
+location-sharing permission and staff screens never ship to customers).
+
+- Sign in with the email and password the owner created. Riders cannot sign themselves up.
+- **Online / offline** switch: only online riders can take orders.
+- **New** tab: orders nobody has taken yet. The first rider to accept gets the
+  job; a second rider is told "too late".
+- **My jobs**: start delivery, navigate (opens Google Maps, no map fee), call or WhatsApp the customer.
+- **Live location**: while a delivery is "On the way" the phone shares its
+  position (Android foreground service, about every 6 seconds). The customer sees the rider on a map.
+  It stops when the order is delivered.
+- **Mark delivered**: records cash taken at the door (cash-on-delivery orders become Paid) and empties collected.
+- **History**: today's deliveries, cash to hand in, empties returned.
+- No demo mode: it needs the real Firebase project (see below).
+
+### Adding a rider
+Either run the script, on the owner's computer with a service account key:
+
+```bash
+cd firebase/functions
+GOOGLE_APPLICATION_CREDENTIALS=key.json npm run add-rider -- imran@alphalpg.pk "Imran Khan" +923001234567 "Temp#Pass1"
+```
+
+or by hand in the Firebase console:
+1. **Authentication → Users → Add user** (email and password), and copy the user's UID.
+2. **Firestore → `riders` → add a document** with that UID as the ID and fields
+   `name` (string), `phone` (string), `vehicle` ("Motorbike"), `active` (true), `online` (false).
+
+Set `active` to false to block a rider. To make the owner an admin, create an
+empty document `admins/<owner UID>` (or run `npm run add-admin -- owner@alphalpg.pk`).
+
+Staff roles are read from these documents, so this works on the free Firebase plan.
+
+### Connecting the rider app to Firebase
+```bash
+cd apps/rider_app
+flutterfire configure --project=<project-id> --android-package-name=pk.alphalpg.rider
+flutter build apk --release --split-per-abi
+```
+Then deploy `firebase/firestore.rules`.
+
 ## Map and search key (Geoapify)
 
 The map, address search and "address from a pin" use Geoapify (free plan, no

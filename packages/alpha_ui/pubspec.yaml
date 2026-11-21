@@ -1,0 +1,18 @@
+name: alpha_ui
+description: Alpha LPG brand colours, light/dark theme and shared widgets for the customer, rider and admin apps.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  material_ui: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

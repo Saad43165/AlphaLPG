@@ -12,6 +12,7 @@ import '../../utils/format.dart';
 import '../../utils/launch.dart';
 import '../../widgets/common.dart';
 import '../../widgets/live.dart';
+import '../../widgets/live_rider_map.dart';
 import '../../widgets/payment.dart';
 import '../../utils/haptics.dart';
 
@@ -91,7 +92,8 @@ extension _Tracking on LpgOrder {
     _ => Brand.headerGradient,
   };
 
-  /// "Arriving by 4:30 PM", "Delivered at 3:12 PM", scheduled slot …
+  /// Only real facts: when it was delivered, or the slot the customer chose.
+  /// (Live "minutes away" comes from the rider's GPS on the map card.)
   String? get etaLine {
     if (status == OrderStatus.cancelled) return null;
     if (status == OrderStatus.delivered) {
@@ -102,12 +104,7 @@ extension _Tracking on LpgOrder {
       final slot = notes.split('\n').first.replaceFirst('Slot: ', '');
       return 'Scheduled · ${formatDay(scheduledFor!)}, $slot';
     }
-    final base = status == OrderStatus.outForDelivery
-        ? (timeOf(OrderStatus.outForDelivery) ?? DateTime.now()).add(
-            const Duration(minutes: 35),
-          )
-        : (createdAt ?? DateTime.now()).add(const Duration(minutes: 120));
-    return 'Arriving by ${formatTime(base)}';
+    return null;
   }
 }
 
@@ -192,6 +189,10 @@ class _TrackingView extends StatelessWidget {
                         _CancelledCard(o)
                       else
                         _StepTracker(o),
+                      if (o.status == OrderStatus.outForDelivery) ...[
+                        const SizedBox(height: 14),
+                        LiveRiderMap(order: o),
+                      ],
                       if (riderVisible) ...[
                         const SizedBox(height: 14),
                         _RiderCard(o),

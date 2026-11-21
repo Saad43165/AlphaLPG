@@ -65,6 +65,7 @@ class Backend {
           FirebaseAuth.instance,
         );
       } catch (e) {
+        if (Env.production) rethrow;
         debugPrint('Firebase unavailable, starting demo mode: $e');
       }
     }

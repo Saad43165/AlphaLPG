@@ -1,0 +1,236 @@
+import 'package:alpha_ui/alpha_ui.dart';
+import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
+
+import '../state/session.dart';
+import '../widgets/common.dart';
+import 'account_screen.dart';
+import 'available_screen.dart';
+import 'history_screen.dart';
+import 'jobs_screen.dart';
+
+/// Header with the on/off-shift switch, a location banner, and four tabs.
+class HomeShell extends StatefulWidget {
+  const HomeShell({super.key});
+
+  @override
+  State<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends State<HomeShell> {
+  int _tab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<RiderSession>();
+    final pal = context.pal;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: Brand.lightStatusBar,
+      child: Scaffold(
+        body: Column(
+          children: [
+            _Header(session: s),
+            _LocationBanner(session: s),
+            Expanded(
+              child: IndexedStack(
+                index: _tab,
+                children: [
+                  JobsScreen(onFindJobs: () => setState(() => _tab = 1)),
+                  AvailableScreen(onAccepted: () => setState(() => _tab = 0)),
+                  const HistoryScreen(),
+                  const AccountScreen(),
+                ],
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _tab,
+          onDestinationSelected: (i) => setState(() => _tab = i),
+          destinations: [
+            NavigationDestination(
+              icon: Badge.count(
+                count: s.jobs.length,
+                isLabelVisible: s.jobs.isNotEmpty,
+                child: const Icon(Icons.two_wheeler_outlined),
+              ),
+              selectedIcon: Badge.count(
+                count: s.jobs.length,
+                isLabelVisible: s.jobs.isNotEmpty,
+                child: const Icon(Icons.two_wheeler_rounded),
+              ),
+              label: 'My jobs',
+            ),
+            NavigationDestination(
+              icon: Badge.count(
+                count: s.available.length,
+                isLabelVisible: s.available.isNotEmpty && s.online,
+                backgroundColor: Brand.cylinderRed,
+                child: const Icon(Icons.notifications_none_rounded),
+              ),
+              selectedIcon: Badge.count(
+                count: s.available.length,
+                isLabelVisible: s.available.isNotEmpty && s.online,
+                backgroundColor: Brand.cylinderRed,
+                child: const Icon(Icons.notifications_rounded),
+              ),
+              label: 'New',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.receipt_long_outlined, color: pal.muted),
+              selectedIcon: const Icon(Icons.receipt_long_rounded),
+              label: 'History',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded, color: pal.muted),
+              selectedIcon: const Icon(Icons.person_rounded),
+              label: 'Me',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.session});
+  final RiderSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    final online = session.online;
+    final name = (session.profile?.name ?? '').split(' ').first;
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: Brand.headerGradient,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 8, 14, 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const BrandLogo(height: 30, white: true),
+                    const SizedBox(height: 10),
+                    Text(
+                      name.isEmpty ? 'Rider' : 'Salam $name',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    Text(
+                      online
+                          ? 'You are online and can take orders'
+                          : 'You are offline',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.88),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Switch(
+                    value: online,
+                    activeTrackColor: Brand.success,
+                    inactiveTrackColor: Colors.white.withValues(alpha: 0.25),
+                    onChanged: (v) {
+                      HapticFeedback.selectionClick();
+                      session.setOnline(v);
+                    },
+                  ),
+                  Text(
+                    online ? 'ONLINE' : 'OFFLINE',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Green while sharing location; red if sharing should be on but cannot start.
+class _LocationBanner extends StatelessWidget {
+  const _LocationBanner({required this.session});
+  final RiderSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    final problem = session.trackingProblem;
+    if (problem != null) {
+      return Container(
+        width: double.infinity,
+        color: const Color(0xFFFFEEEB),
+        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+        child: Row(
+          children: [
+            const Icon(Icons.location_off_rounded, color: Brand.danger),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                problem,
+                style: const TextStyle(
+                  color: Color(0xFF7A1F1F),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: session.tracker.openSettings,
+              child: const Text('Settings'),
+            ),
+            TextButton(
+              onPressed: session.retryTracking,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+    if (session.tracker.isTracking) {
+      return Container(
+        width: double.infinity,
+        color: Brand.success.withValues(alpha: 0.14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: const Row(
+          children: [
+            Icon(Icons.my_location_rounded, color: Brand.success, size: 20),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Sharing your location with the customer',
+                style: TextStyle(
+                  color: Brand.success,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}

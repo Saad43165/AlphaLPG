@@ -47,6 +47,8 @@ dependencies:
   # In-memory database for demo mode (runs without Firebase).
   alpha_core:
     path: ../../packages/alpha_core
+  alpha_ui:
+    path: ../../packages/alpha_ui
   pdf: ^3.13.1
   printing: ^5.15.1
   flutter_map: ^8.3.2

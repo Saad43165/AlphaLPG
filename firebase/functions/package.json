@@ -10,7 +10,9 @@
     "test": "tsc && node --test lib/pricing.test.js",
     "deploy": "firebase deploy --only functions",
     "seed": "tsc && node lib/tools/seed.js",
-    "set-role": "tsc && node lib/tools/set-role.js"
+    "set-role": "tsc && node lib/tools/set-role.js",
+    "add-rider": "tsc && node lib/tools/add-rider.js",
+    "add-admin": "tsc && node lib/tools/add-admin.js"
   },
   "dependencies": {
     "firebase-admin": "^13.6.0",
