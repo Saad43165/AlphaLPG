@@ -59,7 +59,10 @@ class HelpScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Help & FAQs')),
+      appBar: AppBar(
+        leading: const ScreenBack(),
+        title: const Text('Help & FAQs'),
+      ),
       body: Constrained(
         child: ListView(
           padding: const EdgeInsets.all(16),

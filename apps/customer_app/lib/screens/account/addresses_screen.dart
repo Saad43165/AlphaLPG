@@ -15,7 +15,10 @@ class AddressesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Saved addresses')),
+      appBar: AppBar(
+        leading: const ScreenBack(),
+        title: const Text('Saved addresses'),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/location'),
         icon: const Icon(Icons.add_location_alt_outlined),

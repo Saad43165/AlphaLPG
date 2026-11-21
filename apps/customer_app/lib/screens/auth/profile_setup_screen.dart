@@ -83,6 +83,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     final text = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
+        leading: const ScreenBack(),
         title: Text(widget.editing ? 'Edit profile' : 'Welcome to Alpha LPG'),
         automaticallyImplyLeading: widget.editing,
       ),

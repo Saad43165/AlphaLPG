@@ -17,7 +17,10 @@ class SettingsScreen extends StatelessWidget {
     final pal = context.pal;
     final cycle = state.cycleDaysOverride;
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(
+        leading: const ScreenBack(),
+        title: const Text('Settings'),
+      ),
       body: Constrained(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),

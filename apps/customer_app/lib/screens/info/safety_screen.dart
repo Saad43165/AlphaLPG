@@ -132,7 +132,10 @@ class _SafetyScreenState extends State<SafetyScreen> {
     final s = context.watch<AppState>().settings;
     final wide = MediaQuery.sizeOf(context).width > 640;
     return Scaffold(
-      appBar: AppBar(title: const Text('Safety guide')),
+      appBar: AppBar(
+        leading: const ScreenBack(),
+        title: const Text('Safety guide'),
+      ),
       body: Constrained(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
@@ -684,6 +687,7 @@ class SafetyPosterScreen extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.black,
     appBar: AppBar(
+      leading: const ScreenBack(),
       backgroundColor: Colors.black,
       foregroundColor: Colors.white,
       systemOverlayStyle: Brand.lightStatusBar,

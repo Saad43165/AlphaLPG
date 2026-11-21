@@ -43,9 +43,6 @@ GoRouter buildRouter(AppState state) => GoRouter(
     if (needsAuth && !state.signedIn) {
       return '/login?from=${Uri.encodeComponent(s.uri.toString())}';
     }
-    if (state.signedIn && path == '/login') {
-      return s.uri.queryParameters['from'] ?? '/';
-    }
     if (state.needsProfile && path != '/setup' && path != '/location') {
       return '/setup';
     }

@@ -103,6 +103,14 @@ void main() {
     expect(find.text('Transaction ID: TX12345'), findsOneWidget);
     await scrollTo(tester, find.text('Cancel order'));
     expect(find.text('Cancel order'), findsOneWidget);
+
+    // Back from tracking lands on Home (it was opened on top of Home).
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('need LPG today?', skipOffstage: false),
+      findsOneWidget,
+    );
   });
 
   testWidgets('customer can cancel a placed order with a reason', (

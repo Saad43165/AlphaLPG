@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/backend.dart';
 import '../../theme/brand.dart';
 import '../../utils/format.dart';
+import '../../utils/nav.dart';
 import '../../widgets/common.dart';
 
 /// Two steps on one screen: mobile number, then the 6-digit SMS code.
@@ -26,7 +27,34 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _error;
   bool _busy = false;
 
-  AuthService get _auth => context.read<Backend>().auth;
+  bool _left = false;
+
+  // Kept as a field: `context` cannot be read while the screen is closing.
+  late final AuthService _auth;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth = context.read<Backend>().auth;
+    _auth.addListener(_onAuthChanged);
+  }
+
+  /// Leaves the login screen once signed in, *replacing* it so the screens
+  /// underneath (cart, home…) stay and Back keeps working.
+  void _onAuthChanged() {
+    if (!_auth.isSignedIn || _left) return;
+    _left = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = widget.from ?? '/';
+      final path = Uri.parse(target).path;
+      if (const ['/', '/orders', '/account'].contains(path)) {
+        context.go(target);
+      } else {
+        context.pushReplacement(target);
+      }
+    });
+  }
 
   Future<void> _sendCode() async {
     final e164 = normalizePkMobile(_phone.text);
@@ -66,6 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _auth.removeListener(_onAuthChanged);
     _phone.dispose();
     _code.dispose();
     super.dispose();
@@ -80,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+          onPressed: () => context.backOrHome(),
         ),
       ),
       body: Constrained(

@@ -138,7 +138,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (!slots.contains(_slot) && slots.isNotEmpty) _slot = slots.first;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Checkout')),
+      appBar: AppBar(
+        leading: const ScreenBack(),
+        title: const Text('Checkout'),
+      ),
       body: Constrained(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
@@ -429,7 +432,8 @@ class _Section extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          child,
+          // Lets list-tile ripples paint on top of the card colour.
+          Material(type: MaterialType.transparency, child: child),
         ],
       ),
     ),

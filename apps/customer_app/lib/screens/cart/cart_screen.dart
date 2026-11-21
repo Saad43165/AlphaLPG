@@ -46,6 +46,7 @@ class CartScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ScreenBack(),
         title: Text(cart.isEmpty ? 'Your cart' : 'Your cart (${cart.count})'),
         actions: [
           if (!cart.isEmpty)

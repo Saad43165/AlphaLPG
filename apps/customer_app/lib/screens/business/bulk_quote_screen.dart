@@ -80,7 +80,7 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
   Widget build(BuildContext context) {
     if (_sent) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(leading: const ScreenBack()),
         body: EmptyState(
           icon: Icons.mark_email_read_outlined,
           title: 'Request received',
@@ -93,7 +93,10 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Bulk & commercial supply')),
+      appBar: AppBar(
+        leading: const ScreenBack(),
+        title: const Text('Bulk & commercial supply'),
+      ),
       body: Constrained(
         maxWidth: 560,
         child: Form(

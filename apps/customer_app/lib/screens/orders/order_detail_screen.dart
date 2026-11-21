@@ -31,7 +31,7 @@ class OrderDetailScreen extends StatelessWidget {
         final o = snap.data;
         if (snap.hasError) {
           return Scaffold(
-            appBar: AppBar(),
+            appBar: AppBar(leading: const ScreenBack()),
             body: EmptyState(
               icon: Icons.error_outline,
               title: 'Could not load this order',
@@ -41,7 +41,7 @@ class OrderDetailScreen extends StatelessWidget {
         }
         if (o == null) {
           return Scaffold(
-            appBar: AppBar(),
+            appBar: AppBar(leading: const ScreenBack()),
             body: snap.connectionState == ConnectionState.waiting
                 ? const Center(child: CircularProgressIndicator())
                 : const EmptyState(
@@ -145,6 +145,7 @@ class _TrackingView extends StatelessWidget {
         body: CustomScrollView(
           slivers: [
             SliverAppBar(
+              leading: const ScreenBack(),
               pinned: true,
               expandedHeight:
                   320 + (MediaQuery.textScalerOf(context).scale(15) - 15) * 8,

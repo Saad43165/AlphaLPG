@@ -8,6 +8,7 @@ import '../../state/app_state.dart';
 import '../../state/cart.dart';
 import '../../theme/brand.dart';
 import '../../utils/format.dart';
+import '../../utils/nav.dart';
 import '../../widgets/common.dart';
 import '../../utils/haptics.dart';
 
@@ -65,6 +66,13 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
+  /// Leaves setup: signs out so the customer is never trapped here.
+  Future<void> _cancel() async {
+    final backend = context.read<Backend>();
+    await backend.auth.signOut();
+    if (mounted) context.go('/');
+  }
+
   void _next() {
     if (!_forms[_step].currentState!.validate()) return;
     Haptics.select();
@@ -104,7 +112,11 @@ class _SetupScreenState extends State<SetupScreen> {
         context,
         "You're all set, ${_name.text.trim().split(' ').first}!",
       );
-      context.go(goCheckout ? '/checkout' : '/');
+      if (goCheckout) {
+        context.goHomeThenPush(['/cart', '/checkout']);
+      } else {
+        context.go('/');
+      }
     } catch (e) {
       if (mounted) showMessage(context, 'Could not save: $e', error: true);
     } finally {
@@ -131,6 +143,10 @@ class _SetupScreenState extends State<SetupScreen> {
               : null,
           automaticallyImplyLeading: false,
           title: Text('Step ${_step + 1} of 3'),
+          actions: [
+            if (_step == 0)
+              TextButton(onPressed: _cancel, child: const Text('Cancel')),
+          ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(6),
             child: Padding(

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../state/cart.dart';
 import '../theme/brand.dart';
+import '../utils/nav.dart';
 
 class BrandLogo extends StatelessWidget {
   const BrandLogo({super.key, this.height = 40, this.white = false});
@@ -359,4 +360,14 @@ void showMessage(BuildContext context, String message, {bool error = false}) {
         backgroundColor: error ? const Color(0xFFB3261E) : null,
       ),
     );
+}
+
+/// Back button that always works: goes back, or Home when this screen is the
+/// only one in the stack (e.g. after sign-in or a deep link).
+class ScreenBack extends StatelessWidget {
+  const ScreenBack({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      BackButton(onPressed: () => context.backOrHome());
 }

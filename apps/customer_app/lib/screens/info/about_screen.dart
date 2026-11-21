@@ -39,7 +39,11 @@ class AboutScreen extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar(pinned: true, title: Text('About us')),
+          const SliverAppBar(
+            pinned: true,
+            leading: ScreenBack(),
+            title: Text('About us'),
+          ),
           SliverToBoxAdapter(
             child: Constrained(
               child: Padding(
