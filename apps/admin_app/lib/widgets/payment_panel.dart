@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../state/session.dart';
 import '../utils/order_x.dart';
+import '../utils/payment_checks.dart';
 
 String _accountFor(PaymentMethod m, AppSettings s) => switch (m) {
   PaymentMethod.jazzCash => s.jazzCashAccount,
@@ -97,6 +98,47 @@ class PaymentPanel extends StatelessWidget {
             }, style: const TextStyle(fontWeight: FontWeight.w700, height: 1.35)),
           ),
         ],
+        ...(() {
+          final warnings = paymentWarnings(
+            o,
+            context.watch<AdminSession>().orders,
+          );
+          if (warnings.isEmpty) return <Widget>[];
+          return <Widget>[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Brand.danger.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Brand.danger.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Brand.danger),
+                      SizedBox(width: 8),
+                      Text(
+                        'Check before marking paid',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  for (final w in warnings)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        '• ${w.text}',
+                        style: const TextStyle(height: 1.35),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ];
+        })(),
         if (req != null) ...[
           const SizedBox(height: 10),
           Container(

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:alpha_core/alpha_core.dart';
 import 'package:alpha_ui/alpha_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../state/session.dart';
@@ -103,11 +106,12 @@ Future<bool> completeDeliveryFlow(
     );
     return false;
   }
-  final result = await showModalBottomSheet<({int cash, int empties})>(
-    context: context,
-    isScrollControlled: true,
-    builder: (_) => _CompleteSheet(order: order),
-  );
+  final result =
+      await showModalBottomSheet<({int cash, int empties, String? photo})>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => _CompleteSheet(order: order),
+      );
   if (result == null || !context.mounted) return false;
   final ok = await session.complete(
     order,
@@ -116,6 +120,11 @@ Future<bool> completeDeliveryFlow(
   );
   if (!context.mounted) return ok;
   if (ok) {
+    final photo = result.photo;
+    if (photo != null) {
+      // Best effort: the delivery is already saved.
+      unawaited(session.addProof(order, photo));
+    }
     HapticFeedback.heavyImpact();
     showMessage(context, 'Delivered. Well done!');
   } else {
@@ -142,6 +151,33 @@ class _CompleteSheetState extends State<_CompleteSheet> {
     text: widget.order.amountDue > 0 ? '${widget.order.amountDue}' : '0',
   );
   late int _empties = widget.order.emptiesToCollect;
+  String? _photo;
+  bool _photoBusy = false;
+
+  Future<void> _takePhoto() async {
+    setState(() => _photoBusy = true);
+    try {
+      final f = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        maxWidth: 2200,
+        imageQuality: 90,
+      );
+      if (f != null) {
+        final data = await compressReceiptPhoto(await f.readAsBytes());
+        if (mounted) setState(() => _photo = data);
+      }
+    } catch (_) {
+      if (mounted) {
+        showMessage(
+          context,
+          'Could not use the photo. Try again.',
+          error: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -257,11 +293,40 @@ class _CompleteSheetState extends State<_CompleteSheet> {
                   style: TextStyle(color: pal.muted, fontSize: 12),
                 ),
               ),
+            const SizedBox(height: 16),
+            if (_photo != null)
+              Row(
+                children: [
+                  ReceiptImage(_photo!, size: 64),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('Delivery photo added')),
+                  TextButton(
+                    onPressed: () => setState(() => _photo = null),
+                    child: const Text('Remove'),
+                  ),
+                ],
+              )
+            else
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size(0, 46)),
+                onPressed: _photoBusy ? null : _takePhoto,
+                icon: const Icon(Icons.photo_camera_rounded),
+                label: Text(
+                  _photoBusy
+                      ? 'Please wait…'
+                      : 'Take a delivery photo (recommended)',
+                ),
+              ),
             const SizedBox(height: 20),
             FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: Brand.success),
-              onPressed: () =>
-                  Navigator.pop(context, (cash: _cashValue, empties: _empties)),
+              onPressed: _photoBusy
+                  ? null
+                  : () => Navigator.pop(context, (
+                      cash: _cashValue,
+                      empties: _empties,
+                      photo: _photo,
+                    )),
               icon: const Icon(Icons.check_circle_rounded),
               label: const Text('Mark as delivered'),
             ),

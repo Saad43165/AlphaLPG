@@ -27,7 +27,11 @@ class PriceBreakdown {
   int get total => subtotal + deliveryFee;
   bool get freeDelivery => deliveryFee == 0;
 
-  static PriceBreakdown of(List<OrderItem> items, AppSettings s) {
+  static PriceBreakdown of(
+    List<OrderItem> items,
+    AppSettings s, {
+    String area = '',
+  }) {
     final subtotal = items.fold(0, (sum, i) => sum + i.lineTotal);
     final cylinders = items.fold(0, (n, i) => n + i.quantity);
     final free =
@@ -35,7 +39,7 @@ class PriceBreakdown {
         (s.freeDeliveryFrom > 0 && subtotal >= s.freeDeliveryFrom);
     return PriceBreakdown(
       subtotal: subtotal,
-      deliveryFee: free ? 0 : s.deliveryFee,
+      deliveryFee: free ? 0 : s.feeForArea(area),
       cylinders: cylinders,
       lines: items.length,
     );

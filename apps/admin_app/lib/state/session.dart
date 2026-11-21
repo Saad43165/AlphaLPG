@@ -39,6 +39,20 @@ class AdminSession extends ChangeNotifier {
   String? error;
 
   List<LpgOrder> orders = const [];
+  List<CustomerProfile> customers = const [];
+  Map<String, BlockedCustomer> blocked = const {};
+  List<LedgerEntry> ledger = const [];
+  List<CashHandover> handovers = const [];
+  List<AuditEntry> auditLog = const [];
+  List<ErrorEntry> errorLog = const [];
+  List<AdminUser> admins = const [];
+
+  /// This signed-in admin's record (null = the original owner / custom claim).
+  AdminUser? me;
+
+  /// Owners can do everything; staff cannot change settings, delete products,
+  /// cancel paid orders or manage admins.
+  bool get isOwner => me?.isOwner ?? true;
   List<RiderProfile> riders = const [];
   List<QuoteRequest> quotes = const [];
   List<Product> products = const [];
@@ -132,42 +146,167 @@ class AdminSession extends ChangeNotifier {
     }
   }
 
-  Future<String?> confirm(LpgOrder o) => _run(
-    () => backend.orders.updateStatus(o.id, OrderStatus.confirmed, uid!),
-  );
+  /// Writes who-did-what for the owner. Never blocks or fails the action.
+  void _audit(String action, {String target = '', String detail = ''}) {
+    final id = uid;
+    if (id == null) return;
+    backend.ops
+        .addAudit(
+          AuditEntry(
+            by: id,
+            byName: me?.name.isNotEmpty == true
+                ? me!.name
+                : (backend.auth.email ?? 'Owner'),
+            action: action,
+            target: target,
+            detail: detail,
+          ),
+        )
+        .catchError((_) {});
+  }
 
-  Future<String?> assign(LpgOrder o, RiderProfile r) => _run(
-    () => backend.orders.assignRider(
+  /// Takes (or gives back) counted stock for an order's cylinders.
+  Future<void> _stock(LpgOrder o, int sign) async {
+    for (final i in o.items) {
+      try {
+        await backend.catalog.adjustStock(i.productId, sign * i.quantity);
+      } catch (_) {}
+    }
+  }
+
+  Future<String?> confirm(LpgOrder o) => _run(() async {
+    await backend.orders.updateStatus(o.id, OrderStatus.confirmed, uid!);
+    await _stock(o, -1);
+    _audit('Confirmed order', target: o.displayNumber);
+  });
+
+  Future<String?> assign(LpgOrder o, RiderProfile r) => _run(() async {
+    await backend.orders.assignRider(
       o.id,
       uid!,
       riderId: r.uid,
       name: r.name,
       phone: r.phone,
-    ),
-  );
+    );
+    _audit('Assigned rider', target: o.displayNumber, detail: r.name);
+  });
 
-  Future<String?> cancel(LpgOrder o, String reason) => _run(
-    () => backend.orders.updateStatus(
+  Future<String?> cancel(LpgOrder o, String reason) => _run(() async {
+    await backend.orders.updateStatus(
       o.id,
       OrderStatus.cancelled,
       uid!,
       note: reason,
-    ),
-  );
+    );
+    // Stock was taken when the order was confirmed.
+    if (o.status != OrderStatus.placed) await _stock(o, 1);
+    _audit('Cancelled order', target: o.displayNumber, detail: reason);
+  });
 
-  Future<String?> markDelivered(LpgOrder o) => _run(
-    () => backend.orders.updateStatus(o.id, OrderStatus.delivered, uid!),
-  );
+  Future<String?> markDelivered(LpgOrder o) => _run(() async {
+    await backend.orders.updateStatus(o.id, OrderStatus.delivered, uid!);
+    _audit('Marked delivered', target: o.displayNumber);
+  });
 
-  Future<String?> markPaid(LpgOrder o) =>
-      _run(() => backend.orders.markPaid(o.id, uid!));
+  Future<String?> markPaid(LpgOrder o) => _run(() async {
+    await backend.orders.markPaid(o.id, uid!);
+    _audit(
+      'Marked paid',
+      target: o.displayNumber,
+      detail:
+          '${o.paymentMethod.label} · Rs ${o.total} · TID ${o.paymentReference}',
+    );
+  });
 
   Future<String?> sendPaymentRequest(LpgOrder o, PaymentRequest r) =>
-      _run(() => backend.orders.sendPaymentRequest(o.id, r));
+      _run(() async {
+        await backend.orders.sendPaymentRequest(o.id, r);
+        _audit(
+          'Sent payment details',
+          target: o.displayNumber,
+          detail: '${r.method.label} · ${r.account}',
+        );
+      });
 
   /// Tell the customer what is wrong with their payment ('' clears it).
   Future<String?> setPaymentIssue(LpgOrder o, String issue) =>
       _run(() => backend.orders.setPaymentIssue(o.id, issue));
+
+  Future<String?> setCustomerBlocked(
+    CustomerProfile c, {
+    required bool blocked,
+    String reason = '',
+  }) => _run(() async {
+    await backend.profiles.setBlocked(c, blocked: blocked, reason: reason);
+    _audit(
+      blocked ? 'Blocked customer' : 'Unblocked customer',
+      target: '${c.name} ${c.phone}',
+      detail: reason,
+    );
+  });
+
+  /// Deposit / empty-cylinder line for a customer.
+  Future<String?> addLedger(
+    CustomerProfile c,
+    LedgerKind kind, {
+    int amount = 0,
+    int empties = 0,
+    String note = '',
+  }) => _run(() async {
+    await backend.ops.addLedger(
+      LedgerEntry(
+        customerId: c.uid,
+        customerName: c.name,
+        kind: kind,
+        amount: amount,
+        empties: empties,
+        note: note,
+        by: uid!,
+      ),
+    );
+    _audit(
+      kind.label,
+      target: c.name,
+      detail: amount > 0 ? 'Rs $amount' : '$empties cylinder(s)',
+    );
+  });
+
+  /// A rider hands in cash.
+  Future<String?> addHandover(RiderProfile r, int amount, {String note = ''}) =>
+      _run(() async {
+        await backend.ops.addHandover(
+          CashHandover(
+            riderId: r.uid,
+            riderName: r.name,
+            amount: amount,
+            note: note,
+            by: uid!,
+          ),
+        );
+        _audit(
+          'Cash received from rider',
+          target: r.name,
+          detail: 'Rs $amount',
+        );
+      });
+
+  /// Creates a staff login (email + password) with limited powers.
+  Future<String?> addStaff({
+    required String name,
+    required String email,
+    required String password,
+  }) => _run(() async {
+    final staffUid = await backend.createRiderLogin(email, password);
+    await backend.ops.saveAdmin(
+      AdminUser(uid: staffUid, email: email, name: name, role: 'staff'),
+    );
+    _audit('Added staff', target: name, detail: email);
+  });
+
+  Future<String?> removeStaff(AdminUser a) => _run(() async {
+    await backend.ops.removeAdmin(a.uid);
+    _audit('Removed staff', target: a.name, detail: a.email);
+  });
 
   Future<String?> saveProduct(Product p) =>
       _run(() => backend.catalog.saveProduct(p));
@@ -188,8 +327,10 @@ class AdminSession extends ChangeNotifier {
     }
   });
 
-  Future<String?> saveSettings(AppSettings s) =>
-      _run(() => backend.catalog.saveSettings(s));
+  Future<String?> saveSettings(AppSettings s) => _run(() async {
+    await backend.catalog.saveSettings(s);
+    _audit('Changed shop settings');
+  });
   Future<String?> loadDefaults() => _run(backend.catalog.seed);
 
   Future<String?> setQuoteStatus(QuoteRequest q, String status) =>
@@ -358,7 +499,49 @@ class AdminSession extends ChangeNotifier {
     }
   }
 
+  final _waitAlerted = <String>{};
+  Timer? _waitTimer;
+
+  /// Orders nobody has taken for [waitingMinutes] or more.
+  static const waitingMinutes = 10;
+  List<LpgOrder> get waitingForRider {
+    final cutoff = DateTime.now().subtract(
+      const Duration(minutes: waitingMinutes),
+    );
+    return [
+      for (final o in orders)
+        if ((o.status == OrderStatus.placed ||
+                o.status == OrderStatus.confirmed) &&
+            o.riderId == null &&
+            o.scheduledFor == null &&
+            o.createdAt != null &&
+            o.createdAt!.isBefore(cutoff))
+          o,
+    ];
+  }
+
+  void _checkWaiting() {
+    final late = waitingForRider;
+    for (final o in late) {
+      if (_waitAlerted.add(o.id)) {
+        Alerts.show(
+          id: 500000 + (o.id.hashCode & 0xffff),
+          title: 'No rider yet · ${o.displayNumber}',
+          body:
+              '${o.customerName} has waited $waitingMinutes+ minutes. Assign a rider.',
+          payload: 'order:${o.id}',
+        );
+      }
+    }
+    notifyListeners();
+  }
+
   void _startData() {
+    _waitTimer?.cancel();
+    _waitTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _checkWaiting(),
+    );
     Alerts.init();
     Alerts.askPermission();
     KeepAlive.start(
@@ -423,6 +606,23 @@ class AdminSession extends ChangeNotifier {
       ordersLoaded = true;
     });
     listen(backend.riders.watchAllRiders(), (v) => riders = v);
+    listen(backend.profiles.watchCustomers(), (v) => customers = v);
+    listen(backend.ops.watchLedger(), (v) => ledger = v);
+    listen(backend.ops.watchHandovers(), (v) => handovers = v);
+    listen(backend.ops.watchErrors(), (v) => errorLog = v);
+    listen(backend.ops.watchAdmin(uid!), (v) => me = v);
+    // Owner-only data: quietly ignored for staff (the rules refuse it).
+    void quiet<T>(Stream<T> st, void Function(T) on) => _subs.add(
+      st.listen((v) {
+        on(v);
+        notifyListeners();
+      }, onError: (_) {}),
+    );
+    quiet(backend.ops.watchAudit(), (v) => auditLog = v);
+    quiet(backend.ops.watchAdmins(), (v) => admins = v);
+    listen(backend.profiles.watchAllBlocked(), (v) {
+      blocked = {for (final b in v) b.uid: b};
+    });
     listen(backend.quotes.watchAll(), (v) => quotes = v);
     listen(backend.catalog.watchAllProducts(), (v) {
       products = v;
@@ -437,6 +637,8 @@ class AdminSession extends ChangeNotifier {
   }
 
   void _stopData() {
+    _waitTimer?.cancel();
+    _waitTimer = null;
     for (final s in _subs) {
       s.cancel();
     }

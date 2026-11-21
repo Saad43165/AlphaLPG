@@ -23,6 +23,27 @@ abstract interface class OrderRepository {
   /// Customer cancellation (only while `placed`, enforced by rules).
   Future<void> cancelByCustomer(LpgOrder o, String reason);
 
+  /// Customer: "I paid". Transaction ID and amount are required; a receipt
+  /// picture (base64) is optional but encouraged. Marks the order as having a
+  /// receipt for the shop to check.
+  Future<void> submitPayment(
+    String orderId, {
+    required String uid,
+    required String reference,
+    required int amount,
+    String? data,
+    String note = '',
+  });
+
+  /// Rider: a photo of the delivered cylinders / the customer's door
+  /// (base64 JPEG, kept small). Customer and shop can see it.
+  Future<void> addDeliveryProof(
+    String orderId, {
+    required String uid,
+    required String data,
+  });
+  Stream<List<PaymentReceipt>> watchDeliveryProofs(String orderId);
+
   /// Customer adds / corrects the transaction ID of a prepaid order.
   Future<void> submitPaymentReference(String orderId, String reference);
 
@@ -212,6 +233,54 @@ class _FirestoreOrders implements OrderRepository {
     extra: {'cancelReason': reason},
     note: reason,
   );
+
+  @override
+  Future<void> submitPayment(
+    String orderId, {
+    required String uid,
+    required String reference,
+    required int amount,
+    String? data,
+    String note = '',
+  }) async {
+    final batch = _db.batch();
+    if (data != null && data.isNotEmpty) {
+      batch.set(_db.collection(FirestorePaths.receipts(orderId)).doc(), {
+        'uid': uid,
+        'data': data,
+        'note': note,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    batch.update(_orders.doc(orderId), {
+      'paymentReference': reference.trim(),
+      'paidAmount': amount,
+      'receiptAt': FieldValue.serverTimestamp(),
+      'paymentIssue': '',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+  }
+
+  @override
+  Future<void> addDeliveryProof(
+    String orderId, {
+    required String uid,
+    required String data,
+  }) => _db.collection(FirestorePaths.proofs(orderId)).add({
+    'uid': uid,
+    'data': data,
+    'createdAt': FieldValue.serverTimestamp(),
+  });
+
+  @override
+  Stream<List<PaymentReceipt>> watchDeliveryProofs(String orderId) => _db
+      .collection(FirestorePaths.proofs(orderId))
+      .orderBy('createdAt')
+      .snapshots()
+      .map(
+        (s) => [for (final d in s.docs) PaymentReceipt.fromMap(d.id, d.data())],
+      );
 
   @override
   Future<void> submitPaymentReference(String orderId, String reference) =>
@@ -560,6 +629,63 @@ class _MemoryOrders implements OrderRepository {
     o.customerId,
     extra: {'cancelReason': reason},
     note: reason,
+  );
+
+  @override
+  Future<void> submitPayment(
+    String orderId, {
+    required String uid,
+    required String reference,
+    required int amount,
+    String? data,
+    String note = '',
+  }) async {
+    if (data != null && data.isNotEmpty) {
+      _s.set(FirestorePaths.receipts(orderId), _s.newId(), {
+        'uid': uid,
+        'data': data,
+        'note': note,
+        'createdAt': DateTime.now(),
+      });
+    }
+    _s.update(
+      _path,
+      orderId,
+      (d) => {
+        ...d,
+        'paymentReference': reference.trim(),
+        'paidAmount': amount,
+        'receiptAt': DateTime.now(),
+        'paymentIssue': '',
+        'updatedAt': DateTime.now(),
+      },
+    );
+  }
+
+  @override
+  Future<void> addDeliveryProof(
+    String orderId, {
+    required String uid,
+    required String data,
+  }) async => _s.set(FirestorePaths.proofs(orderId), _s.newId(), {
+    'uid': uid,
+    'data': data,
+    'createdAt': DateTime.now(),
+  });
+
+  @override
+  Stream<List<PaymentReceipt>> watchDeliveryProofs(String orderId) => _s.watch(
+    FirestorePaths.proofs(orderId),
+    (docs) {
+      final l =
+          [for (final e in docs.entries) PaymentReceipt.fromMap(e.key, e.value)]
+            ..sort(
+              (a, b) => (a.createdAt ?? DateTime(0)).compareTo(
+                b.createdAt ?? DateTime(0),
+              ),
+            );
+      return l;
+    },
   );
 
   @override

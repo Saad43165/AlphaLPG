@@ -15,6 +15,9 @@ import '../../widgets/slide_to_confirm.dart';
 import 'cart_screen.dart';
 import '../../utils/haptics.dart';
 
+/// Orders one customer may have in progress at the same time.
+const maxOpenOrders = 3;
+
 enum DeliverySlot {
   morning('Morning', 9, 12),
   afternoon('Afternoon', 12, 16),
@@ -41,12 +44,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   DateTime _day = DateTime.now();
   DeliverySlot _slot = DeliverySlot.morning;
   PaymentMethod _payment = PaymentMethod.cashOnDelivery;
-  final _reference = TextEditingController();
   final _notes = TextEditingController();
 
   @override
   void dispose() {
-    _reference.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -68,21 +69,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       showMessage(context, 'Please set your delivery location', error: true);
       return false;
     }
+    if (state.blocked != null) {
+      showMessage(
+        context,
+        'Alpha LPG cannot take orders from this account right now. Please call ${state.settings.phone}.',
+        error: true,
+      );
+      return false;
+    }
+    // At most 3 orders in progress at once (stops accidental or spam orders).
+    if (state.openOrders >= maxOpenOrders) {
+      showMessage(
+        context,
+        'You already have ${state.openOrders} orders on the way. Please wait for one to be delivered, or call ${state.settings.phone}.',
+        error: true,
+      );
+      return false;
+    }
     final items = cart.toOrderItems(state.productById);
-    final price = PriceBreakdown.of(items, state.settings);
+    final price = PriceBreakdown.of(
+      items,
+      state.settings,
+      area: state.selectedAddress?.area ?? '',
+    );
     final problem = price.problem(state.settings, status: state.ordering);
     if (problem != null) {
       showMessage(context, problem, error: true);
       return false;
     }
 
-    if (_payment.isPrepaid) {
-      final tidProblem = validateTransactionId(_reference.text);
-      if (tidProblem != null) {
-        showMessage(context, tidProblem, error: true);
-        return false;
-      }
-    }
     Haptics.medium();
     try {
       final id = await backend.orders.place(
@@ -98,7 +113,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           total: price.total,
           address: address,
           paymentMethod: _payment,
-          paymentReference: _payment.isPrepaid ? _reference.text.trim() : '',
           scheduledFor: _asap
               ? null
               : DateTime(_day.year, _day.month, _day.day, _slot.from),
@@ -131,7 +145,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final state = context.watch<AppState>();
     final cart = context.watch<Cart>();
     final items = cart.toOrderItems(state.productById);
-    final price = PriceBreakdown.of(items, state.settings);
+    final price = PriceBreakdown.of(
+      items,
+      state.settings,
+      area: state.selectedAddress?.area ?? '',
+    );
     final address = state.selectedAddress;
     final today = DateTime.now();
     final days = [for (var i = 0; i < 4; i++) today.add(Duration(days: i))];
@@ -365,7 +383,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 value: _payment,
                 settings: state.settings,
                 total: price.total,
-                reference: _reference,
                 onChanged: (m) => setState(() => _payment = m),
               ),
             ),

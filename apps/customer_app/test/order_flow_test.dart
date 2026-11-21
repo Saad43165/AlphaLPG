@@ -82,16 +82,14 @@ void main() {
     expect(find.textContaining('Main Boulevard, Gulberg III'), findsOneWidget);
     expect(find.textContaining('Bilal Ahmed'), findsOneWidget);
 
-    // Pay by JazzCash with a transaction ID.
+    // Pay by JazzCash: the shop sends the account after the order is placed.
     await tapText(tester, 'JazzCash');
-    expect(find.text('How to pay Rs. 6,592'), findsOneWidget);
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Transaction ID (TID)'),
-      'TX12345',
+    expect(
+      find.textContaining('Alpha LPG sends the JazzCash account'),
+      findsOneWidget,
     );
     await slideToOrder(tester);
     expect(find.text('Order placed!'), findsOneWidget);
-    expect(find.text('Transaction ID TX12345'), findsOneWidget);
     expect(find.text('Keep 2 empty cylinders ready'), findsOneWidget);
 
     // The stored order is shown on the tracking screen.
@@ -100,7 +98,7 @@ void main() {
     expect(find.text('Rs. 6,592'), findsWidgets);
     expect(find.text('FREE'), findsOneWidget);
     await scrollTo(tester, find.text('AWAITING PAYMENT'));
-    expect(find.text('Transaction ID: TX12345'), findsOneWidget);
+    expect(find.textContaining('Payment needed'), findsOneWidget);
     await scrollTo(tester, find.text('Cancel order'));
     expect(find.text('Cancel order'), findsOneWidget);
 

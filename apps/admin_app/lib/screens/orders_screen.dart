@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
+import '../utils/payment_checks.dart';
 import '../widgets/common.dart';
 import 'order_detail_screen.dart';
 
@@ -111,6 +112,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
         child: Column(
           children: [
             if (!_searching) const _ShopBar(),
+            if (!_searching && s.waitingForRider.isNotEmpty)
+              _PayBanner(
+                icon: Icons.two_wheeler_rounded,
+                text: s.waitingForRider.length == 1
+                    ? '1 order has waited ${AdminSession.waitingMinutes}+ min for a rider'
+                    : '${s.waitingForRider.length} orders have waited ${AdminSession.waitingMinutes}+ min for a rider',
+                onTap: () => setState(() => _f = _Filter.fresh),
+              ),
             if (!_searching && s.needDetailsCount > 0)
               _PayBanner(
                 icon: Icons.send_rounded,
@@ -409,6 +418,18 @@ class OrderTile extends StatelessWidget {
                               _ => const Color(0xFF8A6D00),
                             },
                     ),
+                    if (!paid &&
+                        paymentWarnings(
+                          o,
+                          context.watch<AdminSession>().orders,
+                        ).isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      const Pill(
+                        Icons.warning_amber_rounded,
+                        'Check',
+                        color: Brand.danger,
+                      ),
+                    ],
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerRight,

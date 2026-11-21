@@ -13,6 +13,8 @@ class AdminBackend {
     required this.riders,
     required this.catalog,
     required this.quotes,
+    required this.profiles,
+    required this.ops,
     required this.watchIsAdmin,
     required this.createRiderLogin,
   });
@@ -24,6 +26,8 @@ class AdminBackend {
         riders: RiderRepository.firestore(db),
         catalog: CatalogRepository.firestore(db),
         quotes: QuoteRepository.firestore(db),
+        profiles: ProfileRepository.firestore(db),
+        ops: OpsRepository.firestore(db),
         watchIsAdmin: (uid) => db
             .doc('admins/$uid')
             .snapshots()
@@ -37,6 +41,8 @@ class AdminBackend {
   final RiderRepository riders;
   final CatalogRepository catalog;
   final QuoteRepository quotes;
+  final ProfileRepository profiles;
+  final OpsRepository ops;
 
   /// True while `admins/{uid}` exists.
   final Stream<bool> Function(String uid) watchIsAdmin;

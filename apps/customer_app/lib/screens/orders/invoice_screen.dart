@@ -4,10 +4,36 @@ import 'package:alpha_core/alpha_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../services/invoice.dart';
 import '../../state/app_state.dart';
 import '../../widgets/common.dart';
+
+/// Shares the invoice as a picture (works in a WhatsApp chat, unlike text).
+Future<void> shareInvoiceImage(BuildContext context, LpgOrder order) async {
+  try {
+    final settings = context.read<AppState>().settings;
+    final pdf = await buildInvoicePdf(
+      order,
+      settings,
+      await InvoiceAssets.load(),
+    );
+    final pages = await Printing.raster(pdf, pages: [0], dpi: 170).toList();
+    final png = await pages.first.toPng();
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile.fromData(png, mimeType: 'image/png')],
+        fileNameOverrides: [invoiceFileName(order).replaceAll('.pdf', '.png')],
+        subject: 'Alpha LPG invoice ${order.displayNumber}',
+      ),
+    );
+  } catch (_) {
+    if (context.mounted) {
+      showMessage(context, 'Could not share the invoice', error: true);
+    }
+  }
+}
 
 /// In-app invoice preview with share / print, plus a direct "Share PDF"
 /// action that works even where the preview cannot render.
@@ -37,6 +63,11 @@ class InvoiceScreen extends StatelessWidget {
       leading: const ScreenBack(),
       title: Text('Invoice ${order.displayNumber}'),
       actions: [
+        IconButton(
+          tooltip: 'Share as picture',
+          icon: const Icon(Icons.image_rounded),
+          onPressed: () => shareInvoiceImage(context, order),
+        ),
         IconButton(
           tooltip: 'Share PDF',
           icon: const Icon(Icons.share_rounded),

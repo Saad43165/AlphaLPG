@@ -26,6 +26,10 @@ abstract class LocationTracker extends ChangeNotifier {
   /// Asks for location permission if needed.
   Future<TrackerAccess> ensureAccess();
 
+  /// A quick, cheap position (last known), or null. Used so the shop can see
+  /// which rider is nearest to a new order.
+  Future<({double lat, double lng})?> quickPosition() async => null;
+
   Future<void> start(String orderId, OrderRepository orders);
   Future<void> stop();
   Future<void> openSettings();
@@ -206,6 +210,16 @@ class GeolocatorTracker extends LocationTracker {
     _lastError = null;
     _lastShared = null;
     if (had) notifyListeners();
+  }
+
+  @override
+  Future<({double lat, double lng})?> quickPosition() async {
+    try {
+      final p = await Geolocator.getLastKnownPosition();
+      return p == null ? null : (lat: p.latitude, lng: p.longitude);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override

@@ -118,6 +118,7 @@ class Rig {
     orders: OrderRepository.memory(store),
     riders: RiderRepository.memory(store),
     catalog: CatalogRepository.memory(store),
+    ops: OpsRepository.memory(store),
     tracker: tracker ??= FakeTracker(),
   );
 }

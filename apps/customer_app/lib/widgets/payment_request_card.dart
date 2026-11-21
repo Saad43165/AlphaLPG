@@ -109,95 +109,30 @@ class PaymentRequestCard extends StatelessWidget {
   }
 }
 
-/// Receipts the customer already sent, plus the button to add another.
-class ReceiptSection extends StatefulWidget {
+/// Receipts the customer already sent, plus the button to send payment
+/// details (transaction ID and amount are required, a picture is optional).
+class ReceiptSection extends StatelessWidget {
   const ReceiptSection(this.order, {super.key});
   final LpgOrder order;
 
-  @override
-  State<ReceiptSection> createState() => _ReceiptSectionState();
-}
-
-class _ReceiptSectionState extends State<ReceiptSection> {
-  bool _busy = false;
-
-  Future<void> _add(ImageSource source) async {
-    final backend = context.read<Backend>();
-    final messenger = context;
-    try {
-      final file = await ImagePicker().pickImage(
-        source: source,
-        maxWidth: 2200,
-        imageQuality: 90,
-      );
-      if (file == null) return;
-      setState(() => _busy = true);
-      final data = await ui.compressReceiptPhoto(await file.readAsBytes());
-      await backend.orders.addReceipt(
-        widget.order.id,
-        uid: widget.order.customerId,
-        data: data,
-      );
-      // A chat line too, so the shop is alerted and sees it in the thread.
-      try {
-        await backend.orders.sendMessage(
-          widget.order.id,
-          uid: widget.order.customerId,
-          role: MessageRole.customer,
-          name: 'Customer',
-          text:
-              '📎 I sent my payment receipt (${widget.order.paymentMethod.label}).',
-        );
-      } catch (_) {}
-      if (messenger.mounted) {
-        showMessage(messenger, 'Receipt sent. We will confirm your payment.');
-      }
-    } catch (e) {
-      if (messenger.mounted) {
-        showMessage(
-          messenger,
-          e is String ? e : 'Could not send the receipt. Check your internet and try again.',
-          error: true,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  void _choose() {
-    showModalBottomSheet<void>(
+  Future<void> _open(BuildContext context) async {
+    final done = await showModalBottomSheet<bool>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
-      builder: (c) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_rounded),
-              title: const Text('Choose a screenshot'),
-              onTap: () {
-                Navigator.pop(c);
-                _add(ImageSource.gallery);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_camera_rounded),
-              title: const Text('Take a photo'),
-              onTap: () {
-                Navigator.pop(c);
-                _add(ImageSource.camera);
-              },
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => _PaySheet(order: order),
     );
+    if (done == true && context.mounted) {
+      showMessage(
+        context,
+        'Sent. Alpha LPG will check and confirm your payment.',
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final o = widget.order;
+    final o = order;
     final backend = context.read<Backend>();
     final pal = context.pal;
     return Column(
@@ -218,11 +153,20 @@ class _ReceiptSectionState extends State<ReceiptSection> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Alpha LPG could not confirm your payment: ${o.paymentIssue}. Please send a new receipt.',
+                    'Alpha LPG could not confirm your payment: ${o.paymentIssue}. Please send the details again.',
                     style: const TextStyle(height: 1.4, fontSize: 13.5),
                   ),
                 ),
               ],
+            ),
+          ),
+        if (o.paymentReference.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              'You sent: transaction ${o.paymentReference}'
+              '${o.paidAmount == null ? '' : ' · ${formatRupees(o.paidAmount!)}'}',
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         StreamBuilder<List<PaymentReceipt>>(
@@ -236,7 +180,7 @@ class _ReceiptSectionState extends State<ReceiptSection> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Receipts you sent',
+                    'Receipt pictures you sent',
                     style: TextStyle(color: pal.muted, fontSize: 12),
                   ),
                   const SizedBox(height: 6),
@@ -251,23 +195,219 @@ class _ReceiptSectionState extends State<ReceiptSection> {
           },
         ),
         FilledButton.icon(
-          onPressed: _busy ? null : _choose,
-          icon: _busy
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.upload_file_rounded),
+          onPressed: () => _open(context),
+          icon: const Icon(Icons.upload_file_rounded),
           label: Text(
-            _busy
-                ? 'Sending…'
-                : (o.receiptAt == null
-                      ? 'Add payment receipt'
-                      : 'Add another receipt'),
+            o.receiptAt == null
+                ? 'I have paid: send details'
+                : 'Send details again',
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PaySheet extends StatefulWidget {
+  const _PaySheet({required this.order});
+  final LpgOrder order;
+
+  @override
+  State<_PaySheet> createState() => _PaySheetState();
+}
+
+class _PaySheetState extends State<_PaySheet> {
+  late final _ref = TextEditingController(text: widget.order.paymentReference);
+  late final _amount = TextEditingController(
+    text:
+        '${widget.order.paidAmount ?? widget.order.paymentRequest?.amount ?? widget.order.total}',
+  );
+  String? _data;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _ref.dispose();
+    _amount.dispose();
+    super.dispose();
+  }
+
+  bool get _valid =>
+      _ref.text.trim().length >= 4 &&
+      (int.tryParse(_amount.text.trim()) ?? 0) > 0;
+
+  Future<void> _pick(ImageSource source) async {
+    try {
+      final file = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 2200,
+        imageQuality: 90,
+      );
+      if (file == null) return;
+      setState(() => _busy = true);
+      final data = await ui.compressReceiptPhoto(await file.readAsBytes());
+      if (mounted) setState(() => _data = data);
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = e is String ? e : 'Could not use that picture.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _submit() async {
+    final backend = context.read<Backend>();
+    final o = widget.order;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await backend.orders.submitPayment(
+        o.id,
+        uid: o.customerId,
+        reference: _ref.text.trim(),
+        amount: int.parse(_amount.text.trim()),
+        data: _data,
+      );
+      // A chat line too, so the shop is alerted and sees it in the thread.
+      try {
+        await backend.orders.sendMessage(
+          o.id,
+          uid: o.customerId,
+          role: MessageRole.customer,
+          name: 'Customer',
+          text:
+              '📎 I paid ${formatRupees(int.parse(_amount.text.trim()))} via ${o.paymentMethod.label}. Transaction ID: ${_ref.text.trim()}.',
+        );
+      } catch (_) {}
+      if (mounted) Navigator.pop(context, true);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = 'Could not send. Check your internet and try again.';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    final o = widget.order;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        0,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 20,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Send your payment details',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Order ${o.displayNumber} · ${o.paymentMethod.label}. '
+              'The transaction ID is on the receipt your app shows after paying.',
+              style: TextStyle(color: pal.muted, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _ref,
+              textCapitalization: TextCapitalization.characters,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Transaction ID (required)',
+                prefixIcon: Icon(Icons.tag_rounded),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _amount,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Amount you sent (required)',
+                prefixText: 'Rs ',
+                prefixIcon: Icon(Icons.payments_rounded),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_data != null)
+              Row(
+                children: [
+                  ui.ReceiptImage(_data!, size: 72),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('Receipt picture added')),
+                  TextButton(
+                    onPressed: () => setState(() => _data = null),
+                    child: const Text('Remove'),
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 46),
+                      ),
+                      onPressed: _busy
+                          ? null
+                          : () => _pick(ImageSource.gallery),
+                      icon: const Icon(Icons.photo_library_rounded, size: 18),
+                      label: const Text('Add screenshot'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 46),
+                      ),
+                      onPressed: _busy ? null : () => _pick(ImageSource.camera),
+                      icon: const Icon(Icons.photo_camera_rounded, size: 18),
+                      label: const Text('Take photo'),
+                    ),
+                  ),
+                ],
+              ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Brand.danger),
+                ),
+              ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: (_valid && !_busy) ? _submit : null,
+              icon: _busy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send_rounded),
+              label: Text(_busy ? 'Please wait…' : 'Send to Alpha LPG'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

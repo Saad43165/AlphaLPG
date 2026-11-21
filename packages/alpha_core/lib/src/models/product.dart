@@ -18,6 +18,7 @@ class Product {
     this.segment = CustomerSegment.both,
     this.active = true,
     this.inStock = true,
+    this.stock,
     this.sortOrder = 0,
   });
 
@@ -58,7 +59,16 @@ class Product {
   final CustomerSegment segment;
   final bool active;
   final bool inStock;
+
+  /// Cylinders in the shop. Null means "not counting stock". When a count is
+  /// set, the shop's confirmed orders take from it, and at 0 the product shows
+  /// as out of stock.
+  final int? stock;
   final int sortOrder;
+
+  /// "Only 3 left" for the customer when stock is low (null otherwise).
+  int? get lowStock =>
+      (stock != null && stock! > 0 && stock! <= 5) ? stock : null;
 
   String get sizeLabel =>
       '${sizeKg == sizeKg.roundToDouble() ? sizeKg.toInt() : sizeKg} KG';
@@ -84,6 +94,7 @@ class Product {
     segment: CustomerSegment.parse(m['segment'] as String?),
     active: m['active'] as bool? ?? true,
     inStock: m['inStock'] as bool? ?? true,
+    stock: (m['stock'] as num?)?.round(),
     sortOrder: (m['sortOrder'] as num?)?.toInt() ?? 0,
   );
 
@@ -100,6 +111,7 @@ class Product {
     'segment': segment.name,
     'active': active,
     'inStock': inStock,
+    if (stock != null) 'stock': stock,
     'sortOrder': sortOrder,
   };
 }

@@ -1,3 +1,8 @@
+import 'package:alpha_core/alpha_core.dart';
+import 'package:alpha_ui/alpha_ui.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,6 +26,23 @@ Future<void> main() async {
     prefs = await SharedPreferences.getInstance();
   } catch (_) {
     // Cart simply won't persist between launches.
+  }
+  await AppInfo.load();
+  if (Firebase.apps.isNotEmpty) {
+    // Crashes go to the shop's error log (Admin app > More > App errors).
+    ErrorReporter.install((message, stack, version) async {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+      await OpsRepository.firestore(FirebaseFirestore.instance).reportError(
+        ErrorEntry(
+          app: 'customer',
+          version: version,
+          uid: uid,
+          message: message,
+          stack: stack,
+        ),
+      );
+    });
   }
   runApp(
     AlphaApp(

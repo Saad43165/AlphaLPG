@@ -59,6 +59,8 @@ AdminBackend _backend(MemoryStore s, {bool admin = true}) => AdminBackend(
   riders: RiderRepository.memory(s),
   catalog: CatalogRepository.memory(s),
   quotes: QuoteRepository.memory(s),
+  profiles: ProfileRepository.memory(s),
+  ops: OpsRepository.memory(s),
   watchIsAdmin: (_) => Stream.value(admin),
   createRiderLogin: (e, p) async => 'new-rider',
 );

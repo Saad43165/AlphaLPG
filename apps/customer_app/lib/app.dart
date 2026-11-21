@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:alpha_ui/alpha_ui.dart' show UpdateGate;
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -89,13 +90,22 @@ class _AlphaAppState extends State<AlphaApp> {
         darkTheme: _dark,
         themeMode: mode,
         routerConfig: _router,
-        builder: (context, child) => Stack(
-          fit: StackFit.expand,
-          children: [
-            child ?? const SizedBox.shrink(),
-            if (_splash)
-              SplashScreen(onFinished: () => setState(() => _splash = false)),
-          ],
+        builder: (context, child) => ListenableBuilder(
+          listenable: _state,
+          builder: (context, _) => UpdateGate(
+            minBuild: _state.settings.minBuildCustomer,
+            phone: _state.settings.phone,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                child ?? const SizedBox.shrink(),
+                if (_splash)
+                  SplashScreen(
+                    onFinished: () => setState(() => _splash = false),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     ),

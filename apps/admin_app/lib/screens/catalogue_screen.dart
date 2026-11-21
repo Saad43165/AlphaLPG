@@ -149,10 +149,16 @@ class CatalogueScreen extends StatelessWidget {
                                               color: Color(0xFF8A6D00),
                                             ),
                                           if (p.active && p.inStock)
-                                            const Pill(
-                                              Icons.check_rounded,
-                                              'On sale',
-                                              color: Brand.success,
+                                            Pill(
+                                              p.lowStock != null
+                                                  ? Icons.warning_amber_rounded
+                                                  : Icons.check_rounded,
+                                              p.stock == null
+                                                  ? 'On sale'
+                                                  : 'On sale · ${p.stock} left',
+                                              color: p.lowStock != null
+                                                  ? Brand.flame
+                                                  : Brand.success,
                                             ),
                                           if (!p.hasUploadedImage)
                                             Pill(
@@ -196,11 +202,19 @@ class CatalogueScreen extends StatelessWidget {
             ),
             const Heading('Delivery, hours and payments'),
             FilledButton.tonalIcon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const SettingsEditor()),
-              ),
+              onPressed: context.read<AdminSession>().isOwner
+                  ? () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SettingsEditor(),
+                      ),
+                    )
+                  : null,
               icon: const Icon(Icons.tune_rounded),
-              label: const Text('Edit shop settings'),
+              label: Text(
+                context.read<AdminSession>().isOwner
+                    ? 'Edit shop settings'
+                    : 'Shop settings (owner only)',
+              ),
             ),
           ],
         ),
@@ -304,6 +318,11 @@ class _ProductEditorState extends State<_ProductEditor> {
   late final _badge = TextEditingController(text: widget.product?.badge ?? '');
   late bool _active = widget.product?.active ?? true;
   late bool _inStock = widget.product?.inStock ?? true;
+  int? get _stockCount => int.tryParse(_stock.text.trim());
+
+  late final _stock = TextEditingController(
+    text: widget.product?.stock?.toString() ?? '',
+  );
   late CustomerSegment _segment =
       widget.product?.segment ?? CustomerSegment.both;
   bool _busy = false;
@@ -374,7 +393,8 @@ class _ProductEditorState extends State<_ProductEditor> {
       imageData: _photo ?? old?.imageData ?? '',
       segment: _segment,
       active: _active,
-      inStock: _inStock,
+      inStock: _stockCount == null ? _inStock : _stockCount! > 0,
+      stock: _stockCount,
       sortOrder: old?.sortOrder ?? (s.products.length + 1),
     );
     setState(() {
@@ -513,12 +533,23 @@ class _ProductEditorState extends State<_ProductEditor> {
               value: _active,
               onChanged: (v) => setState(() => _active = v),
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('In stock'),
-              value: _inStock,
-              onChanged: (v) => setState(() => _inStock = v),
+            TextField(
+              controller: _stock,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Cylinders in the shop (optional)',
+                helperText: 'Leave empty to not count. When counted, confirmed orders take from it and 0 shows "out of stock".',
+              ),
             ),
+            if (_stockCount == null)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('In stock'),
+                value: _inStock,
+                onChanged: (v) => setState(() => _inStock = v),
+              ),
             if (_error != null)
               Text(
                 _error!,
@@ -590,6 +621,13 @@ class _SettingsEditorState extends State<SettingsEditor> {
       'shopAddress': TextEditingController(text: s.shopAddress),
       'openingHours': TextEditingController(text: s.openingHours),
       'serviceAreas': TextEditingController(text: s.serviceAreas.join(', ')),
+      'areaFees': TextEditingController(
+        text: [for (final e in s.areaFees.entries) '${e.key} = ${e.value}']
+            .join('\n'),
+      ),
+      'minBuildCustomer': TextEditingController(text: '${s.minBuildCustomer}'),
+      'minBuildRider': TextEditingController(text: '${s.minBuildRider}'),
+      'minBuildAdmin': TextEditingController(text: '${s.minBuildAdmin}'),
       'accountTitle': TextEditingController(text: s.accountTitle),
       'jazzCashAccount': TextEditingController(text: s.jazzCashAccount),
       'easyPaisaAccount': TextEditingController(text: s.easyPaisaAccount),
@@ -604,6 +642,19 @@ class _SettingsEditorState extends State<SettingsEditor> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  /// "DHA = 250" lines (or comma separated) → {dha: 250}.
+  static Map<String, int> _parseAreaFees(String text) {
+    final out = <String, int>{};
+    for (final part in text.split(RegExp(r'[\n,;]'))) {
+      final kv = part.split('=');
+      if (kv.length != 2) continue;
+      final fee = int.tryParse(kv[1].trim());
+      final area = kv[0].trim().toLowerCase();
+      if (area.isNotEmpty && fee != null && fee >= 0) out[area] = fee;
+    }
+    return out;
   }
 
   String _t(String k) => _c[k]!.text.trim();
@@ -641,6 +692,10 @@ class _SettingsEditorState extends State<SettingsEditor> {
       easyPaisaAccount: _t('easyPaisaAccount'),
       raastId: _t('raastId'),
       loginMode: _loginMode,
+      areaFees: _parseAreaFees(_t('areaFees')),
+      minBuildCustomer: _n('minBuildCustomer'),
+      minBuildRider: _n('minBuildRider'),
+      minBuildAdmin: _n('minBuildAdmin'),
     );
     final err = await context.read<AdminSession>().saveSettings(next);
     if (!mounted) return;
@@ -791,6 +846,14 @@ class _SettingsEditorState extends State<SettingsEditor> {
                 style: TextStyle(color: context.pal.muted, height: 1.35),
               ),
             ),
+            const Heading('Force app updates (advanced)'),
+            _num(
+              'minBuildCustomer',
+              'Oldest customer app build allowed',
+              help: '0 = all. Older apps are asked to update. The build number is the +N in the app version.',
+            ),
+            _num('minBuildRider', 'Oldest rider app build allowed'),
+            _num('minBuildAdmin', 'Oldest admin app build allowed'),
             const Heading('Delivery'),
             _num('deliveryFee', 'Delivery fee (Rs)'),
             _num(
@@ -805,6 +868,12 @@ class _SettingsEditorState extends State<SettingsEditor> {
               'Areas you deliver to',
               help: 'Separate with commas. Empty means all of Lahore.',
               lines: 2,
+            ),
+            _text(
+              'areaFees',
+              'Delivery fee by area (optional)',
+              help: 'One per line, like  DHA = 250  or  Gulberg = 150. Areas not listed pay the delivery fee above.',
+              lines: 4,
             ),
             const Heading('Shop'),
             _text('phone', 'Phone', type: TextInputType.phone),

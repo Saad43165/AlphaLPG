@@ -117,6 +117,13 @@ class AppState extends ChangeNotifier {
 
   String? _uid;
   CustomerProfile? profile;
+
+  /// Orders in progress right now (kept up to date by the order watcher).
+  int openOrders = 0;
+
+  /// Set when the shop has blocked this customer from ordering.
+  BlockedCustomer? blocked;
+
   bool profileLoaded = false;
   List<Address> addresses = const [];
   String? _selectedAddressId;
@@ -167,6 +174,7 @@ class AppState extends ChangeNotifier {
     _userSubs.clear();
     _uid = uid;
     profile = null;
+    blocked = null;
     addresses = const [];
     profileLoaded = false;
     if (uid != null) {
@@ -176,6 +184,12 @@ class AppState extends ChangeNotifier {
           profileLoaded = true;
           notifyListeners();
         }),
+      );
+      _userSubs.add(
+        backend.profiles.watchBlocked(uid).listen((b) {
+          blocked = b;
+          notifyListeners();
+        }, onError: (_) {}),
       );
       _userSubs.add(
         backend.profiles.watchAddresses(uid).listen((a) {

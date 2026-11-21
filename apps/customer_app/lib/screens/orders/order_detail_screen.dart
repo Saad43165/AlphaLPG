@@ -1,4 +1,5 @@
 import 'package:alpha_core/alpha_core.dart';
+import 'package:alpha_ui/alpha_ui.dart' as ui;
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -14,6 +15,7 @@ import '../../widgets/common.dart';
 import '../../widgets/live.dart';
 import '../../widgets/live_rider_map.dart';
 import '../../widgets/payment.dart';
+import 'invoice_screen.dart' show shareInvoiceImage;
 import '../../widgets/payment_request_card.dart';
 import '../../utils/haptics.dart';
 
@@ -203,6 +205,7 @@ class _TrackingView extends StatelessWidget {
                       if (o.status == OrderStatus.delivered) ...[
                         _DeliveredActions(o),
                         const SizedBox(height: 14),
+                        _DeliveryPhotos(o),
                         if (o.canBeRated) ...[
                           _RateCard(o),
                           const SizedBox(height: 14),
@@ -1120,49 +1123,6 @@ class _PaymentCard extends StatelessWidget {
   const _PaymentCard(this.o);
   final LpgOrder o;
 
-  Future<void> _addReference(BuildContext context) async {
-    final controller = TextEditingController(text: o.paymentReference);
-    final ref = await showDialog<String>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Transaction ID'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.characters,
-          decoration: InputDecoration(
-            hintText: 'From your ${o.paymentMethod.label} receipt',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(c, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    if (ref == null || ref.trim().isEmpty || !context.mounted) return;
-    try {
-      await context.read<Backend>().orders.submitPaymentReference(o.id, ref);
-      if (context.mounted) {
-        showMessage(context, 'Transaction ID saved. We will confirm shortly.');
-      }
-    } catch (_) {
-      if (context.mounted) {
-        showMessage(
-          context,
-          'Could not save. Please send it on WhatsApp.',
-          error: true,
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<AppState>().settings;
@@ -1235,16 +1195,6 @@ class _PaymentCard extends StatelessWidget {
               ),
             const SizedBox(height: 10),
             ReceiptSection(o),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => _addReference(context),
-              icon: const Icon(Icons.tag_rounded),
-              label: Text(
-                o.paymentReference.isEmpty
-                    ? 'Add transaction ID'
-                    : 'Change transaction ID',
-              ),
-            ),
           ],
           const SizedBox(height: 10),
           if (o.status != OrderStatus.cancelled)
@@ -1470,14 +1420,9 @@ class _ShareRow extends StatelessWidget {
     alignment: Alignment.centerRight,
     child: TextButton.icon(
       style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
-      onPressed: () => Launch.whatsappShare(
-        'My Alpha LPG gas order ${o.displayNumber} is '
-        '${o.status == OrderStatus.outForDelivery ? 'on the way' : 'being prepared'}.'
-        '\nRider: ${o.riderName}${o.riderPhone != null ? ' (${o.riderPhone})' : ''}'
-        '\nDelivering to: ${o.address.oneLine}',
-      ),
-      icon: const Icon(Icons.share_rounded, size: 18),
-      label: const Text('Share delivery details'),
+      onPressed: () => shareInvoiceImage(context, o),
+      icon: const Icon(Icons.image_rounded, size: 18),
+      label: const Text('Share invoice as picture'),
     ),
   );
 }
@@ -1729,4 +1674,47 @@ Future<void> reportProblem(
       );
     }
   }
+}
+
+/// The photo the rider took at the door (shown once delivered).
+class _DeliveryPhotos extends StatelessWidget {
+  const _DeliveryPhotos(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<List<PaymentReceipt>>(
+    stream: context.read<Backend>().orders.watchDeliveryProofs(o.id),
+    builder: (context, snap) {
+      final list = snap.data ?? const <PaymentReceipt>[];
+      if (list.isEmpty) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: context.pal.card,
+            borderRadius: BorderRadius.circular(Brand.radius),
+            boxShadow: context.pal.shadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Delivery photo',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final p in list) ui.ReceiptImage(p.data, size: 110),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }

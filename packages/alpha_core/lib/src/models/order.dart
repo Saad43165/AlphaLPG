@@ -103,6 +103,7 @@ class LpgOrder {
     this.emptiesCollected,
     this.paymentRequest,
     this.receiptAt,
+    this.paidAmount,
     this.paymentIssue = '',
     this.createdAt,
     this.updatedAt,
@@ -154,6 +155,9 @@ class LpgOrder {
 
   /// When the customer last uploaded a payment receipt.
   final DateTime? receiptAt;
+
+  /// Rupees the customer says they sent (checked by the shop).
+  final int? paidAmount;
 
   /// What is wrong with the payment or receipt, said by the shop
   /// ("The receipt is not clear"). Empty when fine.
@@ -223,6 +227,7 @@ class LpgOrder {
           )
         : null,
     receiptAt: readDate(m['receiptAt']),
+    paidAmount: (m['paidAmount'] as num?)?.round(),
     paymentIssue: m['paymentIssue'] as String? ?? '',
     arrivedAt: readDate(m['arrivedAt']),
     emptiesCollected: (m['emptiesCollected'] as num?)?.toInt(),
@@ -259,6 +264,7 @@ class LpgOrder {
     // Only written later by the shop / customer, never when an order is created.
     if (paymentRequest != null) 'paymentRequest': paymentRequest!.toMap(),
     if (receiptAt != null) 'receiptAt': receiptAt,
+    if (paidAmount != null) 'paidAmount': paidAmount,
     if (paymentIssue.isNotEmpty) 'paymentIssue': paymentIssue,
     // Only written once the rider arrives (never when an order is created).
     if (arrivedAt != null) 'arrivedAt': arrivedAt,

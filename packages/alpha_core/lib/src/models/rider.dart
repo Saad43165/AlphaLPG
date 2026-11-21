@@ -11,6 +11,8 @@ class RiderProfile {
     this.active = true,
     this.online = false,
     this.lastSeen,
+    this.lat,
+    this.lng,
   });
 
   final String uid;
@@ -26,6 +28,13 @@ class RiderProfile {
 
   /// Last sign of life from the rider app (a heartbeat while online).
   final DateTime? lastSeen;
+
+  /// Last known position (updated with the heartbeat while online). Used to
+  /// suggest the nearest rider. Only the shop can read it.
+  final double? lat;
+  final double? lng;
+
+  bool get hasPosition => lat != null && lng != null;
 
   /// A rider is really available only while their app keeps reporting in.
   bool isLive([DateTime? now]) =>
@@ -44,6 +53,8 @@ class RiderProfile {
         active: m['active'] as bool? ?? true,
         online: m['online'] as bool? ?? false,
         lastSeen: readDate(m['lastSeen']),
+        lat: (m['lat'] as num?)?.toDouble(),
+        lng: (m['lng'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toMap() => {

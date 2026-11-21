@@ -63,6 +63,7 @@ class OrderWatcher {
       for (final o in list)
         if (o.status.isActive) o,
     ];
+    _state.openOrders = active.length;
     // Unread counts, previews and "Seen" for the chats of active orders.
     _state.chat.follow([for (final o in active) o.id]);
     // One chat subscription per active order.

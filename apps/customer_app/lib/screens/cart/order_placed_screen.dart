@@ -4,7 +4,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
-import '../../state/app_state.dart';
 import '../../theme/brand.dart';
 import '../../utils/nav.dart';
 import '../../widgets/common.dart';
@@ -18,7 +17,6 @@ class OrderPlacedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backend = context.read<Backend>();
-    final settings = context.watch<AppState>().settings;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -114,7 +112,7 @@ class OrderPlacedScreen extends StatelessWidget {
                                   '${o.paymentMethod.label} · ${formatRupees(o.total)}',
                               subtitle: o.paymentMethod.isPrepaid
                                   ? (o.paymentReference.isEmpty
-                                        ? 'Send the payment and add the transaction ID on your order page'
+                                        ? 'Alpha LPG will send the payment details on your order page'
                                         : 'Transaction ID ${o.paymentReference}')
                                   : 'Please keep cash ready for the rider',
                             ),
@@ -131,14 +129,22 @@ class OrderPlacedScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      if (o.paymentMethod.isPrepaid &&
-                          o.paymentReference.isEmpty) ...[
+                      if (o.paymentMethod.isPrepaid) ...[
                         const SizedBox(height: 14),
-                        PaymentSteps(
-                          method: o.paymentMethod,
-                          settings: settings,
-                          total: o.total,
-                          orderNumber: o.displayNumber,
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Brand.flame.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            'Next: Alpha LPG will send you the ${o.paymentMethod.label} payment details on your order page. '
+                            'Pay, then send the transaction ID there. We deliver once the payment is confirmed.',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
                         ),
                       ],
                     ],

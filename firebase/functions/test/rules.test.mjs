@@ -382,6 +382,109 @@ describe('chat read receipts', () => {
   });
 });
 
+describe('area fees', () => {
+  it('uses the area fee from settings, else the default', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'config/app'), { acceptingOrders: true, deliveryFee: 150, freeDeliveryFrom: 6000, minOrderTotal: 0, maxCylindersPerOrder: 20, areaFees: { dha: 250 } });
+    });
+    const dha = { label: 'Home', line1: 'Main Boulevard', area: ' DHA ', landmark: '', city: 'Lahore', lat: 31.51, lng: 74.34 };
+    await assertSucceeds(setDoc(doc(customer(), 'orders/a1'), order({ address: dha, deliveryFee: 250, total: 3546 })));
+    await assertFails(setDoc(doc(customer(), 'orders/a2'), order({ address: dha, deliveryFee: 150, total: 3446 })));
+    await assertSucceeds(setDoc(doc(customer(), 'orders/a3'), order()));
+  });
+});
+
+describe('shop operations and staff roles', () => {
+  const asStaff = () => env.authenticatedContext('clerk').firestore();
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'admins/clerk'), { email: 'clerk@alphalpg.pk', role: 'staff' });
+    });
+  });
+  const entry = { customerId: 'u1', customerName: 'Ali', kind: 'deposit', amount: 4000, empties: 0, note: '', by: 'boss', at: serverTimestamp() };
+  it('ledger: admin only, validated, append-only', async () => {
+    await assertSucceeds(addDoc(collection(staff('boss'), 'ledger'), entry));
+    await assertFails(addDoc(collection(customer(), 'ledger'), { ...entry, by: 'u1' }));
+    await assertFails(addDoc(collection(staff('boss'), 'ledger'), { ...entry, kind: 'gift' }));
+    await assertFails(addDoc(collection(staff('boss'), 'ledger'), { ...entry, amount: -1 }));
+    await assertFails(addDoc(collection(staff('boss'), 'ledger'), { ...entry, by: 'someone' }));
+    await assertFails(getDocs(collection(customer(), 'ledger')));
+  });
+  it('handovers: admin writes; the rider reads only their own', async () => {
+    const h = { riderId: 'r1', riderName: 'Imran', amount: 5000, note: '', by: 'boss', at: serverTimestamp() };
+    const ref = await addDoc(collection(staff('boss'), 'handovers'), h);
+    await assertSucceeds(getDoc(doc(staff('r1'), ref.path)));
+    await assertFails(getDoc(doc(staff('r2'), ref.path)));
+    await assertFails(addDoc(collection(staff('r1'), 'handovers'), { ...h, by: 'r1' }));
+    await assertFails(addDoc(collection(staff('boss'), 'handovers'), { ...h, amount: 0 }));
+  });
+  it('audit: any admin can log, only the owner can read, nobody can change', async () => {
+    const a = { by: 'clerk', byName: 'Clerk', action: 'markPaid', target: 'o1', detail: '', at: serverTimestamp() };
+    const ref = await addDoc(collection(asStaff(), 'audit'), a);
+    await assertFails(getDoc(doc(asStaff(), ref.path)));
+    await assertSucceeds(getDoc(doc(staff('boss'), ref.path)));
+    await assertFails(updateDoc(doc(staff('boss'), ref.path), { detail: 'x' }));
+    await assertFails(deleteDoc(doc(staff('boss'), ref.path)));
+    await assertFails(addDoc(collection(asStaff(), 'audit'), { ...a, by: 'boss' }));
+  });
+  it('errors: any signed-in app can report; only admins read', async () => {
+    const e = { app: 'rider', version: '1.0.0+3', uid: 'u1', message: 'boom', stack: 'trace', at: serverTimestamp() };
+    const ref = await addDoc(collection(customer(), 'errors'), e);
+    await assertFails(getDoc(doc(customer(), ref.path)));
+    await assertSucceeds(getDoc(doc(staff('boss'), ref.path)));
+    await assertFails(addDoc(collection(guest(), 'errors'), e));
+    await assertFails(addDoc(collection(customer(), 'errors'), { ...e, message: 'x'.repeat(600) }));
+    await assertFails(addDoc(collection(customer(), 'errors'), { ...e, uid: 'someone-else' }));
+  });
+  it('staff cannot change settings, delete products, cancel paid orders or manage admins', async () => {
+    await assertSucceeds(setDoc(doc(staff('boss'), 'config/app'), { deliveryFee: 200 }));
+    await assertFails(setDoc(doc(asStaff(), 'config/app'), { deliveryFee: 1 }));
+    await assertSucceeds(updateDoc(doc(asStaff(), 'products/cyl-6kg'), { refillPrice: 1700 }));
+    await assertFails(deleteDoc(doc(asStaff(), 'products/cyl-6kg')));
+    await assertSucceeds(deleteDoc(doc(staff('boss'), 'products/cyl-old')));
+    await seedOrder({ paymentStatus: 'paid', status: 'confirmed' });
+    await assertFails(updateDoc(doc(asStaff(), 'orders/o1'), { status: 'cancelled', cancelReason: 'x', history: ev('cancelled', 'clerk'), updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'orders/o1'), { status: 'cancelled', cancelReason: 'x', history: ev('cancelled', 'boss'), updatedAt: serverTimestamp() }));
+    await seedOrder({ status: 'confirmed' }, 'o2');
+    await assertSucceeds(updateDoc(doc(asStaff(), 'orders/o2'), { status: 'cancelled', cancelReason: 'x', history: ev('cancelled', 'clerk'), updatedAt: serverTimestamp() }));
+    await assertFails(setDoc(doc(asStaff(), 'admins/new'), { email: 'x', role: 'staff' }));
+    await assertSucceeds(setDoc(doc(staff('boss'), 'admins/new'), { email: 'x@y.pk', name: 'New', role: 'staff' }));
+    await assertFails(setDoc(doc(staff('boss'), 'admins/new2'), { email: 'x@y.pk', role: 'god' }));
+  });
+  it('delivery photo: only the assigned rider on their delivery; customer and admin can see it', async () => {
+    await seedOrder({ riderId: 'r1', status: 'outForDelivery' });
+    const p = { uid: 'r1', data: 'x'.repeat(300), createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(staff('r1'), 'orders/o1/proofs'), p);
+    await assertSucceeds(getDoc(doc(customer(), ref.path)));
+    await assertSucceeds(getDoc(doc(staff('boss'), ref.path)));
+    await assertFails(getDoc(doc(customer('u2', '+923111111111'), ref.path)));
+    await assertFails(addDoc(collection(staff('r2'), 'orders/o1/proofs'), { ...p, uid: 'r2' }));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/proofs'), { ...p, uid: 'u1' }));
+    await assertFails(addDoc(collection(staff('r1'), 'orders/o1/proofs'), { ...p, data: 'tiny' }));
+  });
+});
+
+describe('payment details with receipt, and blocking customers', () => {
+  it('customer sends reference + amount with the receipt; bad values fail', async () => {
+    await seedOrder({ paymentMethod: 'jazzCash' });
+    const ok = { receiptAt: serverTimestamp(), paymentIssue: '', paymentReference: 'TX123456', paidAmount: 3446, updatedAt: serverTimestamp() };
+    await assertSucceeds(updateDoc(doc(customer(), 'orders/o1'), ok));
+    await assertFails(updateDoc(doc(customer(), 'orders/o1'), { ...ok, paymentReference: 'ab' }));
+    await assertFails(updateDoc(doc(customer(), 'orders/o1'), { ...ok, paidAmount: -5 }));
+    await assertFails(updateDoc(doc(customer(), 'orders/o1'), { ...ok, paidAmount: 9000000 }));
+    await assertFails(updateDoc(doc(customer(), 'orders/o1'), { ...ok, total: 1 }));
+  });
+  it('a blocked customer cannot place orders; the shop can block and unblock', async () => {
+    await assertFails(setDoc(doc(customer(), 'blocked/u1'), { name: 'Ali', phone: '+923001234567', reason: '', at: serverTimestamp() }));
+    await assertSucceeds(setDoc(doc(staff('boss'), 'blocked/u1'), { name: 'Ali', phone: '+923001234567', reason: 'Fake orders', at: serverTimestamp() }));
+    await assertSucceeds(getDoc(doc(customer(), 'blocked/u1')));
+    await assertFails(getDoc(doc(customer('u2', '+923111111111'), 'blocked/u1')));
+    await assertFails(setDoc(doc(customer(), 'orders/ob1'), order()));
+    await assertSucceeds(deleteDoc(doc(staff('boss'), 'blocked/u1')));
+    await assertSucceeds(setDoc(doc(customer(), 'orders/ob1'), order()));
+  });
+});
+
 describe('payment request and receipts', () => {
   const req = { method: 'easyPaisa', account: '03001234567', accountTitle: 'Alpha LPG', note: '', amount: 3446, sentAt: serverTimestamp() };
   const receipt = (over = {}) => ({ uid: 'u1', data: 'x'.repeat(200), note: '', createdAt: serverTimestamp(), ...over });

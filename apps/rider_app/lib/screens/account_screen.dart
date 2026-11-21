@@ -6,6 +6,7 @@ import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/version.dart';
 import '../widgets/common.dart';
+import 'earnings_screen.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -67,6 +68,33 @@ class AccountScreen extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: panel(context),
+            child: Material(
+              type: MaterialType.transparency,
+              child: ListTile(
+                leading: const Icon(
+                  Icons.bar_chart_rounded,
+                  color: Brand.blueDark,
+                ),
+                title: const Text(
+                  'My earnings and cash',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text('Deliveries, cash to hand in, ratings'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ChangeNotifierProvider.value(
+                      value: s,
+                      child: const EarningsScreen(),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
           const Heading('Appearance'),

@@ -132,6 +132,8 @@ Future<void> main() async {
         riders: riders,
         catalog: catalog,
         quotes: QuoteRepository.memory(store),
+        profiles: ProfileRepository.memory(store),
+        ops: OpsRepository.memory(store),
         watchIsAdmin: (_) => Stream.value(true),
         createRiderLogin: (e, p) async => 'x',
       ),

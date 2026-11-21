@@ -61,6 +61,7 @@ class RiderSession extends ChangeNotifier {
   List<LpgOrder> available = const [];
   List<LpgOrder> jobs = const [];
   List<LpgOrder> history = const [];
+  List<CashHandover> handovers = const [];
 
   /// Set when location sharing could not start for a delivery that is on the way.
   String? trackingProblem;
@@ -259,6 +260,12 @@ class RiderSession extends ChangeNotifier {
       }, onError: (_) {}),
     );
     _riderSubs.add(
+      backend.ops.watchRiderHandovers(uid).listen((h) {
+        handovers = h;
+        notifyListeners();
+      }, onError: (_) {}),
+    );
+    _riderSubs.add(
       backend.orders.watchRiderHistory(uid).listen((o) {
         history = o;
         notifyListeners();
@@ -316,6 +323,10 @@ class RiderSession extends ChangeNotifier {
     notice = null;
     try {
       await backend.riders.setOnline(id, value);
+      if (value) {
+        // Ask for location now, so the shop can see which rider is nearest.
+        tracker.ensureAccess().then((_) => _beatNow(id)).catchError((_) {});
+      }
       return null;
     } catch (e) {
       _selfToggled = false;
@@ -331,6 +342,13 @@ class RiderSession extends ChangeNotifier {
     }
   }
 
+  Future<void> _beatNow(String u) async {
+    final p = await tracker.quickPosition();
+    try {
+      await backend.riders.heartbeat(u, lat: p?.lat, lng: p?.lng);
+    } catch (_) {}
+  }
+
   /// While on shift, tell the shop and customers every minute that this
   /// phone is still here. Stops when offline.
   void _syncHeartbeat() {
@@ -338,9 +356,7 @@ class RiderSession extends ChangeNotifier {
     if (id != null && online && isRider) {
       _beat ??= Timer.periodic(const Duration(seconds: 60), (_) {
         final u = _uid;
-        if (u != null && online) {
-          backend.riders.heartbeat(u).catchError((_) {});
-        }
+        if (u != null && online) _beatNow(u);
       });
     } else {
       _beat?.cancel();
@@ -447,6 +463,15 @@ class RiderSession extends ChangeNotifier {
           : null;
       return false;
     }
+  }
+
+  /// Delivery photo, saved after the delivery itself.
+  Future<void> addProof(LpgOrder order, String data) async {
+    final id = _uid;
+    if (id == null) return;
+    try {
+      await backend.orders.addDeliveryProof(order.id, uid: id, data: data);
+    } catch (_) {}
   }
 
   Future<void> signOut() async {

@@ -73,6 +73,14 @@ class _RiderAppState extends State<RiderApp> {
         theme: _light,
         darkTheme: _dark,
         themeMode: mode,
+        builder: (context, child) => ListenableBuilder(
+          listenable: _session,
+          builder: (context, _) => UpdateGate(
+            minBuild: _session.settings.minBuildRider,
+            phone: _session.settings.phone,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        ),
         home: const _Root(),
       ),
     ),

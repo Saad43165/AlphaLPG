@@ -1,3 +1,5 @@
+import 'package:alpha_core/alpha_core.dart';
+import 'package:alpha_ui/alpha_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -33,6 +35,23 @@ Future<void> main() async {
   try {
     prefs = await SharedPreferences.getInstance();
   } catch (_) {}
+  await AppInfo.load();
+  if (Firebase.apps.isNotEmpty) {
+    // Crashes go to the shop's error log (Admin app > More > App errors).
+    ErrorReporter.install((message, stack, version) async {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+      await OpsRepository.firestore(FirebaseFirestore.instance).reportError(
+        ErrorEntry(
+          app: 'rider',
+          version: version,
+          uid: uid,
+          message: message,
+          stack: stack,
+        ),
+      );
+    });
+  }
   runApp(
     RiderApp(
       backend: RiderBackend.firebase(

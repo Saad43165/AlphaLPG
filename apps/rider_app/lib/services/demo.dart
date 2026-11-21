@@ -119,6 +119,7 @@ Future<RiderBackend> buildDemoBackend() async {
     orders: orders,
     riders: riders,
     catalog: CatalogRepository.memory(store),
+    ops: OpsRepository.memory(store),
     tracker: GeolocatorTracker(),
   );
 }

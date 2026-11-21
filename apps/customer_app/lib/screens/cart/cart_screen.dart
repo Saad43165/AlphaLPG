@@ -38,7 +38,11 @@ class CartScreen extends StatelessWidget {
     final cart = context.watch<Cart>();
     final state = context.watch<AppState>();
     final items = cart.toOrderItems(state.productById);
-    final price = PriceBreakdown.of(items, state.settings);
+    final price = PriceBreakdown.of(
+      items,
+      state.settings,
+      area: state.selectedAddress?.area ?? '',
+    );
     final problem = price.problem(state.settings, status: state.ordering);
     final others = state.products
         .where((p) => p.inStock && cart.quantityOf(p.id) == 0)

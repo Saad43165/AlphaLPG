@@ -22,6 +22,14 @@ service cloud.firestore {
       return signedIn() && (request.auth.token.get('admin', false) == true
         || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
     }
+    // The owner can do everything. Staff admins (admins/{uid}.role == 'staff')
+    // cannot change settings, delete products, cancel paid orders, or manage
+    // other admins.
+    function isOwner() {
+      return signedIn() && (request.auth.token.get('admin', false) == true
+        || (exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+            && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.get('role', 'owner') == 'owner'));
+    }
     function isRider() {
       return signedIn() && (request.auth.token.get('rider', false) == true
         || (exists(/databases/$(database)/documents/riders/$(request.auth.uid))
@@ -49,11 +57,24 @@ service cloud.firestore {
 
     match /products/{id} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if isOwner();
     }
     match /config/{doc} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isOwner();
+    }
+
+    // ---- Customers the shop has blocked ---------------------------------------
+
+    match /blocked/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['name', 'phone', 'reason', 'at'])
+        && isText(request.resource.data.get('reason', ''), 200)
+        && request.resource.data.at == request.time;
+      allow delete: if isAdmin();
+      allow update: if false;
     }
 
     // ---- Customers and their saved locations --------------------------------
@@ -110,11 +131,11 @@ service cloud.firestore {
     function lineOk(items, i) { return items.size() <= i || lineValid(items[i]); }
     function lineSum(items, i) { return items.size() <= i ? 0 : items[i].unitPrice * items[i].quantity; }
 
-    function feeFor(subtotal, s) {
+    function feeFor(subtotal, s, area) {
       return (subtotal == 0
               || (s.get('freeDeliveryFrom', 0) > 0 && subtotal >= s.get('freeDeliveryFrom', 0)))
         ? 0
-        : s.get('deliveryFee', 0);
+        : s.get('areaFees', {}).get(area.trim().lower(), s.get('deliveryFee', 0));
     }
 
     // (Size checks use .size() directly; a wrongly typed value fails the rule.)
@@ -137,6 +158,7 @@ service cloud.firestore {
             'riderPhone', 'cancelReason', 'rating', 'feedback', 'cashCollected', 'emptiesCollected',
             'cylinderCount', 'emptiesToCollect', 'createdAt', 'updatedAt'])
         && d.customerId == request.auth.uid
+        && !exists(/databases/$(database)/documents/blocked/$(request.auth.uid))
         && d.customerName.size() <= 80
         && phoneMatchesToken(d.customerPhone)
         && d.customerType in ['home', 'business']
@@ -161,7 +183,7 @@ service cloud.firestore {
         && lineOk(items, 3) && lineOk(items, 4) && lineOk(items, 5)
         && d.subtotal == lineSum(items, 0) + lineSum(items, 1) + lineSum(items, 2)
                        + lineSum(items, 3) + lineSum(items, 4) + lineSum(items, 5)
-        && d.deliveryFee == feeFor(d.subtotal, s)
+        && d.deliveryFee == feeFor(d.subtotal, s, d.address.get('area', ''))
         && d.total == d.subtotal + d.deliveryFee
         && s.get('acceptingOrders', true) == true
         && d.subtotal >= s.get('minOrderTotal', 0);
@@ -183,7 +205,9 @@ service cloud.firestore {
 
       allow create: if signedIn() && validNewOrder();
 
-      allow update: if isAdmin()
+      allow update: if (isAdmin()
+            && (isOwner()
+                || !(request.resource.data.status == 'cancelled' && resource.data.paymentStatus == 'paid')))
         // Customer cancels while the order is still "placed".
         || (signedIn()
             && resource.data.customerId == request.auth.uid
@@ -208,7 +232,14 @@ service cloud.firestore {
             && resource.data.status != 'cancelled'
             && request.resource.data.receiptAt == request.time
             && request.resource.data.get('paymentIssue', '') == ''
-            && changed().hasOnly(['receiptAt', 'paymentIssue', 'updatedAt']))
+            && changed().hasOnly(['receiptAt', 'paymentIssue', 'paymentReference', 'paidAmount', 'updatedAt'])
+            && (!changed().hasAny(['paymentReference'])
+                || (isText(request.resource.data.paymentReference, 40)
+                    && request.resource.data.paymentReference.size() >= 4))
+            && (!changed().hasAny(['paidAmount'])
+                || (request.resource.data.paidAmount is int
+                    && request.resource.data.paidAmount > 0
+                    && request.resource.data.paidAmount <= 5000000)))
         // Customer rates a delivered order once.
         || (signedIn()
             && resource.data.customerId == request.auth.uid
@@ -355,6 +386,27 @@ service cloud.firestore {
           || (isRider() && orderDoc().riderId == request.auth.uid);
         allow delete: if isAdmin();
       }
+
+      // Photo of the delivery (taken by the rider at the door).
+      match /proofs/{pid} {
+        function proofOrder() {
+          return get(/databases/$(database)/documents/orders/$(id)).data;
+        }
+        allow read: if isAdmin()
+          || (signedIn() && proofOrder().customerId == request.auth.uid)
+          || (isRider() && proofOrder().riderId == request.auth.uid);
+        allow create: if isRider()
+          && proofOrder().riderId == request.auth.uid
+          && proofOrder().status in ['outForDelivery', 'delivered']
+          && request.resource.data.keys().hasOnly(['uid', 'data', 'createdAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.data is string
+          && request.resource.data.data.size() >= 100
+          && request.resource.data.data.size() <= 450000
+          && request.resource.data.createdAt == request.time;
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
     }
 
     // ---- Bulk / commercial quote requests (guests may submit too) -----------
@@ -389,8 +441,12 @@ service cloud.firestore {
       allow create, delete: if isAdmin();
       allow update: if isAdmin()
         || (isSelf(uid)
-            && changed().hasOnly(['online', 'lastSeen'])
-            && request.resource.data.online is bool);
+            && changed().hasOnly(['online', 'lastSeen', 'lat', 'lng'])
+            && request.resource.data.online is bool
+            && (!changed().hasAny(['lat'])
+                || (isNum(request.resource.data.lat) && request.resource.data.lat >= 31.0 && request.resource.data.lat <= 32.0))
+            && (!changed().hasAny(['lng'])
+                || (isNum(request.resource.data.lng) && request.resource.data.lng >= 73.8 && request.resource.data.lng <= 74.9)));
     }
 
     // "Is this rider on shift?" Public and free of personal details: the
@@ -408,8 +464,76 @@ service cloud.firestore {
 
     // Owners: listed by hand in the console. Nobody can write from the apps.
     match /admins/{uid} {
-      allow read: if isSelf(uid);
-      allow write: if false;
+      allow read: if isSelf(uid) || isOwner();
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(['email', 'name', 'role', 'createdAt'])
+        && request.resource.data.role in ['owner', 'staff']
+        && isText(request.resource.data.get('email', ''), 100)
+        && isText(request.resource.data.get('name', ''), 80);
+      allow delete: if isOwner() && uid != request.auth.uid;
+    }
+
+    // ---- Shop operations (admin only) -----------------------------------------
+
+    // Customer cylinder / deposit account.
+    match /ledger/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['customerId', 'customerName', 'kind', 'amount', 'empties', 'note', 'by', 'at'])
+        && request.resource.data.kind in ['deposit', 'depositRefund', 'emptiesOwed', 'emptiesReturned']
+        && request.resource.data.amount is int && request.resource.data.amount >= 0 && request.resource.data.amount <= 5000000
+        && request.resource.data.empties is int && request.resource.data.empties >= 0 && request.resource.data.empties <= 999
+        && isText(request.resource.data.customerId, 128)
+        && isText(request.resource.data.customerName, 80)
+        && isText(request.resource.data.note, 200)
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.at == request.time;
+      allow update: if false;
+      allow delete: if isOwner();
+    }
+
+    // Cash a rider handed in.
+    match /handovers/{id} {
+      allow read: if isAdmin() || (isRider() && resource.data.riderId == request.auth.uid);
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['riderId', 'riderName', 'amount', 'note', 'by', 'at'])
+        && request.resource.data.amount is int && request.resource.data.amount > 0 && request.resource.data.amount <= 5000000
+        && isText(request.resource.data.riderId, 128)
+        && isText(request.resource.data.riderName, 80)
+        && isText(request.resource.data.note, 200)
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.at == request.time;
+      allow update: if false;
+      allow delete: if isOwner();
+    }
+
+    // Who did what. Only the owner can read it; nobody can change or erase it.
+    match /audit/{id} {
+      allow read: if isOwner();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['by', 'byName', 'action', 'target', 'detail', 'at'])
+        && request.resource.data.by == request.auth.uid
+        && isText(request.resource.data.byName, 80)
+        && isText(request.resource.data.action, 60)
+        && isText(request.resource.data.target, 128)
+        && isText(request.resource.data.detail, 300)
+        && request.resource.data.at == request.time;
+      allow update, delete: if false;
+    }
+
+    // Crash and error reports from the apps.
+    match /errors/{id} {
+      allow read: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['app', 'version', 'uid', 'message', 'stack', 'at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.app in ['customer', 'rider', 'admin']
+        && isText(request.resource.data.version, 30)
+        && isText(request.resource.data.message, 500)
+        && isText(request.resource.data.stack, 2000)
+        && request.resource.data.at == request.time;
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     // Server-only counters (order numbers).

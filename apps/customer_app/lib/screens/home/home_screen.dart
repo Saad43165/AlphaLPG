@@ -459,12 +459,18 @@ class _ProductCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              product.inStock ? 'Refill' : 'Out of stock',
+                              !product.inStock
+                                  ? 'Out of stock'
+                                  : product.lowStock != null
+                                  ? 'Only ${product.lowStock} left'
+                                  : 'Refill',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: product.inStock
-                                    ? context.pal.muted
-                                    : Brand.danger,
+                                color: !product.inStock
+                                    ? Brand.danger
+                                    : product.lowStock != null
+                                    ? Brand.flame
+                                    : context.pal.muted,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

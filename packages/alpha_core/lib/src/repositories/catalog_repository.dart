@@ -26,6 +26,11 @@ abstract interface class CatalogRepository {
   Future<void> saveProduct(Product p);
   Future<void> saveSettings(AppSettings s);
   Future<void> seed();
+
+  /// Admin: add [delta] (negative to take) to a product's counted stock. A
+  /// product with no counted stock is left alone. At 0 or less the product is
+  /// marked out of stock; back above 0 it is in stock again.
+  Future<void> adjustStock(String productId, int delta);
 }
 
 List<Product> _activeSorted(Iterable<Product> all) {
@@ -83,6 +88,18 @@ class _FirestoreCatalog implements CatalogRepository {
       _db.doc(FirestorePaths.settingsDoc).set(s.toMap());
 
   @override
+  Future<void> adjustStock(String productId, int delta) async {
+    final ref = _db.collection(FirestorePaths.products).doc(productId);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final stock = (snap.data()?['stock'] as num?)?.round();
+      if (!snap.exists || stock == null) return;
+      final next = stock + delta;
+      tx.update(ref, {'stock': next < 0 ? 0 : next, 'inStock': next > 0});
+    });
+  }
+
+  @override
   Future<void> seed() async {
     final batch = _db.batch();
     for (final p in SeedData.products) {
@@ -135,6 +152,19 @@ class _MemoryCatalog implements CatalogRepository {
   @override
   Future<void> saveSettings(AppSettings s) async =>
       _s.set(_config, 'app', s.toMap());
+
+  @override
+  Future<void> adjustStock(String productId, int delta) async {
+    final d = _s.get(FirestorePaths.products, productId);
+    final stock = (d?['stock'] as num?)?.round();
+    if (d == null || stock == null) return;
+    final next = stock + delta;
+    _s.set(FirestorePaths.products, productId, {
+      ...d,
+      'stock': next < 0 ? 0 : next,
+      'inStock': next > 0,
+    });
+  }
 
   @override
   Future<void> seed() async {

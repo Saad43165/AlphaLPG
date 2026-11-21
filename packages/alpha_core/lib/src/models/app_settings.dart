@@ -24,6 +24,10 @@ class AppSettings {
     this.opensAt = 540,
     this.closesAt = 1260,
     this.pauseWhenNoRiders = false,
+    this.areaFees = const {},
+    this.minBuildCustomer = 0,
+    this.minBuildRider = 0,
+    this.minBuildAdmin = 0,
   });
 
   final bool acceptingOrders;
@@ -72,6 +76,19 @@ class AppSettings {
   /// When true, orders pause by themselves while no rider is online.
   final bool pauseWhenNoRiders;
 
+  /// Delivery fee per area (key: area name in lower case). Areas not listed
+  /// use [deliveryFee].
+  final Map<String, int> areaFees;
+
+  /// Oldest app build allowed to run. Older apps are asked to update.
+  final int minBuildCustomer;
+  final int minBuildRider;
+  final int minBuildAdmin;
+
+  /// Delivery fee for [area] (before the free-delivery rule).
+  int feeForArea(String area) =>
+      areaFees[area.trim().toLowerCase()] ?? deliveryFee;
+
   factory AppSettings.fromMap(Map<String, dynamic> m) {
     const d = AppSettings();
     return AppSettings(
@@ -102,6 +119,13 @@ class AppSettings {
       opensAt: (m['opensAt'] as num?)?.toInt() ?? d.opensAt,
       closesAt: (m['closesAt'] as num?)?.toInt() ?? d.closesAt,
       pauseWhenNoRiders: m['pauseWhenNoRiders'] as bool? ?? d.pauseWhenNoRiders,
+      areaFees: {
+        for (final e in ((m['areaFees'] as Map?) ?? const {}).entries)
+          '${e.key}'.toLowerCase(): (e.value as num).round(),
+      },
+      minBuildCustomer: (m['minBuildCustomer'] as num?)?.toInt() ?? 0,
+      minBuildRider: (m['minBuildRider'] as num?)?.toInt() ?? 0,
+      minBuildAdmin: (m['minBuildAdmin'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -128,5 +152,9 @@ class AppSettings {
     'opensAt': opensAt,
     'closesAt': closesAt,
     'pauseWhenNoRiders': pauseWhenNoRiders,
+    'areaFees': areaFees,
+    'minBuildCustomer': minBuildCustomer,
+    'minBuildRider': minBuildRider,
+    'minBuildAdmin': minBuildAdmin,
   };
 }

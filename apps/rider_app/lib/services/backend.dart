@@ -12,6 +12,7 @@ class RiderBackend {
     required this.orders,
     required this.riders,
     required this.catalog,
+    required this.ops,
     required this.tracker,
   });
 
@@ -21,6 +22,7 @@ class RiderBackend {
         orders: OrderRepository.firestore(db),
         riders: RiderRepository.firestore(db),
         catalog: CatalogRepository.firestore(db),
+        ops: OpsRepository.firestore(db),
         tracker: GeolocatorTracker(),
       );
 
@@ -28,5 +30,6 @@ class RiderBackend {
   final OrderRepository orders;
   final RiderRepository riders;
   final CatalogRepository catalog;
+  final OpsRepository ops;
   final LocationTracker tracker;
 }

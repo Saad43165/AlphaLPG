@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
+import '../utils/payment_checks.dart';
 import '../widgets/common.dart';
 import '../widgets/payment_panel.dart';
 import 'chat_screen.dart';
@@ -378,6 +379,32 @@ class OrderDetailScreen extends StatelessWidget {
                 PaymentPanel(o),
               ],
             ),
+
+            // ---- Delivery photo ---------------------------------------------
+            if (o.status == OrderStatus.delivered)
+              StreamBuilder<List<PaymentReceipt>>(
+                stream: s.backend.orders.watchDeliveryProofs(o.id),
+                builder: (context, snap) {
+                  final list = snap.data ?? const <PaymentReceipt>[];
+                  return _Section(
+                    title: 'Delivery photo',
+                    icon: Icons.photo_camera_rounded,
+                    children: [
+                      if (list.isEmpty)
+                        const Text('The rider did not take a delivery photo.')
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final p in list)
+                              ReceiptImage(p.data, size: 110),
+                          ],
+                        ),
+                    ],
+                  );
+                },
+              ),
 
             // ---- Rider ------------------------------------------------------
             if (o.riderName != null)
@@ -779,8 +806,12 @@ class _ActionsState extends State<_Actions> {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (_) =>
-          _RiderPicker(riders: s.riders, current: widget.order.riderId),
+      builder: (_) => _RiderPicker(
+        riders: s.riders,
+        current: widget.order.riderId,
+        order: widget.order,
+        allOrders: s.orders,
+      ),
     );
     if (r != null) {
       await _do(() => s.assign(widget.order, r), 'Assigned to ${r.name}');
@@ -859,7 +890,35 @@ class _ActionsState extends State<_Actions> {
         FilledButton.tonalIcon(
           onPressed: _busy
               ? null
-              : () => _do(() => s.markPaid(o), 'Marked as paid'),
+              : () async {
+                  final severe = paymentWarnings(
+                    o,
+                    s.orders,
+                  ).where((w) => w.severe).toList();
+                  if (severe.isNotEmpty) {
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (c) => AlertDialog(
+                        title: const Text('Mark paid anyway?'),
+                        content: Text(
+                          severe.map((w) => '• ${w.text}').join('\n\n'),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(c, false),
+                            child: const Text('Go back'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(c, true),
+                            child: const Text('Mark paid'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (ok != true) return;
+                  }
+                  await _do(() => s.markPaid(o), 'Marked as paid');
+                },
           icon: const Icon(Icons.verified_rounded),
           label: const Text('Mark paid'),
         ),
@@ -894,7 +953,9 @@ class _ActionsState extends State<_Actions> {
         ),
       );
     }
-    if (o.status.isActive) {
+    // Staff cannot cancel an order that has already been paid.
+    if (o.status.isActive &&
+        (s.isOwner || o.paymentStatus != PaymentStatus.paid)) {
       buttons.add(
         TextButton(
           onPressed: _busy ? null : _cancel,
@@ -923,16 +984,41 @@ class _ActionsState extends State<_Actions> {
 }
 
 class _RiderPicker extends StatelessWidget {
-  const _RiderPicker({required this.riders, this.current});
+  const _RiderPicker({
+    required this.riders,
+    this.current,
+    required this.order,
+    this.allOrders = const [],
+  });
   final List<RiderProfile> riders;
   final String? current;
+  final LpgOrder order;
+  final List<LpgOrder> allOrders;
+
+  int _jobs(RiderProfile r) =>
+      allOrders.where((o) => o.riderId == r.uid && o.status.isActive).length;
+
+  double? _km(RiderProfile r) => r.hasPosition && order.address.hasLocation
+      ? distanceKm(r.lat!, r.lng!, order.address.lat!, order.address.lng!)
+      : null;
 
   @override
   Widget build(BuildContext context) {
-    final list = [
-      for (final r in riders)
-        if (r.active) r,
-    ]..sort((a, b) => (b.online ? 1 : 0).compareTo(a.online ? 1 : 0));
+    // Live riders first, then free ones, then the closest.
+    final list =
+        [
+          for (final r in riders)
+            if (r.active) r,
+        ]..sort((a, b) {
+          int rank(RiderProfile r) =>
+              (r.isLive() ? 0 : 4) + (_jobs(r) == 0 ? 0 : 2);
+          final c = rank(a).compareTo(rank(b));
+          if (c != 0) return c;
+          return (_km(a) ?? 999).compareTo(_km(b) ?? 999);
+        });
+    final best = list.isEmpty || !list.first.isLive() || _km(list.first) == null
+        ? null
+        : list.first.uid;
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -968,11 +1054,30 @@ class _RiderPicker extends StatelessWidget {
                           color: r.online ? Brand.success : Colors.grey,
                         ),
                       ),
-                      title: Text(r.name),
+                      title: Row(
+                        children: [
+                          Flexible(child: Text(r.name)),
+                          if (r.uid == best) ...[
+                            const SizedBox(width: 8),
+                            const Pill(
+                              Icons.near_me_rounded,
+                              'Nearest',
+                              color: Brand.success,
+                            ),
+                          ],
+                        ],
+                      ),
                       subtitle: Text(
-                        r.online
-                            ? 'Online · ${r.vehicle}'
-                            : 'Offline · ${r.vehicle}',
+                        [
+                          r.isLive()
+                              ? 'Online'
+                              : (r.online ? 'Not responding' : 'Offline'),
+                          if (_km(r) != null)
+                            '${_km(r)!.toStringAsFixed(1)} km away',
+                          _jobs(r) == 0
+                              ? 'free'
+                              : '${_jobs(r)} job${_jobs(r) == 1 ? '' : 's'} now',
+                        ].join(' · '),
                       ),
                       trailing: r.uid == current
                           ? const Icon(Icons.check_rounded)

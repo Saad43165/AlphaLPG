@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../firestore_paths.dart';
 import '../models/address.dart';
+import '../models/blocked_customer.dart';
 import '../models/customer_profile.dart';
 import 'memory_store.dart';
 
@@ -17,6 +18,22 @@ abstract interface class ProfileRepository {
   /// Creates (empty id) or updates an address; returns it with its id.
   Future<Address> saveAddress(String uid, Address a);
   Future<void> deleteAddress(String uid, String id);
+
+  /// Is this customer blocked from ordering? (null when not blocked.)
+  Stream<BlockedCustomer?> watchBlocked(String uid);
+
+  /// Admin: everyone currently blocked.
+  Stream<List<BlockedCustomer>> watchAllBlocked();
+
+  /// Admin: all customers, newest first.
+  Stream<List<CustomerProfile>> watchCustomers({int limit = 500});
+
+  /// Admin: block ([blocked] true) or unblock a customer.
+  Future<void> setBlocked(
+    CustomerProfile customer, {
+    required bool blocked,
+    String reason = '',
+  });
 
   /// Removes the customer's profile and saved locations ("delete my
   /// account"). Past orders are kept for the shop's records.
@@ -61,6 +78,52 @@ class _FirestoreProfiles implements ProfileRepository {
     }
     await _addresses(uid).doc(a.id).set(a.toMap(), SetOptions(merge: true));
     return a;
+  }
+
+  @override
+  Stream<BlockedCustomer?> watchBlocked(String uid) => _db
+      .collection(FirestorePaths.blocked)
+      .doc(uid)
+      .snapshots()
+      .map((d) => d.exists ? BlockedCustomer.fromMap(uid, d.data()!) : null);
+
+  @override
+  Stream<List<BlockedCustomer>> watchAllBlocked() => _db
+      .collection(FirestorePaths.blocked)
+      .snapshots()
+      .map(
+        (s) => [
+          for (final d in s.docs) BlockedCustomer.fromMap(d.id, d.data()),
+        ],
+      );
+
+  @override
+  Stream<List<CustomerProfile>> watchCustomers({int limit = 500}) => _db
+      .collection(FirestorePaths.customers)
+      .orderBy('createdAt', descending: true)
+      .limit(limit)
+      .snapshots()
+      .map(
+        (s) => [
+          for (final d in s.docs) CustomerProfile.fromMap(d.id, d.data()),
+        ],
+      );
+
+  @override
+  Future<void> setBlocked(
+    CustomerProfile customer, {
+    required bool blocked,
+    String reason = '',
+  }) {
+    final ref = _db.collection(FirestorePaths.blocked).doc(customer.uid);
+    return blocked
+        ? ref.set({
+            'name': customer.name,
+            'phone': customer.phone,
+            'reason': reason,
+            'at': FieldValue.serverTimestamp(),
+          })
+        : ref.delete();
   }
 
   @override
@@ -122,6 +185,47 @@ class _MemoryProfiles implements ProfileRepository {
   @override
   Future<void> deleteAddress(String uid, String id) async =>
       _s.delete(FirestorePaths.addresses(uid), id);
+
+  @override
+  Stream<BlockedCustomer?> watchBlocked(String uid) =>
+      _s.watch(FirestorePaths.blocked, (docs) {
+        final d = docs[uid];
+        return d == null ? null : BlockedCustomer.fromMap(uid, d);
+      });
+
+  @override
+  Stream<List<BlockedCustomer>> watchAllBlocked() => _s.watch(
+    FirestorePaths.blocked,
+    (docs) => [
+      for (final e in docs.entries) BlockedCustomer.fromMap(e.key, e.value),
+    ],
+  );
+
+  @override
+  Stream<List<CustomerProfile>> watchCustomers({int limit = 500}) => _s.watch(
+    FirestorePaths.customers,
+    (docs) => [
+      for (final e in docs.entries) CustomerProfile.fromMap(e.key, e.value),
+    ],
+  );
+
+  @override
+  Future<void> setBlocked(
+    CustomerProfile customer, {
+    required bool blocked,
+    String reason = '',
+  }) async {
+    if (blocked) {
+      _s.set(FirestorePaths.blocked, customer.uid, {
+        'name': customer.name,
+        'phone': customer.phone,
+        'reason': reason,
+        'at': DateTime.now(),
+      });
+    } else {
+      _s.delete(FirestorePaths.blocked, customer.uid);
+    }
+  }
 
   @override
   Future<void> deleteAccountData(String uid) async {

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:alpha_ui/alpha_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
@@ -6,7 +9,11 @@ import 'package:provider/provider.dart';
 import '../state/session.dart';
 import '../utils/launch.dart';
 import '../widgets/common.dart';
+import '../utils/export.dart';
+import 'cash_screen.dart';
+import 'customers_screen.dart';
 import 'reports_screen.dart';
+import 'team_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -63,6 +70,120 @@ class MoreScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const ReportsScreen()),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.people_alt_rounded),
+              title: const Text('Customers'),
+              subtitle: const Text('Orders, empties owed, deposits, block'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: s,
+                    child: const CustomersScreen(),
+                  ),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.payments_rounded),
+              title: const Text('Cash handover'),
+              subtitle: const Text('What each rider owes you, daily closing'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: s,
+                    child: const CashScreen(),
+                  ),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_view_rounded),
+              title: const Text('Export orders (Excel / CSV)'),
+              subtitle: const Text('All orders loaded in the app'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () async {
+                try {
+                  await shareBytes(
+                    Uint8List.fromList(utf8.encode(ordersCsv(s.orders))),
+                    name:
+                        'alpha-lpg-orders-${DateFormat('yyyyMMdd').format(DateTime.now())}.csv',
+                    mime: 'text/csv',
+                  );
+                } catch (_) {
+                  if (context.mounted)
+                    showMessage(context, 'Could not export', error: true);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_download_rounded),
+              title: const Text('Backup all data'),
+              subtitle: const Text(
+                'Orders, customers, riders, products, settings',
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () async {
+                try {
+                  final text = backupJson(
+                    orders: s.orders,
+                    customers: s.customers,
+                    riders: s.riders,
+                    products: s.products,
+                    settings: s.settings,
+                    ledger: s.ledger,
+                    handovers: s.handovers,
+                  );
+                  await shareBytes(
+                    Uint8List.fromList(utf8.encode(text)),
+                    name:
+                        'alpha-lpg-backup-${DateFormat('yyyyMMdd').format(DateTime.now())}.json',
+                    mime: 'application/json',
+                  );
+                } catch (_) {
+                  if (context.mounted)
+                    showMessage(
+                      context,
+                      'Could not make the backup',
+                      error: true,
+                    );
+                }
+              },
+            ),
+            if (s.isOwner)
+              ListTile(
+                leading: const Icon(Icons.groups_rounded),
+                title: const Text('Team and activity log'),
+                subtitle: const Text('Add staff, see who did what'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ChangeNotifierProvider.value(
+                      value: s,
+                      child: const TeamScreen(),
+                    ),
+                  ),
+                ),
+              ),
+            ListTile(
+              leading: Badge(
+                isLabelVisible: s.errorLog.isNotEmpty,
+                label: Text('${s.errorLog.length}'),
+                child: const Icon(Icons.bug_report_rounded),
+              ),
+              title: const Text('App errors'),
+              subtitle: const Text('Crashes reported by the apps'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: s,
+                    child: const ErrorLogScreen(),
+                  ),
+                ),
               ),
             ),
             ListTile(

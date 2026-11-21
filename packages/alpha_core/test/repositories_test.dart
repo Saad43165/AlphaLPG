@@ -392,51 +392,59 @@ void _suite(Repos Function() make) {
     expect(o.history.last.note, 'Taken back from the rider');
   });
 
-  test('payment request from the shop and receipts from the customer', () async {
-    final id = await r.orders.place(
-      LpgOrder(
-        customerId: 'u1',
-        customerName: 'Ali',
-        customerPhone: '+923001234567',
-        items: sampleOrder('u1').items,
-        subtotal: 6592,
-        deliveryFee: 0,
-        total: 6592,
-        paymentMethod: PaymentMethod.jazzCash,
-        address: const Address(label: 'Home', line1: '1', area: 'DHA'),
-      ),
-    );
-    await r.orders.sendPaymentRequest(
-      id,
-      const PaymentRequest(
-        method: PaymentMethod.easyPaisa,
-        account: '03001234567',
-        accountTitle: 'Alpha LPG',
-        note: 'Send the receipt after paying',
-        amount: 6592,
-      ),
-    );
-    var o = (await r.orders.watchOrder(id).first)!;
-    expect(o.paymentRequest!.method, PaymentMethod.easyPaisa);
-    expect(o.paymentRequest!.account, '03001234567');
-    expect(o.paymentRequest!.amount, 6592);
-    expect(o.paymentRequest!.sentAt, isNotNull);
-    expect(o.receiptAt, isNull);
+  test(
+    'payment request from the shop and receipts from the customer',
+    () async {
+      final id = await r.orders.place(
+        LpgOrder(
+          customerId: 'u1',
+          customerName: 'Ali',
+          customerPhone: '+923001234567',
+          items: sampleOrder('u1').items,
+          subtotal: 6592,
+          deliveryFee: 0,
+          total: 6592,
+          paymentMethod: PaymentMethod.jazzCash,
+          address: const Address(label: 'Home', line1: '1', area: 'DHA'),
+        ),
+      );
+      await r.orders.sendPaymentRequest(
+        id,
+        const PaymentRequest(
+          method: PaymentMethod.easyPaisa,
+          account: '03001234567',
+          accountTitle: 'Alpha LPG',
+          note: 'Send the receipt after paying',
+          amount: 6592,
+        ),
+      );
+      var o = (await r.orders.watchOrder(id).first)!;
+      expect(o.paymentRequest!.method, PaymentMethod.easyPaisa);
+      expect(o.paymentRequest!.account, '03001234567');
+      expect(o.paymentRequest!.amount, 6592);
+      expect(o.paymentRequest!.sentAt, isNotNull);
+      expect(o.receiptAt, isNull);
 
-    await r.orders.addReceipt(id, uid: 'u1', data: 'QUJD', note: 'from Easypaisa app');
-    await r.orders.setPaymentIssue(id, 'The receipt is not clear');
-    o = (await r.orders.watchOrder(id).first)!;
-    expect(o.receiptAt, isNotNull);
-    expect(o.paymentIssue, 'The receipt is not clear');
-    final receipts = await r.orders.watchReceipts(id).first;
-    expect(receipts.single.data, 'QUJD');
+      await r.orders.addReceipt(
+        id,
+        uid: 'u1',
+        data: 'QUJD',
+        note: 'from Easypaisa app',
+      );
+      await r.orders.setPaymentIssue(id, 'The receipt is not clear');
+      o = (await r.orders.watchOrder(id).first)!;
+      expect(o.receiptAt, isNotNull);
+      expect(o.paymentIssue, 'The receipt is not clear');
+      final receipts = await r.orders.watchReceipts(id).first;
+      expect(receipts.single.data, 'QUJD');
 
-    // A new receipt clears the problem the shop pointed out.
-    await r.orders.addReceipt(id, uid: 'u1', data: 'REVG');
-    o = (await r.orders.watchOrder(id).first)!;
-    expect(o.paymentIssue, isEmpty);
-    expect((await r.orders.watchReceipts(id).first).length, 2);
-  });
+      // A new receipt clears the problem the shop pointed out.
+      await r.orders.addReceipt(id, uid: 'u1', data: 'REVG');
+      o = (await r.orders.watchOrder(id).first)!;
+      expect(o.paymentIssue, isEmpty);
+      expect((await r.orders.watchReceipts(id).first).length, 2);
+    },
+  );
 
   test('delivery with money on a wallet order does not mark it paid', () async {
     final id = await r.orders.place(

@@ -169,14 +169,12 @@ class PaymentMethodPicker extends StatelessWidget {
     required this.value,
     required this.settings,
     required this.total,
-    required this.reference,
     required this.onChanged,
   });
 
   final PaymentMethod value;
   final AppSettings settings;
   final int total;
-  final TextEditingController reference;
   final ValueChanged<PaymentMethod> onChanged;
 
   @override
@@ -204,33 +202,30 @@ class PaymentMethodPicker extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    PaymentSteps(
-                      method: value,
-                      settings: settings,
-                      total: total,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: reference,
-                      textCapitalization: TextCapitalization.characters,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                          RegExp('[A-Za-z0-9]'),
-                        ),
-                        LengthLimitingTextInputFormatter(30),
-                      ],
-                      decoration: InputDecoration(
-                        labelText: 'Transaction ID (TID)',
-                        hintText: 'e.g. 012345678901',
-                        helperText: 'Optional now. You can add it later from your order',
-                        prefixIcon: const Icon(Icons.tag_rounded),
-                        suffixIcon: Icon(
-                          Icons.receipt_long_rounded,
-                          color: value.color,
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: value.color.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: value.color.withValues(alpha: 0.4),
                         ),
                       ),
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      validator: validateTransactionId,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline_rounded, color: value.color),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'How it works: place your order and Alpha LPG sends the ${value.label} account to your order screen. '
+                              'Pay ${formatRupees(total)}, then send the transaction ID and a screenshot there. '
+                              'Your order is delivered once the payment is confirmed.',
+                              style: const TextStyle(height: 1.45),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
