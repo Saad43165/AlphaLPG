@@ -164,6 +164,115 @@ void main() {
     expect(find.text('Receipt problem'), findsOneWidget);
   });
 
+  testWidgets('owner opens a customer, records a deposit and blocks them', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    await tester.runAsync(() async {
+      await b.profiles.saveProfile(
+        const CustomerProfile(
+          uid: 'c1',
+          name: 'Ali Raza',
+          phone: '+923001234567',
+        ),
+        isNew: true,
+      );
+    });
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Customers'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ali Raza'), findsOneWidget);
+    await tester.tap(find.text('Ali Raza'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Deposit taken'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Amount (Rs)'),
+      '4000',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Rs 4,000'), findsWidgets);
+
+    await tester.tap(find.text('Block this customer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Block'));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      expect(await b.profiles.watchBlocked('c1').first, isNotNull);
+      final ledger = await b.ops.watchLedger().first;
+      expect(ledger.single.amount, 4000);
+      final audit = await b.ops.watchAudit().first;
+      expect(
+        audit.map((e) => e.action),
+        containsAll(['Deposit taken', 'Blocked customer']),
+      );
+    });
+  });
+
+  testWidgets('cash handover: rider owes cash until the owner receives it', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    await tester.runAsync(() async {
+      await b.riders.saveRider(
+        const RiderProfile(
+          uid: 'r1',
+          name: 'Imran',
+          phone: '03001112222',
+          online: true,
+        ),
+      );
+      final id = await b.orders.place(_order());
+      await b.orders.assignRider(
+        id,
+        'boss',
+        riderId: 'r1',
+        name: 'Imran',
+        phone: '03001112222',
+      );
+      await b.orders.updateStatus(id, OrderStatus.outForDelivery, 'r1');
+      await b.orders.completeDelivery(
+        id,
+        'r1',
+        cashCollected: 6592,
+        emptiesCollected: 2,
+      );
+    });
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cash handover'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rs 6,592'), findsWidgets);
+    await tester.tap(find.text('Receive cash'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rs 0'), findsWidgets);
+    await tester.runAsync(() async {
+      final h = await b.ops.watchHandovers().first;
+      expect(h.single.amount, 6592);
+    });
+  });
+
   testWidgets('a non-admin account is told how to become one', (tester) async {
     final b = _backend(MemoryStore(), admin: false);
     await tester.pumpWidget(AdminApp(backend: b));

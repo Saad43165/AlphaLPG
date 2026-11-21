@@ -439,6 +439,8 @@ describe('shop operations and staff roles', () => {
   it('staff cannot change settings, delete products, cancel paid orders or manage admins', async () => {
     await assertSucceeds(setDoc(doc(staff('boss'), 'config/app'), { deliveryFee: 200 }));
     await assertFails(setDoc(doc(asStaff(), 'config/app'), { deliveryFee: 1 }));
+    await assertFails(updateDoc(doc(asStaff(), 'config/app'), { deliveryFee: 1 }));
+    await assertSucceeds(updateDoc(doc(asStaff(), 'config/app'), { acceptingOrders: false, closedMessage: 'Back at 5' }));
     await assertSucceeds(updateDoc(doc(asStaff(), 'products/cyl-6kg'), { refillPrice: 1700 }));
     await assertFails(deleteDoc(doc(asStaff(), 'products/cyl-6kg')));
     await assertSucceeds(deleteDoc(doc(staff('boss'), 'products/cyl-old')));

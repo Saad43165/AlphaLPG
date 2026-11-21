@@ -98,16 +98,20 @@ class _FirestoreProfiles implements ProfileRepository {
       );
 
   @override
-  Stream<List<CustomerProfile>> watchCustomers({int limit = 400}) => _db
-      .collection(FirestorePaths.customers)
-      .orderBy('createdAt', descending: true)
-      .limit(limit)
-      .snapshots()
-      .map(
-        (s) => [
-          for (final d in s.docs) CustomerProfile.fromMap(d.id, d.data()),
-        ],
+  Stream<List<CustomerProfile>> watchCustomers({
+    int limit = 400,
+  }) => _db.collection(FirestorePaths.customers).limit(limit).snapshots().map((
+    s,
+  ) {
+    // Sorted here (not in the query) so profiles without a created date
+    // still show up.
+    final l = [for (final d in s.docs) CustomerProfile.fromMap(d.id, d.data())]
+      ..sort(
+        (a, b) =>
+            (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)),
       );
+    return l;
+  });
 
   @override
   Future<void> setBlocked(

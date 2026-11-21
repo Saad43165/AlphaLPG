@@ -138,16 +138,17 @@ class EarningsScreen extends StatelessWidget {
                 children: [
                   const Icon(Icons.star_rounded, color: Brand.flame, size: 30),
                   const SizedBox(width: 10),
-                  Text(
-                    avg == null
-                        ? 'No ratings yet'
-                        : '${avg.toStringAsFixed(1)} / 5',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
+                  Expanded(
+                    child: Text(
+                      avg == null
+                          ? 'No ratings yet'
+                          : '${avg.toStringAsFixed(1)} / 5',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
-                  const Spacer(),
                   Text(
                     '${rated.length} rated',
                     style: TextStyle(color: context.pal.muted),

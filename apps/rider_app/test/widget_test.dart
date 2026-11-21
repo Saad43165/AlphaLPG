@@ -458,4 +458,55 @@ void main() {
     expect(find.textContaining('Collect Rs.'), findsNothing);
     expect(find.textContaining('JazzCash: awaiting'), findsOneWidget);
   });
+
+  testWidgets(
+    'an unpaid online order cannot be delivered; once the shop confirms it can',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      final id = await placeOrder(tester, rig, method: PaymentMethod.easyPaisa);
+      await tester.runAsync(() async {
+        await rig.backend.riders.setOnline('r1', true);
+        await rig.backend.orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran Khan',
+          phone: '0300',
+        );
+        await rig.backend.orders.updateStatus(
+          id,
+          OrderStatus.outForDelivery,
+          'r1',
+        );
+      });
+      await pumpRider(tester, rig);
+      await signIn(tester);
+
+      await tapText(tester, 'Mark delivered');
+      expect(find.text('Payment not confirmed yet'), findsOneWidget);
+      expect(find.text('Confirm delivery'), findsNothing);
+      await tapText(tester, 'OK');
+      var o = await orderOf(tester, rig, id);
+      expect(o.status, OrderStatus.outForDelivery);
+
+      // The shop confirms the payment: now the delivery can be finished.
+      await tester.runAsync(() async {
+        await rig.backend.orders.markPaid(id, 'boss');
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pumpAndSettle();
+      await tapText(tester, 'Mark delivered');
+      expect(find.text('Confirm delivery'), findsOneWidget);
+      await tapText(tester, 'Mark as delivered');
+      o = await orderOf(tester, rig, id);
+      expect(o.status, OrderStatus.delivered);
+      expect(o.cashCollected, 0);
+
+      // Earnings screen shows the delivery.
+      await tapText(tester, 'Me');
+      await tapText(tester, 'My earnings and cash');
+      expect(find.text('My earnings and cash'), findsWidgets);
+      expect(find.text('All cash handed in'), findsOneWidget);
+    },
+  );
 }

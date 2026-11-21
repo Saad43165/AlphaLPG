@@ -62,7 +62,10 @@ service cloud.firestore {
     }
     match /config/{doc} {
       allow read: if true;
-      allow write: if isOwner();
+      allow create, delete: if isOwner();
+      // Staff may only open or close the shop (and its closed message).
+      allow update: if isOwner()
+        || (isAdmin() && changed().hasOnly(['acceptingOrders', 'closedMessage']));
     }
 
     // ---- Customers the shop has blocked ---------------------------------------

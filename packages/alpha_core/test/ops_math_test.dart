@@ -114,4 +114,36 @@ void main() {
     expect((await r.watchAudit().first).single.action, 'markPaid');
     expect((await r.watchErrors().first).single.message, 'boom');
   });
+
+  test('counted stock goes down and back up; out of stock at zero', () async {
+    final store = MemoryStore();
+    final c = CatalogRepository.memory(store);
+    await c.saveProduct(
+      const Product(
+        id: 'p1',
+        name: '6kg',
+        sizeKg: 6,
+        refillPrice: 1676,
+        stock: 3,
+      ),
+    );
+    await c.saveProduct(
+      const Product(id: 'p2', name: '10kg', sizeKg: 10, refillPrice: 2793),
+    );
+    await c.adjustStock('p1', -2);
+    var p = (await c.watchAllProducts().first).firstWhere((e) => e.id == 'p1');
+    expect((p.stock, p.inStock), (1, true));
+    await c.adjustStock('p1', -5);
+    p = (await c.watchAllProducts().first).firstWhere((e) => e.id == 'p1');
+    expect((p.stock, p.inStock), (0, false));
+    await c.adjustStock('p1', 4);
+    p = (await c.watchAllProducts().first).firstWhere((e) => e.id == 'p1');
+    expect((p.stock, p.inStock), (4, true));
+    // Products without a count are left alone.
+    await c.adjustStock('p2', -1);
+    final q = (await c.watchAllProducts().first).firstWhere(
+      (e) => e.id == 'p2',
+    );
+    expect((q.stock, q.inStock), (null, true));
+  });
 }
