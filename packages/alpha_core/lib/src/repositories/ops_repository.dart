@@ -15,11 +15,11 @@ abstract interface class OpsRepository {
   static const errorsPath = 'errors';
 
   // Customer ledger (admin).
-  Stream<List<LedgerEntry>> watchLedger({int limit = 1000});
+  Stream<List<LedgerEntry>> watchLedger({int limit = 400});
   Future<void> addLedger(LedgerEntry e);
 
   // Rider cash handovers (admin writes; the rider can read their own).
-  Stream<List<CashHandover>> watchHandovers({int limit = 1000});
+  Stream<List<CashHandover>> watchHandovers({int limit = 300});
   Stream<List<CashHandover>> watchRiderHandovers(String riderId);
   Future<void> addHandover(CashHandover h);
 
@@ -55,7 +55,7 @@ class _FirestoreOps implements OpsRepository {
       .map((s) => [for (final d in s.docs) from(d.id, d.data())]);
 
   @override
-  Stream<List<LedgerEntry>> watchLedger({int limit = 1000}) =>
+  Stream<List<LedgerEntry>> watchLedger({int limit = 400}) =>
       _recent(OpsRepository.ledgerPath, limit, 'at', LedgerEntry.fromMap);
 
   @override
@@ -64,7 +64,7 @@ class _FirestoreOps implements OpsRepository {
       .add({...e.toMap(), 'at': FieldValue.serverTimestamp()});
 
   @override
-  Stream<List<CashHandover>> watchHandovers({int limit = 1000}) =>
+  Stream<List<CashHandover>> watchHandovers({int limit = 300}) =>
       _recent(OpsRepository.handoversPath, limit, 'at', CashHandover.fromMap);
 
   @override
@@ -148,7 +148,7 @@ class _MemoryOps implements OpsRepository {
       _s.set(path, _s.newId(), {...m, 'at': DateTime.now()});
 
   @override
-  Stream<List<LedgerEntry>> watchLedger({int limit = 1000}) =>
+  Stream<List<LedgerEntry>> watchLedger({int limit = 400}) =>
       _all(OpsRepository.ledgerPath, limit, LedgerEntry.fromMap, (e) => e.at);
 
   @override
@@ -156,7 +156,7 @@ class _MemoryOps implements OpsRepository {
       _add(OpsRepository.ledgerPath, e.toMap());
 
   @override
-  Stream<List<CashHandover>> watchHandovers({int limit = 1000}) => _all(
+  Stream<List<CashHandover>> watchHandovers({int limit = 300}) => _all(
     OpsRepository.handoversPath,
     limit,
     CashHandover.fromMap,

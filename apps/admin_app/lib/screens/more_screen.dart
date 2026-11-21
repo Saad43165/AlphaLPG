@@ -234,7 +234,7 @@ class MoreScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Center(
               child: Text(
-                'Alpha LPG Admin 1.0.0',
+                'Alpha LPG Admin ${AppInfo.current.label}',
                 style: TextStyle(color: context.pal.muted, fontSize: 12),
               ),
             ),

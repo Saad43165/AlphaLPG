@@ -79,13 +79,16 @@ class PrivacyScreen extends StatelessWidget {
     sections: [
       (
         'What we collect',
-        '• Your mobile number, to sign you in with an SMS code.\n'
+        '• Your mobile number, to sign you in and so the rider and shop can call you.\n'
             '• Your name, and optionally your email and business name and type.\n'
             '• Delivery addresses, including the map spot you choose.\n'
             '• Your orders: items, prices, payment method, the transaction ID you enter, notes, and any rating or feedback.\n'
+            '• Payment receipt pictures you choose to send us for online payments.\n'
+            '• Messages you send in the order chat with the shop and your rider.\n'
+            '• A photo the rider takes at delivery, to prove the cylinders arrived.\n'
             '• Business quote requests you send us.\n'
             '• Your phone\'s location only at the moment you tap "Use my current location". It is used to place the map pin. We do not track you in the background.\n'
-            '• A notification token for your phone, if you allow notifications.',
+            '• Basic crash reports (error text and app version) if the app crashes, so we can fix it.',
       ),
       (
         'Why we use it',
@@ -95,17 +98,18 @@ class PrivacyScreen extends StatelessWidget {
       (
         'Who can see it',
         'Alpha LPG staff, and the rider assigned to your order. The rider sees your name, phone number and delivery address only while the order is open. '
-            'During delivery you can see the rider\'s name, phone and live location. Your own location is never shared with other customers.',
+            'During delivery you can see the rider\'s name, phone and live location. Your own location is never shared with other customers. '
+            'The shop owner and staff can see your orders, receipts and messages. Orders may also be blocked by the shop if there is misuse.',
       ),
       (
         'Services we use',
-        'Google Firebase stores your account and orders and sends SMS codes and notifications. '
+        'Google Firebase stores your account and orders. '
             'Geoapify supplies map images and address search; it receives the area you are looking at or the text you search for, not your name or phone number. '
             'WhatsApp, phone calls and Google Maps open only when you tap them.',
       ),
       (
         'Payments',
-        'The app does not collect card or wallet PINs. JazzCash, Easypaisa and bank transfers happen in those apps. We store only the transaction ID you type, so we can match your payment.',
+        'The app does not collect card or wallet PINs. JazzCash, Easypaisa and bank transfers happen in those apps. We store the transaction ID, the amount and the receipt picture you send, so we can check and match your payment.',
       ),
       (
         'Keeping and deleting your data',

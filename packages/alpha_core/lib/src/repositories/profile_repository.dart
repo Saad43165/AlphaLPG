@@ -26,7 +26,7 @@ abstract interface class ProfileRepository {
   Stream<List<BlockedCustomer>> watchAllBlocked();
 
   /// Admin: all customers, newest first.
-  Stream<List<CustomerProfile>> watchCustomers({int limit = 500});
+  Stream<List<CustomerProfile>> watchCustomers({int limit = 400});
 
   /// Admin: block ([blocked] true) or unblock a customer.
   Future<void> setBlocked(
@@ -98,7 +98,7 @@ class _FirestoreProfiles implements ProfileRepository {
       );
 
   @override
-  Stream<List<CustomerProfile>> watchCustomers({int limit = 500}) => _db
+  Stream<List<CustomerProfile>> watchCustomers({int limit = 400}) => _db
       .collection(FirestorePaths.customers)
       .orderBy('createdAt', descending: true)
       .limit(limit)
@@ -202,7 +202,7 @@ class _MemoryProfiles implements ProfileRepository {
   );
 
   @override
-  Stream<List<CustomerProfile>> watchCustomers({int limit = 500}) => _s.watch(
+  Stream<List<CustomerProfile>> watchCustomers({int limit = 400}) => _s.watch(
     FirestorePaths.customers,
     (docs) => [
       for (final e in docs.entries) CustomerProfile.fromMap(e.key, e.value),

@@ -46,7 +46,15 @@ class GeolocatorTracker extends LocationTracker {
   DateTime _lastSent = DateTime.fromMillisecondsSinceEpoch(0);
 
   /// At most one update this often (saves battery, data and database writes).
-  static const _minGap = Duration(seconds: 6);
+  static const _minGap = Duration(seconds: 8);
+
+  /// While standing still, a fresh update is still sent this often (so the
+  /// customer's dot stays "live"), but not every few seconds.
+  static const _stillGap = Duration(seconds: 30);
+
+  /// Moving less than this counts as standing still (metres).
+  static const _moveMetres = 15.0;
+  Position? _lastSentPos;
 
   @override
   String? get orderId => _orderId;
@@ -81,7 +89,7 @@ class GeolocatorTracker extends LocationTracker {
         // 0: report even when standing still (a customer watching a rider
         // parked at a shop should still see a live dot).
         distanceFilter: 0,
-        intervalDuration: const Duration(seconds: 6),
+        intervalDuration: const Duration(seconds: 8),
         foregroundNotificationConfig: const ForegroundNotificationConfig(
           notificationTitle: 'Alpha LPG delivery in progress',
           notificationText: 'Sharing your location with the customer.',
@@ -164,7 +172,22 @@ class GeolocatorTracker extends LocationTracker {
     // ... then keep going with the live stream.
     _sub = Geolocator.getPositionStream(locationSettings: _settings).listen(
       (p) {
-        if (DateTime.now().difference(_lastSent) >= _minGap) _send(p);
+        final since = DateTime.now().difference(_lastSent);
+        final prev = _lastSentPos;
+        final moved = prev == null
+            ? double.infinity
+            : Geolocator.distanceBetween(
+                prev.latitude,
+                prev.longitude,
+                p.latitude,
+                p.longitude,
+              );
+        // Send when moving, or every 30 s when standing still: far fewer
+        // database writes (the free plan has a daily limit).
+        if (since >= _minGap && (moved >= _moveMetres || since >= _stillGap)) {
+          _lastSentPos = p;
+          _send(p);
+        }
       },
       onError: (_) {
         _lastError = 'Your phone is not giving a location. Is GPS on?';
@@ -209,6 +232,7 @@ class GeolocatorTracker extends LocationTracker {
     _startedAt = null;
     _lastError = null;
     _lastShared = null;
+    _lastSentPos = null;
     if (had) notifyListeners();
   }
 
