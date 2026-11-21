@@ -15,6 +15,13 @@ abstract interface class CatalogRepository {
   Stream<List<Product>> watchProducts();
   Stream<AppSettings> watchSettings();
 
+  /// Admin view: every product (hidden ones too), exactly as stored, with no
+  /// fallback. Empty until the catalogue has been loaded.
+  Stream<List<Product>> watchAllProducts();
+
+  /// Admin view: the stored settings, or null until they have been saved.
+  Stream<AppSettings?> watchStoredSettings();
+
   /// Admin only (enforced by security rules).
   Future<void> saveProduct(Product p);
   Future<void> saveSettings(AppSettings s);
@@ -42,6 +49,22 @@ class _FirestoreCatalog implements CatalogRepository {
                 snap.docs.map((d) => Product.fromMap(d.id, d.data())),
               ),
       );
+
+  @override
+  Stream<List<Product>> watchAllProducts() => _db
+      .collection(FirestorePaths.products)
+      .snapshots()
+      .map(
+        (snap) =>
+            [for (final d in snap.docs) Product.fromMap(d.id, d.data())]
+              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+      );
+
+  @override
+  Stream<AppSettings?> watchStoredSettings() => _db
+      .doc(FirestorePaths.settingsDoc)
+      .snapshots()
+      .map((d) => d.exists ? AppSettings.fromMap(d.data()!) : null);
 
   @override
   Stream<AppSettings> watchSettings() => _db
@@ -84,6 +107,20 @@ class _MemoryCatalog implements CatalogRepository {
             docs.entries.map((e) => Product.fromMap(e.key, e.value)),
           ),
   );
+
+  @override
+  Stream<List<Product>> watchAllProducts() => _s.watch(
+    FirestorePaths.products,
+    (docs) => [
+      for (final e in docs.entries) Product.fromMap(e.key, e.value),
+    ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+  );
+
+  @override
+  Stream<AppSettings?> watchStoredSettings() => _s.watch(_config, (docs) {
+    final d = docs['app'];
+    return d == null ? null : AppSettings.fromMap(d);
+  });
 
   @override
   Stream<AppSettings> watchSettings() => _s.watch(_config, (docs) {

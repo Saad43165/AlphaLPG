@@ -12,8 +12,8 @@ and an **admin app** can share the same data model and backend.
 | Customer app (Flutter, Android/iOS/web) | `apps/customer_app` | ✅ v1 |
 | Shared models, pricing, repositories | `packages/alpha_core` | ✅ |
 | Firebase rules, indexes, Cloud Functions | `firebase/` | ✅ |
-| Rider app | `apps/rider_app` | planned, reuses `alpha_core` (`watchRiderOrders`, `updateStatus`) |
-| Admin dashboard | `apps/admin_app` | planned, reuses `alpha_core` (`watchByStatus`, `assignRider`, `saveProduct`, `saveSettings`) |
+| Rider app | `apps/rider_app` | ✅ v1 |
+| Admin app | `apps/admin_app` | ✅ v1: order board, confirm/assign/cancel, mark paid, riders, prices, shop settings, business quotes |
 
 ## Customer app features
 
@@ -149,6 +149,16 @@ flutterfire configure --project=<project-id> --android-package-name=pk.alphalpg.
 flutter build apk --release --split-per-abi
 ```
 Then deploy `firebase/firestore.rules`.
+
+## Admin app (`apps/admin_app`)
+
+For the owner. Sign in with an email and password, then:
+- **Orders**: live board (New / In progress / Verify payment / Delivered), confirm, assign a rider, cancel with a reason, mark wallet and bank payments paid, call or WhatsApp the customer, and see where an out-for-delivery rider is.
+- **Riders**: add a rider (the app creates the login and profile), block or unblock, call.
+- **Shop**: prices, stock, visibility, delivery fee, free-delivery limit, hours, payment accounts, pause orders. "Load the default catalogue" fills an empty database.
+- **Business quotes**: follow up bulk enquiries.
+
+The owner account must be listed in `admins/<uid>`. The app shows the UID to copy if it is not.
 
 ## Map and search key (Geoapify)
 

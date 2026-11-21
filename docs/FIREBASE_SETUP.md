@@ -6,6 +6,7 @@ Both apps use Firebase Authentication (customer: Phone OTP, rider: Email/Passwor
 Project settings → Your apps → Add app → Android:
 - Customer: package `pk.alphalpg.customer`
 - Rider: package `pk.alphalpg.rider`
+- Admin: package `pk.alphalpg.admin`
 Add the SHA-1 and SHA-256 of the signing key used for the APK (phone sign-in fails without them).
 Get them with `cd apps/customer_app/android && ./gradlew signingReport`.
 

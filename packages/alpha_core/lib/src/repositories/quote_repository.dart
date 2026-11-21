@@ -10,6 +10,12 @@ abstract interface class QuoteRepository {
 
   Future<void> submit(QuoteRequest q);
   Stream<List<QuoteRequest>> watchForCustomer(String uid);
+
+  /// Admin: every enquiry, newest first.
+  Stream<List<QuoteRequest>> watchAll({int limit = 100});
+
+  /// Admin: new → contacted → won / lost.
+  Future<void> setStatus(String id, String status);
 }
 
 class _FirestoreQuotes implements QuoteRepository {
@@ -23,6 +29,22 @@ class _FirestoreQuotes implements QuoteRepository {
         'status': 'new',
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+  @override
+  Stream<List<QuoteRequest>> watchAll({int limit = 100}) => _db
+      .collection(FirestorePaths.quoteRequests)
+      .orderBy('createdAt', descending: true)
+      .limit(limit)
+      .snapshots()
+      .map(
+        (s) => [for (final d in s.docs) QuoteRequest.fromMap(d.id, d.data())],
+      );
+
+  @override
+  Future<void> setStatus(String id, String status) => _db
+      .collection(FirestorePaths.quoteRequests)
+      .doc(id)
+      .update({'status': status});
 
   @override
   Stream<List<QuoteRequest>> watchForCustomer(String uid) => _db
@@ -43,6 +65,21 @@ class _MemoryQuotes implements QuoteRepository {
     FirestorePaths.quoteRequests,
     _s.newId(),
     {...q.toMap(), 'status': 'new', 'createdAt': DateTime.now()},
+  );
+
+  @override
+  Stream<List<QuoteRequest>> watchAll({int limit = 100}) => _s.watch(
+    FirestorePaths.quoteRequests,
+    (docs) => [
+      for (final e in docs.entries) QuoteRequest.fromMap(e.key, e.value),
+    ],
+  );
+
+  @override
+  Future<void> setStatus(String id, String status) async => _s.update(
+    FirestorePaths.quoteRequests,
+    id,
+    (d) => {...d, 'status': status},
   );
 
   @override

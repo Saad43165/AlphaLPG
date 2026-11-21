@@ -17,6 +17,9 @@ abstract interface class RiderRepository {
   /// Owner / admin only (enforced by security rules).
   Future<void> saveRider(RiderProfile rider);
   Stream<List<RiderProfile>> watchAllRiders();
+
+  /// Admin: switch a rider's account on or off.
+  Future<void> setActive(String uid, bool active);
 }
 
 class _FirestoreRiders implements RiderRepository {
@@ -41,6 +44,10 @@ class _FirestoreRiders implements RiderRepository {
   @override
   Future<void> saveRider(RiderProfile r) =>
       _col.doc(r.uid).set(r.toMap(), SetOptions(merge: true));
+
+  @override
+  Future<void> setActive(String uid, bool active) =>
+      _col.doc(uid).update({'active': active, if (!active) 'online': false});
 
   @override
   Stream<List<RiderProfile>> watchAllRiders() => _col.snapshots().map(
@@ -69,6 +76,13 @@ class _MemoryRiders implements RiderRepository {
   @override
   Future<void> saveRider(RiderProfile r) async =>
       _s.set(FirestorePaths.riders, r.uid, r.toMap(), merge: true);
+
+  @override
+  Future<void> setActive(String uid, bool active) async => _s.update(
+    FirestorePaths.riders,
+    uid,
+    (d) => {...d, 'active': active, if (!active) 'online': false},
+  );
 
   @override
   Stream<List<RiderProfile>> watchAllRiders() => _s.watch(

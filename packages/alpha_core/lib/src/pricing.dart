@@ -9,11 +9,19 @@ class PriceBreakdown {
     required this.subtotal,
     required this.deliveryFee,
     required this.cylinders,
+    this.lines = 0,
   });
 
   final int subtotal;
   final int deliveryFee;
   final int cylinders;
+
+  /// Different items (product × refill/new) in the order.
+  final int lines;
+
+  /// The most different items one order can hold (also enforced by the
+  /// security rules).
+  static const maxLines = 6;
 
   int get total => subtotal + deliveryFee;
   bool get freeDelivery => deliveryFee == 0;
@@ -28,6 +36,7 @@ class PriceBreakdown {
       subtotal: subtotal,
       deliveryFee: free ? 0 : s.deliveryFee,
       cylinders: cylinders,
+      lines: items.length,
     );
   }
 
@@ -39,6 +48,9 @@ class PriceBreakdown {
           : 'We are not taking online orders right now. Please call us.';
     }
     if (cylinders == 0) return 'Your cart is empty.';
+    if (lines > maxLines) {
+      return 'One order can have up to $maxLines different items. Please place the rest as a second order.';
+    }
     if (cylinders > s.maxCylindersPerOrder) {
       return 'For more than ${s.maxCylindersPerOrder} cylinders please request a bulk quote.';
     }

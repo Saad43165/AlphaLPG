@@ -28,6 +28,12 @@ abstract interface class OrderRepository {
 
   // Admin / rider operations (used by the upcoming apps).
   Stream<List<LpgOrder>> watchByStatus(List<OrderStatus> statuses);
+
+  /// The newest orders of any status (admin dashboard and order board).
+  Stream<List<LpgOrder>> watchRecent({int limit = 300});
+
+  /// Admin: a wallet / bank payment has arrived (or cash was handed in).
+  Future<void> markPaid(String orderId, String by);
   Stream<List<LpgOrder>> watchRiderOrders(String riderId);
   Future<void> assignRider(
     String orderId,
@@ -111,6 +117,15 @@ class _FirestoreOrders implements OrderRepository {
     for (final d in s.docs) LpgOrder.fromMap(d.id, d.data()),
   ];
 
+  /// Newest first, sorted here so no composite Firestore index is needed.
+  /// An order whose server time has not arrived yet counts as the newest.
+  List<LpgOrder> _newestFirst(QuerySnapshot<Map<String, dynamic>> s) {
+    final now = DateTime.now();
+    return _list(s)..sort(
+      (a, b) => (b.createdAt ?? now).compareTo(a.createdAt ?? now),
+    );
+  }
+
   @override
   Future<String> place(LpgOrder order) async {
     final ref = _orders.doc();
@@ -132,10 +147,8 @@ class _FirestoreOrders implements OrderRepository {
   Stream<List<LpgOrder>> watchCustomerOrders(String uid, {int limit = 50}) =>
       _orders
           .where('customerId', isEqualTo: uid)
-          .orderBy('createdAt', descending: true)
-          .limit(limit)
           .snapshots()
-          .map(_list);
+          .map((s) => _newestFirst(s).take(limit).toList());
 
   @override
   Future<void> cancelByCustomer(LpgOrder o, String reason) => _setStatus(
@@ -164,9 +177,21 @@ class _FirestoreOrders implements OrderRepository {
   @override
   Stream<List<LpgOrder>> watchByStatus(List<OrderStatus> statuses) => _orders
       .where('status', whereIn: [for (final s in statuses) s.name])
+      .snapshots()
+      .map(_newestFirst);
+
+  @override
+  Stream<List<LpgOrder>> watchRecent({int limit = 300}) => _orders
       .orderBy('createdAt', descending: true)
+      .limit(limit)
       .snapshots()
       .map(_list);
+
+  @override
+  Future<void> markPaid(String orderId, String by) => _orders.doc(orderId).update({
+    'paymentStatus': PaymentStatus.paid.name,
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
 
   @override
   Stream<List<LpgOrder>> watchRiderOrders(String riderId) => _orders
@@ -400,6 +425,17 @@ class _MemoryOrders implements OrderRepository {
           _sorted(docs.entries.where((e) => names.contains(e.value['status']))),
     );
   }
+
+  @override
+  Stream<List<LpgOrder>> watchRecent({int limit = 300}) =>
+      _s.watch(_path, (docs) => _sorted(docs.entries).take(limit).toList());
+
+  @override
+  Future<void> markPaid(String orderId, String by) async => _s.update(
+    _path,
+    orderId,
+    (d) => {...d, 'paymentStatus': 'paid', 'updatedAt': DateTime.now()},
+  );
 
   @override
   Stream<List<LpgOrder>> watchRiderOrders(String riderId) => _s.watch(

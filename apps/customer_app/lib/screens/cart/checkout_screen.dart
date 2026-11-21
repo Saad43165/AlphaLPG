@@ -113,9 +113,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return true;
     } catch (e) {
       if (mounted) {
+        final denied = '$e'.contains('permission-denied');
         showMessage(
           context,
-          'Could not place order. Please try again.',
+          denied
+              ? 'Alpha LPG could not accept this order. Prices or settings may have just changed. Go back to the cart and try again, or call the shop.'
+              : 'Could not place order. Check your internet and try again.',
           error: true,
         );
       }

@@ -1,4 +1,4 @@
-package pk.alphalpg.alpha_rider
+package pk.alphalpg.rider
 
 import io.flutter.embedding.android.FlutterActivity
 
