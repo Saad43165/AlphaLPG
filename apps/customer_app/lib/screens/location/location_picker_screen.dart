@@ -308,6 +308,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       children: [
         TileLayer(
           urlTemplate: tiles.urlTemplate,
+          // If the paid-style tiles fail (bad key, restriction, outage), show OpenStreetMap instead of a blank map.
+          fallbackUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'pk.alphalpg.customer',
           maxNativeZoom: 19,
           retinaMode: MediaQuery.devicePixelRatioOf(context) > 1.5,

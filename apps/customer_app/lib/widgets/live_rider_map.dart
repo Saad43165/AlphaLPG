@@ -154,6 +154,8 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                             urlTemplate: svc
                                 .tiles(dark: pal.isDark)
                                 .urlTemplate,
+                            // If the paid-style tiles fail (bad key, restriction, outage), show OpenStreetMap instead of a blank map.
+                            fallbackUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                             userAgentPackageName: 'pk.alphalpg.customer',
                             retinaMode:
                                 MediaQuery.devicePixelRatioOf(context) > 1.5,
