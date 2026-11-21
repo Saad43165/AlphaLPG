@@ -77,28 +77,12 @@ class _LoginScreenState extends State<LoginScreen> {
             child: ListView(
               padding: const EdgeInsets.all(24),
               children: [
-                const SizedBox(height: 24),
-                const Center(child: BrandLogo(height: 64)),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Brand.navy,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'ADMIN',
-                      style: TextStyle(
-                        color: Brand.flame,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2,
-                        fontSize: 12,
-                      ),
-                    ),
+                  child: Image.asset(
+                    'assets/brand/admin_logo.png',
+                    height: 170,
+                    semanticLabel: 'Alpha LPG Admin',
                   ),
                 ),
                 const SizedBox(height: 32),

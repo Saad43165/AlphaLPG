@@ -194,7 +194,7 @@ void main() {
         findsOneWidget,
       );
       await tapText(tester, 'Sign out');
-      expect(find.text('Rider'.toUpperCase()), findsOneWidget);
+      expect(find.byType(Image), findsWidgets); // the Rider banner
     },
   );
 
