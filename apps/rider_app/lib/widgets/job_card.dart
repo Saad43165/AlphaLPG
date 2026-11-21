@@ -2,6 +2,10 @@ import 'package:alpha_core/alpha_core.dart';
 import 'package:alpha_ui/alpha_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'package:provider/provider.dart';
+
+import '../screens/chat_screen.dart';
+import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
 import 'common.dart';
@@ -52,6 +56,9 @@ class JobCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     StatusChip(o.status),
+                    if (o.status == OrderStatus.assigned ||
+                        o.status == OrderStatus.outForDelivery)
+                      _ChatButton(order: o),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -117,6 +124,35 @@ class JobCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Chat with the customer, with a red count of unread messages.
+class _ChatButton extends StatelessWidget {
+  const _ChatButton({required this.order});
+  final LpgOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    final unread = context.watch<RiderSession>().chat.unread(order.id);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Badge(
+        isLabelVisible: unread > 0,
+        label: Text('$unread'),
+        backgroundColor: Brand.cylinderRed,
+        child: IconButton.filledTonal(
+          visualDensity: VisualDensity.compact,
+          tooltip: 'Message customer',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => JobChatScreen(order: order),
+            ),
+          ),
+          icon: const Icon(Icons.forum_rounded, size: 20),
         ),
       ),
     );

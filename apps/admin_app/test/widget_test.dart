@@ -232,4 +232,46 @@ void main() {
     final riders = await tester.runAsync(() => b.riders.watchAllRiders().first);
     expect(riders!.single.online, isFalse);
   });
+
+  testWidgets(
+    'a customer message shows as unread on the order; opening the chat clears it',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final store = MemoryStore();
+      final b = _backend(store);
+      late String id;
+      await tester.runAsync(() async {
+        id = await b.orders.place(_order());
+      });
+      await tester.pumpWidget(AdminApp(backend: b));
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await b.orders.sendMessage(
+          id,
+          uid: 'c1',
+          role: MessageRole.customer,
+          name: 'Ali Raza',
+          text: 'Please call me',
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('1 new'), findsOneWidget);
+      await tester.tap(find.text('Ali Raza'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chat (1)'));
+      await tester.pumpAndSettle();
+      expect(find.text('Please call me'), findsOneWidget);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 60)),
+      );
+      await tester.pumpAndSettle();
+      final reads = await tester.runAsync(
+        () => b.orders.watchChatReads(id).first,
+      );
+      expect(reads!.containsKey(MessageRole.admin), isTrue);
+    },
+  );
 }

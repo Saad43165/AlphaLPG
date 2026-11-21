@@ -34,6 +34,7 @@ class RiderSession extends ChangeNotifier {
     };
     backend.auth.addListener(_onAuth);
     backend.tracker.addListener(notifyListeners);
+    chat.addListener(notifyListeners);
     _subs.add(
       backend.catalog.watchSettings().listen((s) {
         settings = s;
@@ -44,6 +45,9 @@ class RiderSession extends ChangeNotifier {
   }
 
   final RiderBackend backend;
+
+  /// Unread counts, previews and "Seen" for the chats of my jobs.
+  late final ChatInbox chat = ChatInbox(backend.orders, MessageRole.rider);
   final SharedPreferences? prefs;
   final themeMode = ValueNotifier<ThemeMode>(ThemeMode.system);
 
@@ -115,6 +119,7 @@ class RiderSession extends ChangeNotifier {
     }
     _jobMessageSubs.clear();
     _messagesSeen.clear();
+    chat.follow(const []);
     _beat?.cancel();
     _beat = null;
     notice = null;
@@ -177,6 +182,7 @@ class RiderSession extends ChangeNotifier {
 
   void _alertJobs(List<LpgOrder> list) {
     final ids = {for (final o in list) o.id};
+    chat.follow(ids);
     final known = _knownJobs;
     _knownJobs = ids;
     if (known != null) {
@@ -204,6 +210,7 @@ class RiderSession extends ChangeNotifier {
                   ? '${o.customerName}'
                   : 'Alpha LPG',
               body: m.text,
+              payload: 'chat:${o.id}',
             );
           }
         }, onError: (_) {}),
@@ -426,6 +433,7 @@ class RiderSession extends ChangeNotifier {
 
   @override
   void dispose() {
+    chat.dispose();
     _beat?.cancel();
     backend.auth.removeListener(_onAuth);
     backend.tracker.removeListener(notifyListeners);

@@ -64,32 +64,10 @@ class AppState extends ChangeNotifier {
   final Backend backend;
   final SharedPreferences? prefs;
 
-  // ---- Order chat: what the customer has read --------------------------------
+  // ---- Order chat -----------------------------------------------------------
 
-  final _chatSeen = <String, int>{};
-
-  int _seenAt(String orderId) =>
-      _chatSeen[orderId] ?? prefs?.getInt('chat.$orderId') ?? 0;
-
-  /// The customer opened the chat for [orderId]: everything so far is read.
-  void markChatRead(String orderId) {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    _chatSeen[orderId] = now;
-    prefs?.setInt('chat.$orderId', now);
-    notifyListeners();
-  }
-
-  /// Messages from the rider or the shop that are newer than the last visit.
-  int unreadMessages(String orderId, List<OrderMessage> list) {
-    final seen = _seenAt(orderId);
-    return list
-        .where(
-          (m) =>
-              m.role != MessageRole.customer &&
-              (m.createdAt?.millisecondsSinceEpoch ?? 1 << 50) > seen,
-        )
-        .length;
-  }
+  /// Unread counts, last message and "seen" for the customer's orders.
+  late final ChatInbox chat = ChatInbox(backend.orders, MessageRole.customer);
 
   // ---- Settings (saved on this device) ------------------------------------
 
@@ -211,6 +189,7 @@ class AppState extends ChangeNotifier {
 
   @override
   void dispose() {
+    chat.dispose();
     _clock?.cancel();
     routeSignal.dispose();
     themeMode.dispose();

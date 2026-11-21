@@ -301,6 +301,15 @@ class OrderTile extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (context.watch<AdminSession>().chat.unread(o.id) >
+                        0) ...[
+                      Pill(
+                        Icons.forum_rounded,
+                        '${context.watch<AdminSession>().chat.unread(o.id)} new',
+                        color: Brand.cylinderRed,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     StatusChip(o.status),
                   ],
                 ),

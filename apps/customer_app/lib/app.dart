@@ -79,6 +79,7 @@ class _AlphaAppState extends State<AlphaApp> {
       Provider.value(value: widget.backend),
       Provider<LocationService>.value(value: _location),
       ChangeNotifierProvider.value(value: _state),
+      ChangeNotifierProvider.value(value: _state.chat),
       ChangeNotifierProvider.value(value: _cart),
     ],
     child: ValueListenableBuilder<ThemeMode>(

@@ -168,6 +168,18 @@ class _TrackingView extends StatelessWidget {
               ),
               actions: [
                 if (o.status != OrderStatus.cancelled)
+                  Badge(
+                    isLabelVisible: context.watch<ChatInbox>().unread(o.id) > 0,
+                    label: Text('${context.watch<ChatInbox>().unread(o.id)}'),
+                    backgroundColor: Brand.cylinderRed,
+                    offset: const Offset(-4, 4),
+                    child: IconButton(
+                      tooltip: 'Messages',
+                      onPressed: () => context.push('/orders/${o.id}/chat'),
+                      icon: const Icon(Icons.forum_rounded),
+                    ),
+                  ),
+                if (o.status != OrderStatus.cancelled)
                   IconButton(
                     tooltip: 'Invoice',
                     onPressed: () => context.push('/invoice', extra: o),
@@ -636,9 +648,6 @@ class _RiderCard extends StatelessWidget {
         .take(2)
         .map((w) => w[0].toUpperCase())
         .join();
-    final wa = o.riderPhone == null
-        ? null
-        : normalizePkMobile(o.riderPhone!)?.substring(1);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: _cardDecoration(context),
@@ -698,16 +707,17 @@ class _RiderCard extends StatelessWidget {
               ],
             ),
           ),
-          if (wa != null)
-            _RoundAction(
+          Badge(
+            isLabelVisible: context.watch<ChatInbox>().unread(o.id) > 0,
+            label: Text('${context.watch<ChatInbox>().unread(o.id)}'),
+            backgroundColor: Brand.cylinderRed,
+            child: _RoundAction(
               tooltip: 'Message rider',
               icon: Icons.chat_rounded,
-              color: Brand.whatsapp,
-              onTap: () => Launch.whatsapp(
-                wa,
-                'Assalam-o-Alaikum, this is about Alpha LPG order ${o.displayNumber}.',
-              ),
+              color: Brand.blueDark,
+              onTap: () => context.push('/orders/${o.id}/chat'),
             ),
+          ),
           if (o.riderPhone != null) ...[
             const SizedBox(width: 8),
             _RoundAction(
@@ -1615,14 +1625,11 @@ class _ChatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backend = context.read<Backend>();
-    final state = context.watch<AppState>();
-    return StreamBuilder<List<OrderMessage>>(
-      stream: backend.orders.watchMessages(o.id),
-      builder: (context, snap) {
-        final list = snap.data ?? const <OrderMessage>[];
-        final unread = state.unreadMessages(o.id, list);
-        final last = list.isEmpty ? null : list.last;
+    final chat = context.watch<ChatInbox>();
+    final unread = chat.unread(o.id);
+    final last = chat.last(o.id);
+    return Builder(
+      builder: (context) {
         return Material(
           color: Colors.transparent,
           child: Ink(

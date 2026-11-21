@@ -290,6 +290,24 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
+      // "Seen" and unread counts: when each side last opened the chat.
+      match /reads/{who} {
+        function orderDoc() {
+          return get(/databases/$(database)/documents/orders/$(id)).data;
+        }
+        allow read: if isAdmin()
+          || (signedIn() && orderDoc().customerId == request.auth.uid)
+          || (isRider() && orderDoc().riderId == request.auth.uid);
+        allow create, update: if request.resource.data.keys().hasOnly(['at'])
+          && request.resource.data.at == request.time
+          && (
+            (who == 'customer' && signedIn() && orderDoc().customerId == request.auth.uid)
+            || (who == 'rider' && isRider() && orderDoc().riderId == request.auth.uid)
+            || (who == 'admin' && isAdmin())
+          );
+        allow delete: if isAdmin();
+      }
+
       // The rider's live position while delivering.
       match /live/{doc} {
         function orderDoc() {

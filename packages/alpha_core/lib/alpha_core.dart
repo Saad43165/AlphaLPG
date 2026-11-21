@@ -1,6 +1,7 @@
 /// Shared code for every Alpha LPG app (customer, rider, admin).
 library;
 
+export 'src/chat_inbox.dart';
 export 'src/dates.dart';
 export 'src/firestore_paths.dart';
 export 'src/gauge.dart';

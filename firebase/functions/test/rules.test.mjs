@@ -356,6 +356,28 @@ describe('rider presence (online / offline)', () => {
   });
 });
 
+describe('chat read receipts', () => {
+  const at = () => ({ at: serverTimestamp() });
+  it('each side writes only its own "read" time; participants can read all of them', async () => {
+    await seedOrder({ riderId: 'r1', status: 'assigned' });
+    await assertSucceeds(setDoc(doc(customer(), 'orders/o1/reads/customer'), at()));
+    await assertSucceeds(setDoc(doc(staff('r1'), 'orders/o1/reads/rider'), at()));
+    await assertSucceeds(setDoc(doc(staff('boss'), 'orders/o1/reads/admin'), at()));
+    await assertFails(setDoc(doc(customer(), 'orders/o1/reads/rider'), at()));
+    await assertFails(setDoc(doc(staff('r1'), 'orders/o1/reads/customer'), at()));
+    await assertFails(setDoc(doc(staff('r2'), 'orders/o1/reads/rider'), at()));
+    await assertFails(setDoc(doc(customer('u2', '+923111111111'), 'orders/o1/reads/customer'), at()));
+    await assertSucceeds(getDocs(collection(customer(), 'orders/o1/reads')));
+    await assertSucceeds(getDocs(collection(staff('r1'), 'orders/o1/reads')));
+    await assertFails(getDocs(collection(staff('r2'), 'orders/o1/reads')));
+  });
+  it('needs a real server time and nothing else', async () => {
+    await seedOrder({ riderId: 'r1', status: 'assigned' });
+    await assertFails(setDoc(doc(customer(), 'orders/o1/reads/customer'), { at: new Date() }));
+    await assertFails(setDoc(doc(customer(), 'orders/o1/reads/customer'), { ...at(), extra: 1 }));
+  });
+});
+
 describe('live location', () => {
   const pos = { lat: 31.51, lng: 74.34, heading: 90, speedKmh: 20, accuracy: 8, updatedAt: serverTimestamp() };
   it('the delivering rider writes, the customer reads, strangers cannot', async () => {

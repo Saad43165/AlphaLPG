@@ -197,7 +197,9 @@ class OrderDetailScreen extends StatelessWidget {
                     Expanded(
                       child: _Act(
                         Icons.forum_rounded,
-                        'Chat',
+                        s.chat.unread(o.id) > 0
+                            ? 'Chat (${s.chat.unread(o.id)})'
+                            : 'Chat',
                         () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => OrderChatScreen(order: o),

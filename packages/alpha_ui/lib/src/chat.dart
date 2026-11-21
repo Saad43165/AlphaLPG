@@ -9,11 +9,15 @@ class ChatMsg {
     required this.name,
     required this.mine,
     this.at,
+    this.seen = false,
   });
   final String text;
   final String name;
   final bool mine;
   final DateTime? at;
+
+  /// For my own messages: has the other side opened the chat since?
+  final bool seen;
 }
 
 /// A full chat screen: bubbles, quick replies and a message box. The apps
@@ -31,7 +35,7 @@ class ChatPage extends StatefulWidget {
 
   final String title;
   final String subtitle;
-  final Stream<List<ChatMsg>> messages;
+  final List<ChatMsg> messages;
   final Future<void> Function(String text) onSend;
   final List<String> quickReplies;
 
@@ -110,10 +114,9 @@ class _ChatPageState extends State<ChatPage> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<List<ChatMsg>>(
-              stream: widget.messages,
-              builder: (context, snap) {
-                final list = snap.data ?? const <ChatMsg>[];
+            child: Builder(
+              builder: (context) {
+                final list = widget.messages;
                 if (list.length != _seen) {
                   _seen = list.length;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -132,9 +135,7 @@ class _ChatPageState extends State<ChatPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(32),
                       child: Text(
-                        snap.connectionState == ConnectionState.waiting
-                            ? 'Loading…'
-                            : 'No messages yet. Say hello, or tap a quick reply below.',
+                        'No messages yet. Say hello, or tap a quick reply below.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: pal.muted, height: 1.4),
                       ),
@@ -188,19 +189,36 @@ class _ChatPageState extends State<ChatPage> {
                                 height: 1.35,
                               ),
                             ),
-                            if (m.at != null)
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  _clock(m.at!),
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    color: m.mine
-                                        ? Colors.white70
-                                        : pal.muted,
-                                  ),
-                                ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (m.at != null)
+                                    Text(
+                                      _clock(m.at!),
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        color: m.mine
+                                            ? Colors.white70
+                                            : pal.muted,
+                                      ),
+                                    ),
+                                  if (m.mine) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      m.seen
+                                          ? Icons.done_all_rounded
+                                          : Icons.done_rounded,
+                                      size: 15,
+                                      color: m.seen
+                                          ? const Color(0xFF8FE3FF)
+                                          : Colors.white70,
+                                    ),
+                                  ],
+                                ],
                               ),
+                            ),
                           ],
                         ),
                       ),

@@ -57,6 +57,8 @@ class OrderWatcher {
       for (final o in list)
         if (o.status.isActive) o,
     ];
+    // Unread counts, previews and "Seen" for the chats of active orders.
+    _state.chat.follow([for (final o in active) o.id]);
     // One chat subscription per active order.
     for (final o in active) {
       _messageSubs.putIfAbsent(
@@ -150,6 +152,7 @@ class OrderWatcher {
     _messageSubs.clear();
     _last.clear();
     _messagesSeen.clear();
+    _state.chat.follow(const []);
     KeepAlive.stop();
   }
 

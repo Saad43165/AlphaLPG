@@ -13,6 +13,7 @@ abstract final class FirestorePaths {
   /// Public "is this rider on shift" records (no names or numbers).
   static const presence = 'presence';
   static String messages(String orderId) => 'orders/$orderId/messages';
+  static String chatReads(String orderId) => 'orders/$orderId/reads';
   static String live(String orderId) => 'orders/$orderId/live';
   static const liveDoc = 'rider';
 }

@@ -19,10 +19,14 @@ class AdminSession extends ChangeNotifier {
       _ => ThemeMode.system,
     };
     backend.auth.addListener(_onAuth);
+    chat.addListener(notifyListeners);
     _onAuth();
   }
 
   final AdminBackend backend;
+
+  /// Unread counts, previews and "Seen" for chats on orders in progress.
+  late final ChatInbox chat = ChatInbox(backend.orders, MessageRole.admin);
   final SharedPreferences? prefs;
   final themeMode = ValueNotifier<ThemeMode>(ThemeMode.system);
 
@@ -313,12 +317,14 @@ class AdminSession extends ChangeNotifier {
                   ? '${o.customerName} (customer)'
                   : '${m.name} (rider)',
               body: '${m.text}  ·  ${o.displayNumber}',
+              payload: 'chat:${o.id}',
             );
           }
         }, onError: (_) {}),
       );
     }
     final ids = {for (final o in active) o.id};
+    chat.follow(ids);
     for (final id in _chatSubs.keys.toList()) {
       if (!ids.contains(id)) _chatSubs.remove(id)?.cancel();
     }
@@ -395,6 +401,7 @@ class AdminSession extends ChangeNotifier {
     }
     _chatSubs.clear();
     _chatSeen.clear();
+    chat.follow(const []);
     KeepAlive.stop();
   }
 
@@ -408,6 +415,7 @@ class AdminSession extends ChangeNotifier {
 
   @override
   void dispose() {
+    chat.dispose();
     backend.auth.removeListener(_onAuth);
     _stop();
     themeMode.dispose();

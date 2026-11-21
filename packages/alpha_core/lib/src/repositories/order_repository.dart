@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../dates.dart';
 import '../firestore_paths.dart';
 import '../models/order.dart';
 import '../models/order_message.dart';
@@ -102,6 +103,12 @@ abstract interface class OrderRepository {
 
   /// Messages on an order, oldest first.
   Stream<List<OrderMessage>> watchMessages(String orderId);
+
+  /// When each side last opened the chat: used for "Seen" and unread counts.
+  Stream<Map<MessageRole, DateTime>> watchChatReads(String orderId);
+
+  /// "I have read everything so far" for [role].
+  Future<void> markChatRead(String orderId, MessageRole role);
 
   /// Writes a message as the customer, the rider or the shop.
   Future<void> sendMessage(
@@ -386,6 +393,24 @@ class _FirestoreOrders implements OrderRepository {
           for (final d in s.docs) OrderMessage.fromMap(d.id, d.data()),
         ],
       );
+
+  @override
+  Stream<Map<MessageRole, DateTime>> watchChatReads(String orderId) => _db
+      .collection(FirestorePaths.chatReads(orderId))
+      .snapshots()
+      .map((s) {
+        final out = <MessageRole, DateTime>{};
+        for (final d in s.docs) {
+          final at = readDate(d.data()['at']);
+          if (at != null) out[MessageRole.parse(d.id)] = at;
+        }
+        return out;
+      });
+
+  @override
+  Future<void> markChatRead(String orderId, MessageRole role) => _db
+      .doc('${FirestorePaths.chatReads(orderId)}/${role.name}')
+      .set({'at': FieldValue.serverTimestamp()});
 
   @override
   Future<void> sendMessage(
@@ -673,6 +698,23 @@ class _MemoryOrders implements OrderRepository {
             ),
           );
         return list;
+      });
+
+  @override
+  Stream<Map<MessageRole, DateTime>> watchChatReads(String orderId) =>
+      _s.watch(FirestorePaths.chatReads(orderId), (docs) {
+        final out = <MessageRole, DateTime>{};
+        for (final e in docs.entries) {
+          final at = readDate(e.value['at']);
+          if (at != null) out[MessageRole.parse(e.key)] = at;
+        }
+        return out;
+      });
+
+  @override
+  Future<void> markChatRead(String orderId, MessageRole role) async =>
+      _s.set(FirestorePaths.chatReads(orderId), role.name, {
+        'at': DateTime.now(),
       });
 
   @override

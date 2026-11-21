@@ -402,6 +402,48 @@ void main() {
     },
   );
 
+  testWidgets(
+    'rider and customer can chat on an assigned job, with unread badge and Seen',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      final id = await placeOrder(tester, rig);
+      await tester.runAsync(() async {
+        await rig.backend.orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran Khan',
+          phone: '0300',
+        );
+      });
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      // The customer writes: the rider sees a badge on the job.
+      await tester.runAsync(() async {
+        await rig.backend.orders.sendMessage(
+          id,
+          uid: 'u1',
+          role: MessageRole.customer,
+          name: 'Ali',
+          text: 'Blue gate please',
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('1'), findsWidgets); // unread badge on the job
+      await tester.tap(find.byTooltip('Message customer').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Blue gate please'), findsOneWidget);
+      await tester.tap(find.text('On my way'));
+      await tester.pumpAndSettle();
+      final thread = await tester.runAsync(
+        () => rig.backend.orders.watchMessages(id).first,
+      );
+      expect(thread!.map((m) => m.text), ['Blue gate please', 'On my way']);
+      expect(thread.last.role, MessageRole.rider);
+    },
+  );
+
   testWidgets('prepaid orders are not shown as cash to collect', (
     tester,
   ) async {

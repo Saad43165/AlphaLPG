@@ -47,6 +47,24 @@ class JobDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(o.displayNumber),
         actions: [
+          if (mine &&
+              (o.status == OrderStatus.assigned ||
+                  o.status == OrderStatus.outForDelivery))
+            Badge(
+              isLabelVisible: s.chat.unread(o.id) > 0,
+              label: Text('${s.chat.unread(o.id)}'),
+              backgroundColor: Brand.cylinderRed,
+              offset: const Offset(-4, 4),
+              child: IconButton(
+                tooltip: 'Message customer',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => JobChatScreen(order: o),
+                  ),
+                ),
+                icon: const Icon(Icons.forum_rounded),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: StatusChip(o.status),
@@ -360,14 +378,27 @@ class JobDetailScreen extends StatelessWidget {
             if (mine &&
                 (o.status == OrderStatus.assigned ||
                     o.status == OrderStatus.outForDelivery)) ...[
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => JobChatScreen(order: o),
+              Badge(
+                isLabelVisible: s.chat.unread(o.id) > 0,
+                label: Text('${s.chat.unread(o.id)}'),
+                backgroundColor: Brand.cylinderRed,
+                alignment: Alignment.topRight,
+                offset: const Offset(-10, -6),
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => JobChatScreen(order: o),
+                    ),
+                  ),
+                  icon: const Icon(Icons.forum_rounded),
+                  label: Text(
+                    s.chat.last(o.id) == null
+                        ? 'Message customer'
+                        : 'Chat · ${s.chat.last(o.id)!.text}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                icon: const Icon(Icons.forum_rounded),
-                label: const Text('Message customer'),
               ),
               const SizedBox(height: 10),
             ],
