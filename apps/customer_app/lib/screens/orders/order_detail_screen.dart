@@ -219,6 +219,10 @@ class _TrackingView extends StatelessWidget {
                         const SizedBox(height: 10),
                         _ShareRow(o),
                       ],
+                      if (o.status != OrderStatus.cancelled) ...[
+                        const SizedBox(height: 10),
+                        _ChatCard(o),
+                      ],
                       if (o.canBeRated &&
                           o.status != OrderStatus.delivered) ...[
                         const SizedBox(height: 14),
@@ -1600,6 +1604,83 @@ class _PayStatus extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Entry to the order chat, with the latest message and an unread count.
+class _ChatCard extends StatelessWidget {
+  const _ChatCard(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) {
+    final backend = context.read<Backend>();
+    final state = context.watch<AppState>();
+    return StreamBuilder<List<OrderMessage>>(
+      stream: backend.orders.watchMessages(o.id),
+      builder: (context, snap) {
+        final list = snap.data ?? const <OrderMessage>[];
+        final unread = state.unreadMessages(o.id, list);
+        final last = list.isEmpty ? null : list.last;
+        return Material(
+          color: Colors.transparent,
+          child: Ink(
+            decoration: _cardDecoration(context),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(Brand.radius),
+              onTap: () => context.push('/orders/${o.id}/chat'),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Badge(
+                      isLabelVisible: unread > 0,
+                      label: Text('$unread'),
+                      backgroundColor: Brand.cylinderRed,
+                      child: const CircleAvatar(
+                        backgroundColor: Brand.blueDark,
+                        child: Icon(Icons.forum_rounded, color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            o.riderName != null
+                                ? 'Chat with ${o.riderName} and Alpha LPG'
+                                : 'Chat with Alpha LPG',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          Text(
+                            last == null
+                                ? 'Tell the rider where to find you'
+                                : '${last.role == MessageRole.customer ? 'You' : (last.name.isEmpty ? last.role.fallbackName : last.name)}: ${last.text}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: unread > 0
+                                  ? context.pal.ink
+                                  : context.pal.muted,
+                              fontWeight: unread > 0
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

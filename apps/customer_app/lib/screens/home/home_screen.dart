@@ -580,27 +580,42 @@ class _ClosedBanner extends StatelessWidget {
   final AppSettings settings;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF4D6),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline, color: Brand.warning),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              settings.closedMessage.isNotEmpty ? settings.closedMessage : 'Online ordering is paused right now. Please call or WhatsApp us.',
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          // A warm notice that reads well on both the light and dark theme.
+          color: pal.isDark
+              ? Brand.flame.withValues(alpha: 0.16)
+              : const Color(0xFFFFF4D6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Brand.flame.withValues(alpha: 0.45)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              color: pal.isDark ? Brand.flame : Brand.warning,
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                settings.closedMessage.isNotEmpty ? settings.closedMessage : 'Online ordering is paused right now. Please call or WhatsApp us.',
+                style: TextStyle(
+                  color: pal.isDark ? pal.ink : const Color(0xFF4A3800),
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// Live tracking card for an in-progress order, plus the gas meter once the

@@ -376,9 +376,16 @@ class _EmergencyCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: const Color(0xFFFFEEEB),
+      // Light pink in the light theme, a deep red-brown in the dark theme.
+      color: context.pal.isDark
+          ? const Color(0xFF2B1A1C)
+          : const Color(0xFFFFEEEB),
       borderRadius: BorderRadius.circular(Brand.radius),
-      border: Border.all(color: const Color(0xFFFAD0C9)),
+      border: Border.all(
+        color: context.pal.isDark
+            ? const Color(0xFF5E2D2D)
+            : const Color(0xFFFAD0C9),
+      ),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,12 +400,13 @@ class _EmergencyCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Smell gas? Know what to do.',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.4,
+            color: context.pal.ink,
           ),
         ),
         const SizedBox(height: 4),
@@ -433,7 +441,10 @@ class _EmergencyCard extends StatelessWidget {
                     children: [
                       Text(
                         '${i + 1}. $title',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: context.pal.ink,
+                        ),
                       ),
                       Text(
                         body,
@@ -459,20 +470,28 @@ class _EmergencyCard extends StatelessWidget {
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: () => Launch.call('1122'),
-                icon: const Icon(Icons.emergency_rounded),
-                label: const Text('Rescue 1122'),
+                icon: const Icon(Icons.emergency_rounded, size: 20),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Rescue 1122'),
+                ),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: context.pal.card,
+                  foregroundColor: context.pal.ink,
+                  side: BorderSide(color: context.pal.line),
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: () => Launch.call(phone),
-                icon: const Icon(Icons.call_rounded),
-                label: const Text('Alpha LPG'),
+                icon: const Icon(Icons.call_rounded, size: 20),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Alpha LPG'),
+                ),
               ),
             ),
           ],

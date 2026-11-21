@@ -8,6 +8,7 @@ export 'src/models/address.dart';
 export 'src/models/app_settings.dart';
 export 'src/models/customer_profile.dart';
 export 'src/models/order.dart';
+export 'src/models/order_message.dart';
 export 'src/models/order_status.dart';
 export 'src/models/product.dart';
 export 'src/models/quote_request.dart';

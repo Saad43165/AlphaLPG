@@ -3,6 +3,8 @@ import 'package:geocoding/geocoding.dart' as geo;
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'routing.dart';
+
 /// Centre of Lahore, used when the phone's location is unavailable.
 const lahoreCentre = LatLng(31.5204, 74.3587);
 
@@ -75,10 +77,17 @@ abstract class LocationService {
   Future<List<PlaceHit>> search(String query);
 
   Future<void> openSettings() => Geolocator.openAppSettings();
+
+  /// Driving route between two points; null when unavailable (tests, offline).
+  Future<RoutePath?> route(LatLng from, LatLng to) async => null;
 }
 
 class DeviceLocationService extends LocationService {
   late final _geo = geo.Geocoding();
+
+  @override
+  Future<RoutePath?> route(LatLng from, LatLng to) =>
+      RouteClient.fetch(from, to);
 
   @override
   Future<LocationAccess> access() async {

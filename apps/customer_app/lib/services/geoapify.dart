@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import 'location_service.dart';
+import 'routing.dart';
 
 /// Map tiles, address search and "address from a pin" from Geoapify
 /// (geoapify.com). GPS still comes from the phone.
@@ -83,6 +84,10 @@ class GeoapifyLocationService extends DeviceLocationService {
     }
     return '';
   }
+
+  @override
+  Future<RoutePath?> route(LatLng from, LatLng to) =>
+      RouteClient.fetch(from, to, geoapifyKey: apiKey, client: _http);
 
   @override
   Future<ResolvedPlace> reverse(LatLng p) async {

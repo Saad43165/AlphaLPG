@@ -3,6 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:alpha_ui/alpha_ui.dart' show Alerts;
+
 import 'router.dart';
 import 'screens/splash_screen.dart';
 import 'services/backend.dart';
@@ -11,6 +13,7 @@ import 'services/geoapify.dart';
 import 'services/location_service.dart';
 import 'state/app_state.dart';
 import 'state/cart.dart';
+import 'state/order_watcher.dart';
 import 'theme/brand.dart';
 
 class AlphaApp extends StatefulWidget {
@@ -43,6 +46,7 @@ class _AlphaAppState extends State<AlphaApp> {
   );
   late final Cart _cart = Cart(prefs: widget.prefs);
   late final GoRouter _router = buildRouter(_state);
+  late final OrderWatcher _watcher = OrderWatcher(widget.backend, _state);
   late final LocationService _location =
       widget.location ?? defaultLocationService(Env.geoapifyKey);
   late bool _splash = widget.showSplash;
@@ -50,7 +54,19 @@ class _AlphaAppState extends State<AlphaApp> {
   final _dark = Brand.theme(Brightness.dark);
 
   @override
+  void initState() {
+    super.initState();
+    _watcher; // starts watching orders (notifications) once signed in
+    Alerts.onTap = (payload) => _router.push(payload);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final p = await Alerts.launchPayload();
+      if (p != null && mounted) _router.push(p);
+    });
+  }
+
+  @override
   void dispose() {
+    _watcher.dispose();
     _router.dispose();
     _state.dispose();
     _cart.dispose();

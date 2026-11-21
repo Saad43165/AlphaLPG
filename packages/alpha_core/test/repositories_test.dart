@@ -300,6 +300,17 @@ void _suite(Repos Function() make) {
     expect(o.status, OrderStatus.outForDelivery);
   });
 
+  test('order chat: customer, rider and shop all see the same thread', () async {
+    final id = await r.orders.place(sampleOrder('u1'));
+    await r.orders.sendMessage(id, uid: 'u1', role: MessageRole.customer, name: 'Ali', text: ' Gate is blue ');
+    await r.orders.sendMessage(id, uid: 'r1', role: MessageRole.rider, name: 'Imran', text: 'On my way');
+    await r.orders.sendMessage(id, uid: 'boss', role: MessageRole.admin, name: 'Alpha LPG', text: 'Thanks!');
+    final thread = await r.orders.watchMessages(id).first;
+    expect(thread.map((m) => m.text), ['Gate is blue', 'On my way', 'Thanks!']);
+    expect(thread.map((m) => m.role), [MessageRole.customer, MessageRole.rider, MessageRole.admin]);
+    expect(await r.orders.watchMessages('other').first, isEmpty);
+  });
+
   test('riders: a cancelled order cannot be accepted', () async {
     final id = await r.orders.place(sampleOrder('u1'));
     await r.orders.updateStatus(id, OrderStatus.cancelled, 'u1');

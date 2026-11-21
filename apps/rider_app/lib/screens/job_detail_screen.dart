@@ -9,6 +9,7 @@ import '../utils/launch.dart';
 import '../utils/order_x.dart';
 import '../widgets/common.dart';
 import '../widgets/job_map.dart';
+import 'chat_screen.dart';
 import 'job_actions.dart';
 
 class JobDetailScreen extends StatelessWidget {
@@ -356,6 +357,20 @@ class JobDetailScreen extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 22),
+            if (mine &&
+                (o.status == OrderStatus.assigned ||
+                    o.status == OrderStatus.outForDelivery)) ...[
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => JobChatScreen(order: o),
+                  ),
+                ),
+                icon: const Icon(Icons.forum_rounded),
+                label: const Text('Message customer'),
+              ),
+              const SizedBox(height: 10),
+            ],
             if (mine && o.status == OrderStatus.assigned) ...[
               FilledButton.icon(
                 onPressed: () => startDeliveryFlow(context, s, o),

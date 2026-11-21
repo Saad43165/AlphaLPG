@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:alpha_customer/services/geoapify.dart';
 import 'package:alpha_customer/services/location_service.dart';
+import 'package:alpha_customer/services/routing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -146,5 +147,61 @@ void main() {
   test('a failing service never crashes the picker', () async {
     final s = service((_) => {}, status: 429);
     expect(await s.search('gulberg'), isEmpty);
+  });
+
+  group('road routes', () {
+    test('Geoapify response: line, distance and time', () {
+      final r = RouteClient.parseGeoapify({
+        'features': [
+          {
+            'properties': {'distance': 3400, 'time': 780},
+            'geometry': {
+              'type': 'MultiLineString',
+              'coordinates': [
+                [
+                  [74.3445, 31.5107],
+                  [74.3500, 31.5150],
+                ],
+                [
+                  [74.3500, 31.5150],
+                  [74.3587, 31.5204],
+                ],
+              ],
+            },
+          },
+        ],
+      })!;
+      expect(r.points.length, 4);
+      expect(r.points.first.latitude, closeTo(31.5107, 1e-9));
+      expect(r.points.first.longitude, closeTo(74.3445, 1e-9));
+      expect(r.km, closeTo(3.4, 1e-9));
+      expect(r.minutes, 13);
+    });
+
+    test('OSRM response: GeoJSON line', () {
+      final r = RouteClient.parseOsrm({
+        'routes': [
+          {
+            'distance': 1200.5,
+            'duration': 90,
+            'geometry': {
+              'type': 'LineString',
+              'coordinates': [
+                [74.3, 31.5],
+                [74.31, 31.51],
+              ],
+            },
+          },
+        ],
+      })!;
+      expect(r.points.length, 2);
+      expect(r.minutes, 2);
+    });
+
+    test('garbage gives null, never a crash', () {
+      expect(RouteClient.parseGeoapify({'features': []}), isNull);
+      expect(RouteClient.parseGeoapify('nope'), isNull);
+      expect(RouteClient.parseOsrm({'routes': [{}]}), isNull);
+    });
   });
 }

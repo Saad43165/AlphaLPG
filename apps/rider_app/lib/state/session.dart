@@ -6,7 +6,11 @@ import 'package:material_ui/material_ui.dart' show ThemeMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/backend.dart';
+
+import 'package:alpha_ui/alpha_ui.dart' show Alerts, KeepAlive;
+
 import '../services/location_tracker.dart';
+import '../utils/order_x.dart';
 
 enum AcceptResult { ok, taken, offline, error }
 
@@ -105,6 +109,13 @@ class RiderSession extends ChangeNotifier {
     profileLoaded = false;
     available = jobs = history = const [];
     trackingProblem = null;
+    _knownAvailable = _knownJobs = null;
+    for (final s in _jobMessageSubs.values) {
+      s.cancel();
+    }
+    _jobMessageSubs.clear();
+    _messagesSeen.clear();
+    if (uid == null) KeepAlive.stop();
     if (uid != null) {
       _riderSubs.add(
         backend.riders
@@ -114,6 +125,7 @@ class RiderSession extends ChangeNotifier {
                 final wasRider = isRider;
                 profile = p;
                 profileLoaded = true;
+                _syncKeepAlive();
                 if (isRider && !wasRider) _listenToWork(uid);
                 if (!isRider) {
                   // Blocked or removed: drop everything.
@@ -131,10 +143,86 @@ class RiderSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ---- Phone alerts -----------------------------------------------------------
+
+  Set<String>? _knownAvailable;
+  Set<String>? _knownJobs;
+  final _jobMessageSubs = <String, StreamSubscription<List<OrderMessage>>>{};
+  final _messagesSeen = <String, int>{};
+
+  void _alertAvailable(List<LpgOrder> list) {
+    final ids = {for (final o in list) o.id};
+    final known = _knownAvailable;
+    _knownAvailable = ids;
+    if (known == null || !online) return;
+    for (final o in list.where((o) => !known.contains(o.id))) {
+      Alerts.show(
+        id: 100 + (o.id.hashCode & 0xffff),
+        title: 'New order available',
+        body: '${o.itemsLine} · ${o.areaLine}. First rider to accept gets it.',
+      );
+    }
+  }
+
+  void _alertJobs(List<LpgOrder> list) {
+    final ids = {for (final o in list) o.id};
+    final known = _knownJobs;
+    _knownJobs = ids;
+    if (known != null) {
+      for (final o in list.where((o) => !known.contains(o.id))) {
+        Alerts.show(
+          id: 70000 + (o.id.hashCode & 0xffff),
+          title: 'New job for you',
+          body: '${o.customerName} · ${o.itemsLine} · ${o.areaLine}',
+        );
+      }
+    }
+    // Messages from the customer or the shop on the jobs I hold.
+    for (final o in list) {
+      _jobMessageSubs.putIfAbsent(
+        o.id,
+        () => backend.orders.watchMessages(o.id).listen((msgs) {
+          final seen = _messagesSeen[o.id];
+          _messagesSeen[o.id] = msgs.length;
+          if (seen == null || msgs.length <= seen) return;
+          for (final m in msgs.skip(seen)) {
+            if (m.role == MessageRole.rider) continue;
+            Alerts.show(
+              id: 140000 + (o.id.hashCode & 0xffff),
+              title: m.role == MessageRole.customer
+                  ? '${o.customerName}'
+                  : 'Alpha LPG',
+              body: m.text,
+            );
+          }
+        }, onError: (_) {}),
+      );
+    }
+    for (final id in _jobMessageSubs.keys.toList()) {
+      if (!ids.contains(id)) _jobMessageSubs.remove(id)?.cancel();
+    }
+  }
+
+  /// Online riders keep a quiet service running so jobs can alert them even
+  /// with the phone in a pocket.
+  void _syncKeepAlive() {
+    if (online || jobs.isNotEmpty) {
+      KeepAlive.start(
+        title: online ? 'You are online' : 'Delivery in progress',
+        text: 'New jobs and messages will alert you.',
+      );
+    } else {
+      KeepAlive.stop();
+    }
+  }
+
   void _listenToWork(String uid) {
+    Alerts.init();
+    Alerts.askPermission();
     _riderSubs.add(
       backend.orders.watchAvailable().listen((o) {
         available = o;
+        _alertAvailable(o);
         notifyListeners();
       }, onError: (_) {}),
     );
@@ -146,7 +234,9 @@ class RiderSession extends ChangeNotifier {
               b.createdAt ?? DateTime(0),
             ),
           );
+        _alertJobs(jobs);
         _syncTracking();
+        _syncKeepAlive();
         notifyListeners();
       }, onError: (_) {}),
     );

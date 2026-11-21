@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { before, after, beforeEach, describe, it } from 'node:test';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 
 const PHONE = '+923001234567';
 let env;
@@ -290,6 +290,40 @@ describe('the whole journey across the three apps', () => {
     // The customer cannot mark it paid; the admin can.
     await assertFails(updateDoc(doc(customer(), 'orders/j2'), { paymentStatus: 'paid', updatedAt: serverTimestamp() }));
     await assertSucceeds(updateDoc(doc(staff('boss'), 'orders/j2'), { paymentStatus: 'paid', updatedAt: serverTimestamp() }));
+  });
+});
+
+describe('order chat', () => {
+  const msg = (uid, role, over = {}) => ({ uid, role, name: 'X', text: 'Hello', createdAt: serverTimestamp(), ...over });
+  it('the customer, the assigned rider and the shop can talk; strangers cannot', async () => {
+    await seedOrder({ riderId: 'r1', riderName: 'Imran Khan', status: 'assigned' });
+    await assertSucceeds(addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'customer')));
+    await assertSucceeds(addDoc(collection(staff('r1'), 'orders/o1/messages'), msg('r1', 'rider')));
+    await assertSucceeds(addDoc(collection(staff('boss'), 'orders/o1/messages'), msg('boss', 'admin')));
+    await assertSucceeds(getDocs(collection(customer(), 'orders/o1/messages')));
+    await assertSucceeds(getDocs(collection(staff('r1'), 'orders/o1/messages')));
+    await assertFails(getDocs(collection(customer('u2', '+923111111111'), 'orders/o1/messages')));
+    await assertFails(getDocs(collection(staff('r2'), 'orders/o1/messages')));
+    await assertFails(addDoc(collection(staff('r2'), 'orders/o1/messages'), msg('r2', 'rider')));
+    await assertFails(addDoc(collection(customer('u2', '+923111111111'), 'orders/o1/messages'), msg('u2', 'customer')));
+  });
+  it('nobody can write as someone else, or send huge or empty messages', async () => {
+    await seedOrder({ riderId: 'r1', status: 'assigned' });
+    await assertFails(addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'admin')));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'rider')));
+    await assertFails(addDoc(collection(staff('r1'), 'orders/o1/messages'), msg('r1', 'admin')));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/messages'), msg('boss', 'customer')));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'customer', { text: '' })));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'customer', { text: 'x'.repeat(501) })));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'customer', { createdAt: new Date() })));
+    await assertFails(addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'customer', { extra: 1 })));
+  });
+  it('messages cannot be edited, and only the shop can delete them', async () => {
+    await seedOrder({ riderId: 'r1', status: 'assigned' });
+    const ref = await addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'customer'));
+    await assertFails(updateDoc(doc(customer(), ref.path), { text: 'edited' }));
+    await assertFails(deleteDoc(doc(customer(), ref.path)));
+    await assertSucceeds(deleteDoc(doc(staff('boss'), ref.path)));
   });
 });
 

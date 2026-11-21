@@ -254,9 +254,15 @@ class OrderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final o = order;
+    final pal = context.pal;
     final when = o.createdAt == null
         ? ''
-        : DateFormat('d MMM, h:mm a').format(o.createdAt!);
+        : DateFormat('d MMM · h:mm a').format(o.createdAt!);
+    final paid = o.paymentStatus == PaymentStatus.paid;
+    final who =
+        o.customerType == CustomerSegment.business && o.businessName.isNotEmpty
+        ? '${o.customerName} · ${o.businessName}'
+        : o.customerName;
     return Material(
       color: Colors.transparent,
       child: Ink(
@@ -273,70 +279,140 @@ class OrderTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Order number and status.
                 Row(
                   children: [
-                    Text(
-                      o.displayNumber,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            o.displayNumber,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
+                          ),
+                          Text(
+                            when,
+                            style: TextStyle(color: pal.muted, fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
-                    const Spacer(),
                     StatusChip(o.status),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
+                // Who, what and where.
                 Text(
-                  o.customerType == CustomerSegment.business &&
-                          o.businessName.isNotEmpty
-                      ? '${o.customerName} · ${o.businessName}'
-                      : o.customerName,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  who,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15.5,
+                  ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  '${o.itemsLine}  ·  ${o.areaLine}',
-                  style: TextStyle(color: context.pal.muted, fontSize: 13),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.propane_tank_rounded,
+                      size: 15,
+                      color: pal.muted,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      o.itemsLine,
+                      style: TextStyle(color: pal.muted, fontSize: 13),
+                    ),
+                    const SizedBox(width: 10),
+                    Icon(Icons.location_on_rounded, size: 15, color: pal.muted),
+                    const SizedBox(width: 2),
+                    Expanded(
+                      child: Text(
+                        o.areaLine,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: pal.muted, fontSize: 13),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
+                Divider(height: 22, color: pal.line),
+                // Money and rider, on one aligned row.
                 Row(
                   children: [
                     Text(
                       rs(o.total),
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
-                        fontSize: 16,
+                        fontSize: 19,
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Pill(
-                      o.paymentStatus == PaymentStatus.paid
+                      paid
                           ? Icons.check_circle_rounded
                           : o.paymentMethod.isPrepaid
                           ? Icons.hourglass_top_rounded
                           : Icons.payments_outlined,
-                      o.paymentStatus == PaymentStatus.paid
+                      paid
                           ? 'Paid'
                           : o.paymentMethod == PaymentMethod.cashOnDelivery
                           ? 'Cash'
                           : 'Verify',
-                      color: o.paymentStatus == PaymentStatus.paid
-                          ? Brand.success
-                          : const Color(0xFF8A6D00),
+                      color: paid ? Brand.success : const Color(0xFF8A6D00),
                     ),
-                    const Spacer(),
-                    Text(
-                      when,
-                      style: TextStyle(color: context.pal.muted, fontSize: 12),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: o.riderName == null
+                            ? (o.status.isActive
+                                  ? Text(
+                                      'No rider yet',
+                                      style: TextStyle(
+                                        color: pal.muted,
+                                        fontSize: 12.5,
+                                      ),
+                                    )
+                                  : null)
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.two_wheeler,
+                                    size: 17,
+                                    color: Brand.blueDark,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      o.riderName!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ],
                 ),
                 if (o.status == OrderStatus.placed) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            minimumSize: const Size(0, 42),
+                            minimumSize: const Size(0, 44),
                           ),
                           onPressed: () async {
                             final s = context.read<AdminSession>();
@@ -354,32 +430,14 @@ class OrderTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 42),
-                        ),
-                        onPressed: () => Launch.call(o.customerPhone),
-                        icon: const Icon(Icons.call_rounded, size: 18),
-                        label: const Text('Call'),
-                      ),
-                    ],
-                  ),
-                ],
-                if (o.riderName != null && o.status.isActive) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.two_wheeler,
-                        size: 16,
-                        color: Brand.blueDark,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        o.riderName!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 44),
+                          ),
+                          onPressed: () => Launch.call(o.customerPhone),
+                          icon: const Icon(Icons.call_rounded, size: 18),
+                          label: const Text('Call'),
                         ),
                       ),
                     ],

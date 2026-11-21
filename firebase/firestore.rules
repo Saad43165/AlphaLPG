@@ -266,6 +266,30 @@ service cloud.firestore {
 
       allow delete: if false;
 
+      // Order chat: the customer, the assigned rider and the shop.
+      match /messages/{mid} {
+        function orderDoc() {
+          return get(/databases/$(database)/documents/orders/$(id)).data;
+        }
+        allow read: if isAdmin()
+          || (signedIn() && orderDoc().customerId == request.auth.uid)
+          || (isRider() && orderDoc().riderId == request.auth.uid);
+        allow create: if request.resource.data.keys().hasOnly(['uid', 'role', 'name', 'text', 'createdAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 500
+          && isText(request.resource.data.name, 80)
+          && request.resource.data.createdAt == request.time
+          && (
+            (request.resource.data.role == 'customer' && signedIn() && orderDoc().customerId == request.auth.uid)
+            || (request.resource.data.role == 'rider' && isRider() && orderDoc().riderId == request.auth.uid)
+            || (request.resource.data.role == 'admin' && isAdmin())
+          );
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+
       // The rider's live position while delivering.
       match /live/{doc} {
         function orderDoc() {

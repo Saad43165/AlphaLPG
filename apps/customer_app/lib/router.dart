@@ -20,6 +20,7 @@ import 'screens/info/help_screen.dart';
 import 'screens/info/legal_screen.dart';
 import 'screens/info/safety_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/orders/chat_screen.dart';
 import 'screens/orders/invoice_screen.dart';
 import 'screens/orders/order_detail_screen.dart';
 import 'screens/orders/orders_screen.dart';
@@ -89,6 +90,12 @@ GoRouter buildRouter(AppState state) => GoRouter(
     GoRoute(
       path: '/orders/:id',
       builder: (_, s) => OrderDetailScreen(orderId: s.pathParameters['id']!),
+      routes: [
+        GoRoute(
+          path: 'chat',
+          builder: (_, s) => OrderChatScreen(orderId: s.pathParameters['id']!),
+        ),
+      ],
     ),
     GoRoute(
       path: '/account/edit',

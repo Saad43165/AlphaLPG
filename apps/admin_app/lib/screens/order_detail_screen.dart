@@ -1,5 +1,6 @@
 import 'package:alpha_core/alpha_core.dart';
 import 'package:alpha_ui/alpha_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
 import '../widgets/common.dart';
+import 'chat_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key, required this.orderId});
@@ -16,11 +18,11 @@ class OrderDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AdminSession>();
-    LpgOrder? o;
+    LpgOrder? found;
     for (final x in s.orders) {
-      if (x.id == orderId) o = x;
+      if (x.id == orderId) found = x;
     }
-    if (o == null) {
+    if (found == null) {
       return Scaffold(
         appBar: AppBar(),
         body: const EmptyState(
@@ -29,234 +31,436 @@ class OrderDetailScreen extends StatelessWidget {
         ),
       );
     }
-    final order = o;
+    final o = found;
     final fmt = DateFormat('d MMM, h:mm a');
-    final wa = whatsappNumber(order.customerPhone);
+    final pal = context.pal;
+    final wa = whatsappNumber(o.customerPhone);
+    final initials = o.customerName
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .take(2)
+        .map((w) => w[0].toUpperCase())
+        .join();
+    final paid = o.paymentStatus == PaymentStatus.paid;
     return Scaffold(
-      appBar: AppBar(title: Text(order.displayNumber)),
-      bottomNavigationBar: _Actions(order: order),
+      appBar: AppBar(
+        title: Text(o.displayNumber),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: StatusChip(o.status),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _Actions(order: o),
       body: Constrained(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
           children: [
-            Row(
+            // ---- Summary: the amount, front and centre -----------------------
+            _Section(
               children: [
-                StatusChip(order.status),
-                const Spacer(),
-                if (order.createdAt != null)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ORDER TOTAL',
+                            style: TextStyle(
+                              color: pal.muted,
+                              fontSize: 11.5,
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            rs(o.total),
+                            style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Pill(
+                      paid
+                          ? Icons.check_circle_rounded
+                          : Icons.hourglass_top_rounded,
+                      paid ? 'Paid' : 'Not paid yet',
+                      color: paid ? Brand.success : const Color(0xFF8A6D00),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _Mini(
+                      Icons.propane_tank_rounded,
+                      '${o.cylinderCount} cylinder${o.cylinderCount == 1 ? '' : 's'}',
+                    ),
+                    const SizedBox(width: 8),
+                    _Mini(Icons.payments_rounded, o.paymentMethod.label),
+                    const SizedBox(width: 8),
+                    _Mini(
+                      Icons.schedule_rounded,
+                      o.scheduledFor != null
+                          ? DateFormat('d MMM, h a').format(o.scheduledFor!)
+                          : 'As soon as possible',
+                    ),
+                  ],
+                ),
+                if (o.createdAt != null) ...[
+                  const SizedBox(height: 10),
                   Text(
-                    'Placed ${fmt.format(order.createdAt!)}',
-                    style: TextStyle(color: context.pal.muted, fontSize: 13),
+                    'Placed ${fmt.format(o.createdAt!)}',
+                    style: TextStyle(color: pal.muted, fontSize: 12.5),
                   ),
+                ],
               ],
             ),
-            const Heading('Customer'),
-            _Card(
+
+            // ---- Customer ----------------------------------------------------
+            _Section(
+              title: 'Customer',
+              icon: Icons.person_rounded,
               children: [
-                Text(
-                  order.customerName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 17,
-                  ),
-                ),
-                if (order.businessName.isNotEmpty) Text(order.businessName),
-                const SizedBox(height: 4),
-                Text(prettyPhone(order.customerPhone)),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
+                Row(
                   children: [
-                    OutlinedButton.icon(
-                      onPressed: () => Launch.call(order.customerPhone),
-                      icon: const Icon(Icons.call_rounded, size: 18),
-                      label: const Text('Call'),
-                    ),
-                    if (wa != null)
-                      OutlinedButton.icon(
-                        onPressed: () => Launch.whatsapp(
-                          wa,
-                          'Alpha LPG order ${order.displayNumber}: ',
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Brand.navy,
+                      child: Text(
+                        initials.isEmpty ? '?' : initials,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
                         ),
-                        icon: const Icon(Icons.chat_rounded, size: 18),
-                        label: const Text('WhatsApp'),
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            o.customerName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 17,
+                            ),
+                          ),
+                          if (o.businessName.isNotEmpty)
+                            Text(
+                              o.businessName,
+                              style: TextStyle(color: pal.muted),
+                            ),
+                          Text(
+                            prettyPhone(o.customerPhone),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _Act(
+                        Icons.call_rounded,
+                        'Call',
+                        () => Launch.call(o.customerPhone),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _Act(
+                        Icons.chat_rounded,
+                        'WhatsApp',
+                        wa == null
+                            ? null
+                            : () => Launch.whatsapp(
+                                wa,
+                                'Alpha LPG order ${o.displayNumber}: ',
+                              ),
+                        color: Brand.whatsapp,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _Act(
+                        Icons.forum_rounded,
+                        'Chat',
+                        () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => OrderChatScreen(order: o),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
-            const Heading('Deliver to'),
-            _Card(
+
+            // ---- Delivery address -----------------------------------------
+            _Section(
+              title: 'Deliver to',
+              icon: Icons.location_on_rounded,
               children: [
-                Text(
-                  '${order.address.label.isEmpty ? '' : '${order.address.label} · '}${order.address.oneLine}',
-                  style: const TextStyle(height: 1.4),
-                ),
-                if (order.scheduledFor != null) ...[
-                  const SizedBox(height: 8),
-                  Pill(
-                    Icons.schedule_rounded,
-                    'Scheduled ${fmt.format(order.scheduledFor!)}',
-                    color: Brand.blueDark,
-                  ),
-                ],
-                if (order.notes.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Note: ${order.notes}',
-                    style: const TextStyle(fontStyle: FontStyle.italic),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () => Launch.navigate(
-                    lat: order.address.lat,
-                    lng: order.address.lng,
-                    address: order.address.oneLine,
-                  ),
-                  icon: const Icon(Icons.map_rounded, size: 18),
-                  label: Text(
-                    order.address.hasLocation
-                        ? 'Open pin in Maps'
-                        : 'Search address in Maps',
-                  ),
-                ),
-              ],
-            ),
-            const Heading('Items'),
-            _Card(
-              children: [
-                for (final i in order.items)
+                if (o.address.label.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${i.quantity}× ${i.name}\n${i.type.label}',
-                            style: const TextStyle(height: 1.3),
-                          ),
-                        ),
-                        Text(
-                          rs(i.lineTotal),
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ],
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      o.address.label,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
-                const Divider(height: 22),
-                _Line('Subtotal', rs(order.subtotal)),
-                _Line(
-                  'Delivery',
-                  order.deliveryFee == 0 ? 'Free' : rs(order.deliveryFee),
-                ),
-                _Line('Total', rs(order.total), bold: true),
-                const SizedBox(height: 6),
-                Text(
-                  'Collect ${order.emptiesToCollect} empty cylinder${order.emptiesToCollect == 1 ? '' : 's'} on delivery.',
-                  style: TextStyle(color: context.pal.muted, fontSize: 13),
-                ),
-              ],
-            ),
-            const Heading('Payment'),
-            _Card(
-              children: [
-                _Line('Method', order.paymentMethod.label),
-                _Line(
-                  'Status',
-                  order.paymentStatus == PaymentStatus.paid
-                      ? 'Paid'
-                      : 'Not paid yet',
-                  bold: true,
-                ),
-                if (order.paymentReference.isNotEmpty)
-                  _Line('Transaction ID', order.paymentReference),
-                if (order.cashCollected != null)
-                  _Line('Cash taken by rider', rs(order.cashCollected!)),
-                if (order.emptiesCollected != null)
-                  _Line('Empties returned', '${order.emptiesCollected}'),
-                if (order.awaitingPaymentCheck)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
+                Text(o.address.oneLine, style: const TextStyle(height: 1.4)),
+                if (o.notes.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: pal.tint,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Text(
-                      order.paymentReference.isEmpty
-                          ? 'The customer has not sent a transaction ID yet. Check your ${order.paymentMethod.label} account before marking paid.'
-                          : 'Check this transaction ID in your ${order.paymentMethod.label} account, then mark it paid.',
+                      o.notes,
                       style: const TextStyle(
-                        color: Color(0xFF8A6D00),
+                        fontStyle: FontStyle.italic,
                         height: 1.35,
                       ),
                     ),
                   ),
+                ],
+                const SizedBox(height: 12),
+                _Act(
+                  Icons.map_rounded,
+                  o.address.hasLocation
+                      ? 'Open pin in Google Maps'
+                      : 'Search address in Google Maps',
+                  () => Launch.navigate(
+                    lat: o.address.lat,
+                    lng: o.address.lng,
+                    address: o.address.oneLine,
+                  ),
+                ),
               ],
             ),
-            if (order.riderName != null) ...[
-              const Heading('Rider'),
-              _Card(
-                children: [
-                  Text(
-                    order.riderName!,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  if (order.riderPhone != null)
-                    Text(prettyPhone(order.riderPhone!)),
-                  if (order.riderPhone != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: OutlinedButton.icon(
-                        onPressed: () => Launch.call(order.riderPhone!),
-                        icon: const Icon(Icons.call_rounded, size: 18),
-                        label: const Text('Call rider'),
-                      ),
+
+            // ---- Items and money --------------------------------------------
+            _Section(
+              title: 'Items',
+              icon: Icons.receipt_long_rounded,
+              children: [
+                for (final i in o.items)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: pal.tint,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${i.quantity}×',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                i.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                '${i.type.label} · ${rs(i.unitPrice)} each',
+                                style: TextStyle(
+                                  color: pal.muted,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          rs(i.lineTotal),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ],
                     ),
-                  if (order.status == OrderStatus.outForDelivery)
-                    _LiveRider(orderId: order.id),
+                  ),
+                Divider(height: 24, color: pal.line),
+                _KV('Subtotal', rs(o.subtotal)),
+                _KV(
+                  'Delivery fee',
+                  o.deliveryFee == 0 ? 'Free' : rs(o.deliveryFee),
+                ),
+                _KV('Total', rs(o.total), big: true),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: pal.tint,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.recycling_rounded, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Rider collects ${o.emptiesToCollect} empty cylinder${o.emptiesToCollect == 1 ? '' : 's'}.',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // ---- Payment ----------------------------------------------------
+            _Section(
+              title: 'Payment',
+              icon: Icons.account_balance_wallet_rounded,
+              children: [
+                _KV('Method', o.paymentMethod.label),
+                _KV(
+                  'Status',
+                  paid ? 'Paid' : 'Not paid yet',
+                  valueColor: paid ? Brand.success : const Color(0xFF8A6D00),
+                ),
+                if (o.paymentReference.isNotEmpty)
+                  _KV(
+                    'Transaction ID',
+                    o.paymentReference,
+                    onCopy: () {
+                      Clipboard.setData(
+                        ClipboardData(text: o.paymentReference),
+                      );
+                      showMessage(context, 'Transaction ID copied');
+                    },
+                  ),
+                if (o.cashCollected != null)
+                  _KV('Cash taken by rider', rs(o.cashCollected!)),
+                if (o.emptiesCollected != null)
+                  _KV('Empties returned', '${o.emptiesCollected}'),
+                if (o.awaitingPaymentCheck) ...[
+                  const SizedBox(height: 10),
+                  _Note(
+                    o.paymentReference.isEmpty
+                        ? 'No transaction ID yet. Check your ${o.paymentMethod.label} account before marking this paid.'
+                        : 'Check this transaction ID in your ${o.paymentMethod.label} account, then tap Mark paid.',
+                  ),
+                ],
+              ],
+            ),
+
+            // ---- Rider ------------------------------------------------------
+            if (o.riderName != null)
+              _Section(
+                title: 'Rider',
+                icon: Icons.two_wheeler_rounded,
+                children: [
+                  Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundColor: Brand.blueDark,
+                        child: Icon(Icons.two_wheeler, color: Colors.white),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              o.riderName!,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (o.riderPhone != null)
+                              Text(prettyPhone(o.riderPhone!)),
+                          ],
+                        ),
+                      ),
+                      if (o.riderPhone != null)
+                        IconButton.filledTonal(
+                          tooltip: 'Call rider',
+                          onPressed: () => Launch.call(o.riderPhone!),
+                          icon: const Icon(Icons.call_rounded),
+                        ),
+                    ],
+                  ),
+                  if (o.arrivedAt != null) ...[
+                    const SizedBox(height: 10),
+                    Pill(
+                      Icons.pin_drop_rounded,
+                      'Arrived at the door ${fmt.format(o.arrivedAt!)}',
+                      color: Brand.success,
+                    ),
+                  ],
+                  if (o.status == OrderStatus.outForDelivery)
+                    _LiveRider(orderId: o.id),
                 ],
               ),
-            ],
-            if (order.rating != null) ...[
-              const Heading('Customer rating'),
-              _Card(
+
+            if (o.rating != null)
+              _Section(
+                title: 'Customer rating',
+                icon: Icons.star_rounded,
                 children: [
                   Row(
                     children: [
                       for (var i = 1; i <= 5; i++)
                         Icon(
-                          i <= order.rating!
+                          i <= o.rating!
                               ? Icons.star_rounded
                               : Icons.star_border_rounded,
                           color: Brand.flame,
+                          size: 26,
                         ),
                     ],
                   ),
-                  if (order.feedback.isNotEmpty) Text(order.feedback),
+                  if (o.feedback.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(o.feedback),
+                  ],
                 ],
               ),
-            ],
-            const Heading('History'),
-            _Card(
+
+            // ---- Timeline ---------------------------------------------------
+            _Section(
+              title: 'Timeline',
+              icon: Icons.timeline_rounded,
               children: [
-                for (final e in order.history)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            e.note.isEmpty
-                                ? e.status.label
-                                : '${e.status.label} · ${e.note}',
-                          ),
-                        ),
-                        Text(
-                          fmt.format(e.at),
-                          style: TextStyle(
-                            color: context.pal.muted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
+                for (final (i, e) in o.history.indexed)
+                  _TimelineRow(
+                    title: e.note.isEmpty
+                        ? e.status.label
+                        : '${e.status.label} · ${e.note}',
+                    time: fmt.format(e.at),
+                    last: i == o.history.length - 1,
                   ),
               ],
             ),
@@ -267,40 +471,217 @@ class OrderDetailScreen extends StatelessWidget {
   }
 }
 
-class _Card extends StatelessWidget {
-  const _Card({required this.children});
+/// A titled card. The title row is optional (the summary card has none).
+class _Section extends StatelessWidget {
+  const _Section({this.title, this.icon, required this.children});
+  final String? title;
+  final IconData? icon;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(14),
+    margin: const EdgeInsets.only(top: 12),
+    padding: const EdgeInsets.all(16),
     decoration: panel(context),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
+      children: [
+        if (title != null) ...[
+          Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18, color: Brand.blueDark),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                title!,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+        ...children,
+      ],
     ),
   );
 }
 
-class _Line extends StatelessWidget {
-  const _Line(this.k, this.v, {this.bold = false});
+/// Label on the left, value on the right: every amount lines up.
+class _KV extends StatelessWidget {
+  const _KV(this.k, this.v, {this.big = false, this.valueColor, this.onCopy});
   final String k, v;
-  final bool bold;
+  final bool big;
+  final Color? valueColor;
+  final VoidCallback? onCopy;
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
+    padding: const EdgeInsets.symmetric(vertical: 4),
     child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(k, style: TextStyle(color: context.pal.muted)),
-        const Spacer(),
-        Flexible(
+        Text(
+          k,
+          style: TextStyle(
+            color: big ? null : context.pal.muted,
+            fontWeight: big ? FontWeight.w800 : FontWeight.w500,
+            fontSize: big ? 16 : 14,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
           child: Text(
             v,
             textAlign: TextAlign.end,
             style: TextStyle(
-              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+              fontWeight: FontWeight.w800,
+              fontSize: big ? 20 : 14.5,
+              color: valueColor,
+            ),
+          ),
+        ),
+        if (onCopy != null)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Copy',
+            onPressed: onCopy,
+            icon: const Icon(Icons.copy_rounded, size: 18),
+          ),
+      ],
+    ),
+  );
+}
+
+/// A small tile with an icon and a short value (three across).
+class _Mini extends StatelessWidget {
+  const _Mini(this.icon, this.text);
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: context.pal.tint,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: Brand.blueDark),
+          const SizedBox(height: 4),
+          Text(
+            text,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// An equal-width action button.
+class _Act extends StatelessWidget {
+  const _Act(this.icon, this.label, this.onTap, {this.color});
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+    style: OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 46),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    ),
+    onPressed: onTap,
+    icon: Icon(icon, size: 19, color: color),
+    label: FittedBox(fit: BoxFit.scaleDown, child: Text(label)),
+  );
+}
+
+class _Note extends StatelessWidget {
+  const _Note(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFF8A6D00).withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(
+          Icons.info_outline_rounded,
+          size: 18,
+          color: Color(0xFF8A6D00),
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: const TextStyle(height: 1.35))),
+      ],
+    ),
+  );
+}
+
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({
+    required this.title,
+    required this.time,
+    required this.last,
+  });
+  final String title, time;
+  final bool last;
+
+  @override
+  Widget build(BuildContext context) => IntrinsicHeight(
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: 20,
+          child: Column(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                margin: const EdgeInsets.only(top: 5),
+                decoration: const BoxDecoration(
+                  color: Brand.blueDark,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              if (!last)
+                Expanded(child: Container(width: 2, color: context.pal.line)),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  time,
+                  style: TextStyle(color: context.pal.muted, fontSize: 12.5),
+                ),
+              ],
             ),
           ),
         ),
@@ -328,23 +709,37 @@ class _LiveRider extends StatelessWidget {
                   'Waiting for the rider\'s first location…',
                   style: TextStyle(color: context.pal.muted),
                 )
-              : Row(
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        l.isFresh()
-                            ? 'Live · ${l.speedKmh.round()} km/h · ${timeAgo(l.updatedAt)}'
-                            : 'Last seen ${timeAgo(l.updatedAt)}',
-                        style: TextStyle(
+                    Row(
+                      children: [
+                        Icon(
+                          l.isFresh()
+                              ? Icons.my_location_rounded
+                              : Icons.location_off_rounded,
+                          size: 18,
                           color: l.isFresh() ? Brand.success : Brand.danger,
-                          fontWeight: FontWeight.w700,
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l.isFresh()
+                                ? 'Live · ${l.speedKmh.round()} km/h · ${timeAgo(l.updatedAt)}'
+                                : 'Last seen ${timeAgo(l.updatedAt)}',
+                            style: TextStyle(
+                              color: l.isFresh() ? Brand.success : Brand.danger,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 8),
                     FilledButton.tonalIcon(
                       onPressed: () => Launch.navigate(lat: l.lat, lng: l.lng),
                       icon: const Icon(Icons.my_location_rounded, size: 18),
-                      label: const Text('See on map'),
+                      label: const Text('See rider on map'),
                     ),
                   ],
                 ),

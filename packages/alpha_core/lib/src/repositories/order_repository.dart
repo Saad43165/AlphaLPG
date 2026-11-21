@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../firestore_paths.dart';
 import '../models/order.dart';
+import '../models/order_message.dart';
 import '../models/order_status.dart';
 import '../models/rider.dart';
 import 'memory_store.dart';
@@ -91,6 +92,20 @@ abstract interface class OrderRepository {
 
   /// The customer (or admin) watches the rider.
   Stream<RiderLocation?> watchRiderLocation(String orderId);
+
+  // ---- Order chat ----------------------------------------------------------
+
+  /// Messages on an order, oldest first.
+  Stream<List<OrderMessage>> watchMessages(String orderId);
+
+  /// Writes a message as the customer, the rider or the shop.
+  Future<void> sendMessage(
+    String orderId, {
+    required String uid,
+    required MessageRole role,
+    required String name,
+    required String text,
+  });
 }
 
 /// "AL-261120-K3F9" — replaced by a sequential number server-side.
@@ -347,6 +362,32 @@ class _FirestoreOrders implements OrderRepository {
       .snapshots()
       .map((d) => d.exists ? RiderLocation.fromMap(d.data()!) : null);
 
+  @override
+  Stream<List<OrderMessage>> watchMessages(String orderId) => _db
+      .collection(FirestorePaths.messages(orderId))
+      .orderBy('createdAt')
+      .snapshots()
+      .map(
+        (s) => [
+          for (final d in s.docs) OrderMessage.fromMap(d.id, d.data()),
+        ],
+      );
+
+  @override
+  Future<void> sendMessage(
+    String orderId, {
+    required String uid,
+    required MessageRole role,
+    required String name,
+    required String text,
+  }) => _db.collection(FirestorePaths.messages(orderId)).add({
+    'uid': uid,
+    'role': role.name,
+    'name': name,
+    'text': text.trim(),
+    'createdAt': FieldValue.serverTimestamp(),
+  });
+
   Future<void> _setStatus(
     String id,
     OrderStatus status,
@@ -596,6 +637,34 @@ class _MemoryOrders implements OrderRepository {
         final d = docs[FirestorePaths.liveDoc];
         return d == null ? null : RiderLocation.fromMap(d);
       });
+
+  @override
+  Stream<List<OrderMessage>> watchMessages(String orderId) =>
+      _s.watch(FirestorePaths.messages(orderId), (docs) {
+        final list = [
+          for (final e in docs.entries) OrderMessage.fromMap(e.key, e.value),
+        ]..sort(
+            (a, b) => (a.createdAt ?? DateTime(0)).compareTo(
+              b.createdAt ?? DateTime(0),
+            ),
+          );
+        return list;
+      });
+
+  @override
+  Future<void> sendMessage(
+    String orderId, {
+    required String uid,
+    required MessageRole role,
+    required String name,
+    required String text,
+  }) async => _s.set(FirestorePaths.messages(orderId), _s.newId(), {
+    'uid': uid,
+    'role': role.name,
+    'name': name,
+    'text': text.trim(),
+    'createdAt': DateTime.now(),
+  });
 
   void _setStatus(
     String id,

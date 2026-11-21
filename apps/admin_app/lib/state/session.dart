@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart' show ThemeMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:alpha_ui/alpha_ui.dart' show Alerts, KeepAlive;
+
 import '../services/backend.dart';
 import '../utils/order_x.dart';
 
@@ -223,7 +225,49 @@ class AdminSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ---- Customer and rider messages on orders in progress -------------------
+
+  final _chatSubs = <String, StreamSubscription<List<OrderMessage>>>{};
+  final _chatSeen = <String, int>{};
+
+  void _watchChats(List<LpgOrder> list) {
+    final active = [
+      for (final o in list)
+        if (o.status.isActive) o,
+    ];
+    for (final o in active) {
+      _chatSubs.putIfAbsent(
+        o.id,
+        () => backend.orders.watchMessages(o.id).listen((msgs) {
+          final seen = _chatSeen[o.id];
+          _chatSeen[o.id] = msgs.length;
+          if (seen == null || msgs.length <= seen) return;
+          for (final m in msgs.skip(seen)) {
+            if (m.role == MessageRole.admin) continue;
+            Alerts.show(
+              id: 300000 + (o.id.hashCode & 0xffff),
+              title: m.role == MessageRole.customer
+                  ? '${o.customerName} (customer)'
+                  : '${m.name} (rider)',
+              body: '${m.text}  ·  ${o.displayNumber}',
+            );
+          }
+        }, onError: (_) {}),
+      );
+    }
+    final ids = {for (final o in active) o.id};
+    for (final id in _chatSubs.keys.toList()) {
+      if (!ids.contains(id)) _chatSubs.remove(id)?.cancel();
+    }
+  }
+
   void _startData() {
+    Alerts.init();
+    Alerts.askPermission();
+    KeepAlive.start(
+      title: 'Alpha LPG Admin',
+      text: 'You will be alerted about new orders and messages.',
+    );
     void listen<T>(Stream<T> s, void Function(T) on) => _subs.add(
       s.listen(
         (v) {
@@ -242,9 +286,15 @@ class AdminSession extends ChangeNotifier {
         for (final o in v) {
           if (o.status == OrderStatus.placed && !_knownIds.contains(o.id)) {
             newOrderAlert = o;
+            Alerts.show(
+              id: 200 + (o.id.hashCode & 0xffff),
+              title: 'New order · ${rs(o.total)}',
+              body: '${o.customerName} · ${o.itemsLine} · ${o.areaLine}',
+            );
           }
         }
       }
+      _watchChats(v);
       _knownIds
         ..clear()
         ..addAll(v.map((o) => o.id));
@@ -277,6 +327,12 @@ class AdminSession extends ChangeNotifier {
     ordersLoaded = false;
     newOrderAlert = null;
     _knownIds.clear();
+    for (final s in _chatSubs.values) {
+      s.cancel();
+    }
+    _chatSubs.clear();
+    _chatSeen.clear();
+    KeepAlive.stop();
   }
 
   void _stop() {
