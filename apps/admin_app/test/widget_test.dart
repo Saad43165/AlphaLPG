@@ -13,7 +13,7 @@ import 'package:alpha_admin/utils/photo.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart'
-    show Switch, Size, Scrollable, TextField;
+    show Switch, Size, Scrollable, TextField, Text;
 
 class FakeAuth extends AdminAuth {
   @override
@@ -271,6 +271,47 @@ void main() {
       final h = await b.ops.watchHandovers().first;
       expect(h.single.amount, 6592);
     });
+  });
+
+  testWidgets('take back works only before the rider is on the way', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    late String id;
+    await tester.runAsync(() async {
+      id = await b.orders.place(_order());
+      await b.orders.assignRider(
+        id,
+        'boss',
+        riderId: 'r1',
+        name: 'Imran',
+        phone: '0300',
+      );
+    });
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('In progress · 1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ali Raza'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Take back from rider'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Take back from rider'), findsOneWidget);
+
+    // The rider leaves: the button is gone.
+    await tester.runAsync(() async {
+      await b.orders.updateStatus(id, OrderStatus.outForDelivery, 'r1');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('Take back from rider'), findsNothing);
   });
 
   testWidgets('a non-admin account is told how to become one', (tester) async {

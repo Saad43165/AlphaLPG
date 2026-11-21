@@ -924,14 +924,42 @@ class _ActionsState extends State<_Actions> {
         ),
       );
     }
-    if (o.riderId != null &&
-        (o.status == OrderStatus.assigned ||
-            o.status == OrderStatus.outForDelivery)) {
+    // Only while the rider has not left yet. Once they are on the way the
+    // order stays with them (call or message them instead).
+    if (o.riderId != null && o.status == OrderStatus.assigned) {
       buttons.add(
         OutlinedButton(
           onPressed: _busy
               ? null
-              : () => _do(() => s.unassign(o), 'Taken back from the rider'),
+              : () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (d) => AlertDialog(
+                      title: const Text('Take this order back?'),
+                      content: Text(
+                        '${o.riderName ?? 'The rider'} will be told straight away that '
+                        '${o.displayNumber} is no longer theirs. The order goes back to '
+                        'the list so you can give it to someone else.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(d, false),
+                          child: const Text('Keep with rider'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(d, true),
+                          child: const Text('Take back'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok == true) {
+                    await _do(
+                      () => s.unassign(o),
+                      'Taken back. ${o.riderName ?? 'The rider'} has been told.',
+                    );
+                  }
+                },
           child: const Text('Take back from rider'),
         ),
       );

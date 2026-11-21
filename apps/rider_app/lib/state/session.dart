@@ -115,6 +115,7 @@ class RiderSession extends ChangeNotifier {
     available = jobs = history = const [];
     trackingProblem = null;
     _knownAvailable = _knownJobs = null;
+    _selfDone.clear();
     for (final s in _jobMessageSubs.values) {
       s.cancel();
     }
@@ -164,6 +165,9 @@ class RiderSession extends ChangeNotifier {
 
   Set<String>? _knownAvailable;
   Set<String>? _knownJobs;
+
+  /// Jobs I finished or handed back myself (no alert needed for those).
+  final _selfDone = <String>{};
   final _jobMessageSubs = <String, StreamSubscription<List<OrderMessage>>>{};
   final _messagesSeen = <String, int>{};
 
@@ -187,6 +191,11 @@ class RiderSession extends ChangeNotifier {
     final known = _knownJobs;
     _knownJobs = ids;
     if (known != null) {
+      // A job that left my list without me finishing or handing it back:
+      // the shop took it back, gave it to someone else, or it was cancelled.
+      for (final gone in known.difference(ids)) {
+        if (!_selfDone.remove(gone)) _explainGone(gone);
+      }
       for (final o in list.where((o) => !known.contains(o.id))) {
         Alerts.show(
           id: 70000 + (o.id.hashCode & 0xffff),
@@ -416,14 +425,59 @@ class RiderSession extends ChangeNotifier {
     }
   }
 
+  /// Tells the rider plainly why a job disappeared from their list.
+  Future<void> _explainGone(String orderId) async {
+    final me = _uid;
+    if (me == null) return;
+    LpgOrder? o;
+    try {
+      o = await backend.orders
+          .watchOrder(orderId)
+          .first
+          .timeout(const Duration(seconds: 6));
+    } catch (_) {
+      return;
+    }
+    if (o == null || _uid != me) return;
+    final String title, body;
+    if (o.status == OrderStatus.cancelled) {
+      title = 'Order cancelled';
+      body =
+          '${o.displayNumber} was cancelled'
+          '${o.cancelReason.isEmpty ? '' : ': ${o.cancelReason}'}. You do not need to deliver it.';
+    } else if (o.status == OrderStatus.delivered) {
+      if (o.cashCollected != null) return; // I finished it.
+      title = 'Order marked delivered';
+      body =
+          'Alpha LPG marked ${o.displayNumber} as delivered. Nothing more to do.';
+    } else if (o.riderId != null && o.riderId != me) {
+      title = 'Order given to another rider';
+      body =
+          'Alpha LPG gave ${o.displayNumber} to ${o.riderName ?? 'another rider'}. You do not need to deliver it.';
+    } else {
+      title = 'Order taken back';
+      body =
+          'Alpha LPG took ${o.displayNumber} back. You do not need to deliver it.';
+    }
+    notice = '$title: $body';
+    Alerts.show(
+      id: 80000 + (orderId.hashCode & 0xffff),
+      title: title,
+      body: body,
+    );
+    notifyListeners();
+  }
+
   /// Hands an assigned job back to the shop so another rider can take it.
   Future<bool> release(LpgOrder order) async {
     final id = _uid;
     if (id == null) return false;
+    _selfDone.add(order.id);
     try {
       await backend.orders.releaseJob(order.id, id);
       return true;
     } catch (_) {
+      _selfDone.remove(order.id);
       return false;
     }
   }
@@ -442,6 +496,7 @@ class RiderSession extends ChangeNotifier {
       completeError = 'Alpha LPG has not confirmed this online payment yet.';
       return false;
     }
+    _selfDone.add(order.id);
     try {
       await backend.orders.completeDelivery(
         order.id,
@@ -458,6 +513,7 @@ class RiderSession extends ChangeNotifier {
       completeError = null;
       return true;
     } catch (e) {
+      _selfDone.remove(order.id);
       completeError = '$e'.contains('permission-denied')
           ? 'The shop has not published the latest database rules yet, so deliveries cannot be saved. Ask Alpha LPG to publish them.'
           : null;

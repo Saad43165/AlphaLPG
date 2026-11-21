@@ -401,8 +401,13 @@ class AdminSession extends ChangeNotifier {
   }
 
   /// Takes an order back from its rider so it can be given to someone else.
-  Future<String?> unassign(LpgOrder o) =>
-      _run(() => backend.orders.unassignRider(o.id, uid!));
+  Future<String?> unassign(LpgOrder o) => _run(() async {
+    if (o.status != OrderStatus.assigned) {
+      throw StateError('Only an order the rider has not started can be taken back.');
+    }
+    await backend.orders.unassignRider(o.id, uid!);
+    _audit('Took order back from rider', target: o.displayNumber, detail: o.riderName ?? '');
+  });
 
   Future<String?> setRiderActive(RiderProfile r, bool active) =>
       _run(() => backend.riders.setActive(r.uid, active));

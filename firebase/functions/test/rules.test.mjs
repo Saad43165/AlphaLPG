@@ -382,6 +382,19 @@ describe('chat read receipts', () => {
   });
 });
 
+describe('taking an order back', () => {
+  it('the shop can take back an assigned order but not one that is on the way', async () => {
+    const back = { status: 'confirmed', riderId: null, riderName: null, riderPhone: null, history: ev('confirmed', 'boss'), updatedAt: serverTimestamp() };
+    await seedOrder({ status: 'assigned', riderId: 'r1', riderName: 'Imran', riderPhone: '0300' });
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'orders/o1'), back));
+    await seedOrder({ status: 'outForDelivery', riderId: 'r1', riderName: 'Imran', riderPhone: '0300' }, 'o2');
+    await assertFails(updateDoc(doc(staff('boss'), 'orders/o2'), back));
+    await assertFails(updateDoc(doc(staff('boss'), 'orders/o2'), { riderId: 'r2', riderName: 'Bilal', updatedAt: serverTimestamp() }));
+    // Cancelling an order that is on the way is still possible (rider stays on it).
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'orders/o2'), { status: 'cancelled', cancelReason: 'Customer asked', history: ev('cancelled', 'boss'), updatedAt: serverTimestamp() }));
+  });
+});
+
 describe('area fees', () => {
   it('uses the area fee from settings, else the default', async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {

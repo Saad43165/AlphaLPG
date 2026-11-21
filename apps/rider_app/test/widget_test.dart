@@ -3,6 +3,8 @@ import 'package:alpha_rider/app.dart';
 import 'package:alpha_rider/services/backend.dart';
 import 'package:alpha_rider/services/location_tracker.dart';
 import 'package:alpha_rider/services/rider_auth.dart';
+import 'package:alpha_rider/state/session.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -507,6 +509,67 @@ void main() {
       await tapText(tester, 'My earnings and cash');
       expect(find.text('My earnings and cash'), findsWidgets);
       expect(find.text('All cash handed in'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'shop takes an order back: the rider is told, and it leaves their jobs',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      final id = await placeOrder(tester, rig);
+      await tester.runAsync(() async {
+        await rig.backend.riders.setOnline('r1', true);
+        await rig.backend.orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran Khan',
+          phone: '0300',
+        );
+      });
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      expect(find.text('Ready to go'), findsOneWidget);
+
+      await tester.runAsync(() async {
+        await rig.backend.orders.unassignRider(id, 'boss');
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Order taken back'), findsOneWidget);
+      expect(find.text('Ready to go'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a job the rider hands back or finishes does not show a "taken back" notice',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      final id = await placeOrder(tester, rig);
+      await tester.runAsync(() async {
+        await rig.backend.riders.setOnline('r1', true);
+        await rig.backend.orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran Khan',
+          phone: '0300',
+        );
+      });
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      final session = Provider.of<RiderSession>(
+        tester.element(find.text('Ready to go')),
+        listen: false,
+      );
+      final order = session.jobs.single;
+      final ok = await tester.runAsync(() => session.release(order));
+      expect(ok, isTrue);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('taken back'), findsNothing);
     },
   );
 }

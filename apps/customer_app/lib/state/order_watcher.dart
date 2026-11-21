@@ -53,6 +53,7 @@ class OrderWatcher {
         o.paymentStatus,
         o.paymentRequest != null,
         o.paymentIssue,
+        o.riderName,
       );
       final before = _last[o.id];
       if (!_first && before != null) _announce(o, before, now);
@@ -106,7 +107,17 @@ class OrderWatcher {
 
   void _announce(LpgOrder o, _Seen before, _Seen now) {
     String? title, body;
-    if (now.status != before.status) {
+    if (before.rider != null && now.rider == null && o.status.isActive) {
+      title = 'We are finding you a new rider';
+      body =
+          'Your rider was changed for order ${o.displayNumber}. We will tell you who is coming.';
+    } else if (before.rider != null &&
+        now.rider != null &&
+        before.rider != now.rider &&
+        o.status.isActive) {
+      title = 'Your rider changed';
+      body = '${now.rider} will deliver order ${o.displayNumber}.';
+    } else if (now.status != before.status) {
       final rider = o.riderName ?? 'Your rider';
       switch (now.status) {
         case OrderStatus.confirmed:
@@ -182,10 +193,12 @@ class _Seen {
     this.payment,
     this.requested,
     this.issue,
+    this.rider,
   );
   final OrderStatus status;
   final bool arrived;
   final PaymentStatus payment;
   final bool requested;
   final String issue;
+  final String? rider;
 }

@@ -210,7 +210,11 @@ service cloud.firestore {
 
       allow update: if (isAdmin()
             && (isOwner()
-                || !(request.resource.data.status == 'cancelled' && resource.data.paymentStatus == 'paid')))
+                || !(request.resource.data.status == 'cancelled' && resource.data.paymentStatus == 'paid'))
+            // Once the rider is on the way the order stays with them: it can
+            // not be taken back or given to someone else.
+            && (resource.data.status != 'outForDelivery'
+                || request.resource.data.get('riderId', null) == resource.data.get('riderId', null)))
         // Customer cancels while the order is still "placed".
         || (signedIn()
             && resource.data.customerId == request.auth.uid
