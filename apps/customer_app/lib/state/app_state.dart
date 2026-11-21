@@ -36,9 +36,30 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       }),
     );
+    // How many riders are on shift (public; no personal details).
+    _subs.add(
+      backend.riders.watchLiveRiderCount().listen((n) {
+        liveRiders = n;
+        notifyListeners();
+      }, onError: (_) {}),
+    );
+    // Opening hours change with the clock, so re-check every minute.
+    _clock = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (settings.autoHours) notifyListeners();
+    });
     backend.auth.addListener(_onAuth);
     _onAuth();
   }
+
+  Timer? _clock;
+
+  /// Riders on shift right now; null until known.
+  int? liveRiders;
+
+  /// Whether the shop is taking orders, and why not. Set by the owner in the
+  /// admin app (switch, opening hours, "pause when no riders").
+  OrderingStatus get ordering =>
+      OrderingStatus.of(settings, liveRiders: liveRiders);
 
   final Backend backend;
   final SharedPreferences? prefs;
@@ -190,6 +211,7 @@ class AppState extends ChangeNotifier {
 
   @override
   void dispose() {
+    _clock?.cancel();
     routeSignal.dispose();
     themeMode.dispose();
     backend.auth.removeListener(_onAuth);

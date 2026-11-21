@@ -175,6 +175,69 @@ class AdminSession extends ChangeNotifier {
   Future<String?> setQuoteStatus(QuoteRequest q, String status) =>
       _run(() => backend.quotes.setStatus(q.id, status));
 
+  // ---- Shop and rider control ------------------------------------------------
+
+  /// Riders whose app is really running and on shift.
+  List<RiderProfile> get liveRiders => [
+    for (final r in riders)
+      if (r.isLive()) r,
+  ];
+
+  /// Open or close the shop for customers (takes effect at once everywhere).
+  Future<String?> setShopOpen(bool open) => saveSettings(
+    AppSettings.fromMap({...settings.toMap(), 'acceptingOrders': open}),
+  );
+
+  /// Ends a rider's shift from here. They are told in their app.
+  Future<String?> switchRiderOffline(RiderProfile r) =>
+      _run(() => backend.riders.setOnline(r.uid, false));
+
+  Future<String?> switchAllRidersOffline() => _run(() async {
+    for (final r in riders.where((r) => r.online)) {
+      await backend.riders.setOnline(r.uid, false);
+    }
+  });
+
+  /// Change a rider's name, phone or vehicle.
+  Future<String?> editRider(
+    RiderProfile r, {
+    required String name,
+    required String phone,
+    required String vehicle,
+  }) => _run(
+    () => backend.riders.saveRider(
+      RiderProfile(
+        uid: r.uid,
+        name: name,
+        phone: phone,
+        vehicle: vehicle,
+        active: r.active,
+        online: r.online,
+      ),
+    ),
+  );
+
+  /// Jobs a rider is holding right now.
+  List<LpgOrder> jobsOf(String riderUid) => [
+    for (final o in orders)
+      if (o.riderId == riderUid &&
+          (o.status == OrderStatus.assigned ||
+              o.status == OrderStatus.outForDelivery))
+        o,
+  ];
+
+  /// Removes a rider. Refused while they still hold jobs.
+  Future<String?> removeRider(RiderProfile r) async {
+    if (jobsOf(r.uid).isNotEmpty) {
+      return '${r.name} still has jobs. Take them back first.';
+    }
+    return _run(() => backend.riders.deleteRider(r.uid));
+  }
+
+  /// Takes an order back from its rider so it can be given to someone else.
+  Future<String?> unassign(LpgOrder o) =>
+      _run(() => backend.orders.unassignRider(o.id, uid!));
+
   Future<String?> setRiderActive(RiderProfile r, bool active) =>
       _run(() => backend.riders.setActive(r.uid, active));
 

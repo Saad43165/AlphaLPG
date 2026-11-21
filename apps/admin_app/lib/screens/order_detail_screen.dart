@@ -861,6 +861,18 @@ class _ActionsState extends State<_Actions> {
         ),
       );
     }
+    if (o.riderId != null &&
+        (o.status == OrderStatus.assigned ||
+            o.status == OrderStatus.outForDelivery)) {
+      buttons.add(
+        OutlinedButton(
+          onPressed: _busy
+              ? null
+              : () => _do(() => s.unassign(o), 'Taken back from the rider'),
+          child: const Text('Take back from rider'),
+        ),
+      );
+    }
     if (o.status == OrderStatus.assigned ||
         o.status == OrderStatus.outForDelivery) {
       buttons.add(

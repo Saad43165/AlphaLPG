@@ -372,6 +372,36 @@ void main() {
     },
   );
 
+  testWidgets(
+    'the shop switching a rider offline, or closing, is shown to the rider',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      await tester.runAsync(() => rig.backend.riders.setOnline('r1', true));
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      expect(find.textContaining('switched you offline'), findsNothing);
+      // The admin app switches the rider off.
+      await tester.runAsync(() => rig.backend.riders.setOnline('r1', false));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Alpha LPG switched you offline'),
+        findsOneWidget,
+      );
+      // The owner closes the shop.
+      await tester.runAsync(
+        () => rig.backend.catalog.saveSettings(
+          AppSettings.fromMap({
+            ...SeedData.settings.toMap(),
+            'acceptingOrders': false,
+          }),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('closed for orders'), findsOneWidget);
+    },
+  );
+
   testWidgets('prepaid orders are not shown as cash to collect', (
     tester,
   ) async {

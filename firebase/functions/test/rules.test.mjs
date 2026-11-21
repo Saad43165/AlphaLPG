@@ -327,6 +327,35 @@ describe('order chat', () => {
   });
 });
 
+describe('rider presence (online / offline)', () => {
+  const on = (online = true) => ({ online, lastSeen: serverTimestamp() });
+  it('a rider writes only their own presence; anyone can read it; customers cannot write', async () => {
+    await assertSucceeds(setDoc(doc(staff('r1'), 'presence/r1'), on()));
+    await assertFails(setDoc(doc(staff('r1'), 'presence/r2'), on()));
+    await assertFails(setDoc(doc(customer(), 'presence/r1'), on()));
+    await assertSucceeds(getDoc(doc(guest(), 'presence/r1')));
+    await assertSucceeds(getDocs(query(collection(customer(), 'presence'), where('online', '==', true))));
+  });
+  it('presence carries no personal details and needs a real timestamp', async () => {
+    await assertFails(setDoc(doc(staff('r1'), 'presence/r1'), { ...on(), name: 'Imran' }));
+    await assertFails(setDoc(doc(staff('r1'), 'presence/r1'), { online: true, lastSeen: new Date() }));
+    await assertFails(setDoc(doc(staff('r1'), 'presence/r1'), { online: 'yes', lastSeen: serverTimestamp() }));
+    // A blocked rider cannot write presence.
+    await assertFails(setDoc(doc(staff('blocked'), 'presence/blocked'), on()));
+  });
+  it('the shop can switch any rider offline, and remove records', async () => {
+    await assertSucceeds(setDoc(doc(staff('r1'), 'presence/r1'), on()));
+    await assertSucceeds(setDoc(doc(staff('boss'), 'presence/r1'), on(false)));
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'riders/r1'), { online: false }));
+    await assertSucceeds(deleteDoc(doc(staff('boss'), 'presence/r1')));
+    await assertFails(deleteDoc(doc(staff('r1'), 'presence/r1')));
+  });
+  it('a rider heartbeat updates only lastSeen on the rider record', async () => {
+    await assertSucceeds(updateDoc(doc(staff('r1'), 'riders/r1'), { lastSeen: serverTimestamp() }));
+    await assertFails(updateDoc(doc(staff('r1'), 'riders/r1'), { lastSeen: serverTimestamp(), active: true, name: 'X' }));
+  });
+});
+
 describe('live location', () => {
   const pos = { lat: 31.51, lng: 74.34, heading: 90, speedKmh: 20, accuracy: 8, updatedAt: serverTimestamp() };
   it('the delivering rider writes, the customer reads, strangers cannot', async () => {

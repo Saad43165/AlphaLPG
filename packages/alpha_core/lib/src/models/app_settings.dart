@@ -20,6 +20,10 @@ class AppSettings {
     this.easyPaisaAccount = '',
     this.raastId = '',
     this.loginMode = 'quick',
+    this.autoHours = false,
+    this.opensAt = 540,
+    this.closesAt = 1260,
+    this.pauseWhenNoRiders = false,
   });
 
   final bool acceptingOrders;
@@ -59,6 +63,15 @@ class AppSettings {
 
   bool get smsLogin => loginMode == 'sms';
 
+  /// When true, the customer app only takes orders between [opensAt] and
+  /// [closesAt] (minutes after midnight, Lahore time).
+  final bool autoHours;
+  final int opensAt;
+  final int closesAt;
+
+  /// When true, orders pause by themselves while no rider is online.
+  final bool pauseWhenNoRiders;
+
   factory AppSettings.fromMap(Map<String, dynamic> m) {
     const d = AppSettings();
     return AppSettings(
@@ -85,6 +98,10 @@ class AppSettings {
       easyPaisaAccount: m['easyPaisaAccount'] as String? ?? d.easyPaisaAccount,
       raastId: m['raastId'] as String? ?? d.raastId,
       loginMode: m['loginMode'] == 'sms' ? 'sms' : 'quick',
+      autoHours: m['autoHours'] as bool? ?? d.autoHours,
+      opensAt: (m['opensAt'] as num?)?.toInt() ?? d.opensAt,
+      closesAt: (m['closesAt'] as num?)?.toInt() ?? d.closesAt,
+      pauseWhenNoRiders: m['pauseWhenNoRiders'] as bool? ?? d.pauseWhenNoRiders,
     );
   }
 
@@ -107,5 +124,9 @@ class AppSettings {
     'easyPaisaAccount': easyPaisaAccount,
     'raastId': raastId,
     'loginMode': loginMode,
+    'autoHours': autoHours,
+    'opensAt': opensAt,
+    'closesAt': closesAt,
+    'pauseWhenNoRiders': pauseWhenNoRiders,
   };
 }

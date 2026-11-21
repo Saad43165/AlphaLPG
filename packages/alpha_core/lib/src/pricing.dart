@@ -1,5 +1,6 @@
 import 'models/app_settings.dart';
 import 'models/order.dart';
+import 'models/ordering_status.dart';
 
 /// The single source of truth for order totals on the client.
 /// `firebase/functions/src/pricing.ts` mirrors these rules on the server and
@@ -41,7 +42,8 @@ class PriceBreakdown {
   }
 
   /// Why the order cannot be placed yet, or null if it can.
-  String? problem(AppSettings s) {
+  String? problem(AppSettings s, {OrderingStatus? status}) {
+    if (status != null && !status.canOrder) return status.message;
     if (!s.acceptingOrders) {
       return s.closedMessage.isNotEmpty
           ? s.closedMessage

@@ -30,6 +30,41 @@ void main() {
     }
   });
 
+  testWidgets(
+    'the owner closing the shop is shown to customers, and ordering is blocked',
+    (tester) async {
+      final backend = testBackend();
+      await backend.catalog.saveSettings(
+        AppSettings.fromMap({
+          ...SeedData.settings.toMap(),
+          'loginMode': 'sms',
+          'acceptingOrders': false,
+          'closedMessage': 'Closed for Eid. Back on Friday.',
+        }),
+      );
+      await pumpApp(tester, backend);
+      expect(find.text('Not taking orders right now'), findsOneWidget);
+      expect(find.text('Closed for Eid. Back on Friday.'), findsOneWidget);
+      await tester.tap(find.byTooltip('Cart').first);
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets('no riders on shift pauses orders only if the owner chose that', (
+    tester,
+  ) async {
+    final backend = testBackend();
+    await backend.catalog.saveSettings(
+      AppSettings.fromMap({
+        ...SeedData.settings.toMap(),
+        'loginMode': 'sms',
+        'pauseWhenNoRiders': true,
+      }),
+    );
+    await pumpApp(tester, backend);
+    expect(find.text('Our riders are offline'), findsOneWidget);
+  });
+
   testWidgets('quick sign-in: a number is enough, no SMS code', (tester) async {
     final backend = testBackend(quickLogin: true);
     await pumpApp(tester, backend);

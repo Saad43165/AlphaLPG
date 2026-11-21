@@ -9,6 +9,9 @@ abstract final class FirestorePaths {
   static const orders = 'orders';
   static const quoteRequests = 'quoteRequests';
   static const riders = 'riders';
+
+  /// Public "is this rider on shift" records (no names or numbers).
+  static const presence = 'presence';
   static String messages(String orderId) => 'orders/$orderId/messages';
   static String live(String orderId) => 'orders/$orderId/live';
   static const liveDoc = 'rider';

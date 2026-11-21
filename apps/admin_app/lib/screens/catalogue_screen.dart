@@ -558,6 +558,10 @@ class _SettingsEditorState extends State<SettingsEditor> {
   final _form = GlobalKey<FormState>();
   late final Map<String, TextEditingController> _c;
   late bool _accepting;
+  late bool _autoHours;
+  late bool _pauseNoRiders;
+  late int _opensAt;
+  late int _closesAt;
   late String _loginMode;
   bool _busy = false;
   String? _error;
@@ -567,6 +571,10 @@ class _SettingsEditorState extends State<SettingsEditor> {
     super.initState();
     final s = context.read<AdminSession>().settings;
     _accepting = s.acceptingOrders;
+    _autoHours = s.autoHours;
+    _pauseNoRiders = s.pauseWhenNoRiders;
+    _opensAt = s.opensAt;
+    _closesAt = s.closesAt;
     _loginMode = s.loginMode;
     _c = {
       'deliveryFee': TextEditingController(text: '${s.deliveryFee}'),
@@ -609,6 +617,10 @@ class _SettingsEditorState extends State<SettingsEditor> {
     });
     final next = AppSettings(
       acceptingOrders: _accepting,
+      autoHours: _autoHours,
+      opensAt: _opensAt,
+      closesAt: _closesAt,
+      pauseWhenNoRiders: _pauseNoRiders,
       closedMessage: _t('closedMessage'),
       deliveryFee: _n('deliveryFee'),
       freeDeliveryFrom: _n('freeDeliveryFrom'),
@@ -704,6 +716,54 @@ class _SettingsEditorState extends State<SettingsEditor> {
               onChanged: (v) => setState(() => _accepting = v),
             ),
             _text('closedMessage', 'Message when paused', lines: 2),
+            const Heading('When orders are accepted'),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: panel(context),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Only take orders in opening hours'),
+                    subtitle: const Text(
+                      'Outside these hours customers see "We are closed" and cannot order.',
+                    ),
+                    value: _autoHours,
+                    onChanged: (v) => setState(() => _autoHours = v),
+                  ),
+                  if (_autoHours)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _TimeField(
+                            label: 'Opens',
+                            minutes: _opensAt,
+                            onChanged: (m) => setState(() => _opensAt = m),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _TimeField(
+                            label: 'Closes',
+                            minutes: _closesAt,
+                            onChanged: (m) => setState(() => _closesAt = m),
+                          ),
+                        ),
+                      ],
+                    ),
+                  const Divider(height: 24),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Pause orders when no rider is on shift'),
+                    subtitle: const Text(
+                      'Customers see "Our riders are offline" until a rider goes online.',
+                    ),
+                    value: _pauseNoRiders,
+                    onChanged: (v) => setState(() => _pauseNoRiders = v),
+                  ),
+                ],
+              ),
+            ),
             const Heading('How customers sign in'),
             SegmentedButton<String>(
               segments: const [
@@ -870,4 +930,42 @@ class _PhotoPicker extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A tappable time (opens the clock) shown as "9:00 am".
+class _TimeField extends StatelessWidget {
+  const _TimeField({
+    required this.label,
+    required this.minutes,
+    required this.onChanged,
+  });
+  final String label;
+  final int minutes;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton(
+    style: OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 56),
+      alignment: Alignment.centerLeft,
+    ),
+    onPressed: () async {
+      final t = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay(hour: minutes ~/ 60 % 24, minute: minutes % 60),
+      );
+      if (t != null) onChanged(t.hour * 60 + t.minute);
+    },
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(label, style: TextStyle(fontSize: 11.5, color: context.pal.muted)),
+        Text(
+          OrderingStatus.clock(minutes),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        ),
+      ],
+    ),
+  );
 }

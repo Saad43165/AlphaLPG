@@ -70,7 +70,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     final items = cart.toOrderItems(state.productById);
     final price = PriceBreakdown.of(items, state.settings);
-    final problem = price.problem(state.settings);
+    final problem = price.problem(state.settings, status: state.ordering);
     if (problem != null) {
       showMessage(context, problem, error: true);
       return false;

@@ -32,6 +32,7 @@ class _HomeShellState extends State<HomeShell> {
         body: Column(
           children: [
             _Header(session: s),
+            _Notices(session: s),
             _LocationBanner(session: s),
             Expanded(
               child: IndexedStack(
@@ -255,5 +256,67 @@ class _LocationBanner extends StatelessWidget {
       );
     }
     return const SizedBox.shrink();
+  }
+}
+
+/// Messages from the shop: "you were switched offline", "shop is closed".
+class _Notices extends StatelessWidget {
+  const _Notices({required this.session});
+  final RiderSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    final closed = !session.settings.acceptingOrders;
+    final note = session.notice;
+    if (!closed && note == null) return const SizedBox.shrink();
+    Widget bar(
+      IconData icon,
+      Color color,
+      String text, {
+      VoidCallback? onClose,
+    }) => Container(
+      width: double.infinity,
+      color: color.withValues(alpha: 0.14),
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          if (onClose != null)
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              onPressed: onClose,
+              icon: Icon(Icons.close_rounded, color: color, size: 18),
+            ),
+        ],
+      ),
+    );
+    return Column(
+      children: [
+        if (note != null)
+          bar(
+            Icons.power_settings_new_rounded,
+            Brand.danger,
+            note,
+            onClose: session.dismissNotice,
+          ),
+        if (closed)
+          bar(
+            Icons.storefront_rounded,
+            const Color(0xFF8A6D00),
+            'Alpha LPG is closed for orders. No new jobs will come in.',
+          ),
+      ],
+    );
   }
 }

@@ -50,6 +50,11 @@ abstract interface class OrderRepository {
     String note = '',
   });
 
+  /// Admin: takes an order away from its rider; it goes back to "confirmed"
+  /// with nobody assigned, so another rider can accept it (or the shop can
+  /// assign one).
+  Future<void> unassignRider(String orderId, String adminId);
+
   // ---- Rider workflow ----------------------------------------------------
 
   /// New orders nobody has taken yet (placed or confirmed, no rider).
@@ -246,6 +251,15 @@ class _FirestoreOrders implements OrderRepository {
     String by, {
     String note = '',
   }) => _setStatus(orderId, status, by, note: note);
+
+  @override
+  Future<void> unassignRider(String orderId, String adminId) => _setStatus(
+    orderId,
+    OrderStatus.confirmed,
+    adminId,
+    note: 'Taken back from the rider',
+    extra: {'riderId': null, 'riderName': null, 'riderPhone': null},
+  );
 
   @override
   Stream<List<LpgOrder>> watchAvailable() => _orders
@@ -535,6 +549,16 @@ class _MemoryOrders implements OrderRepository {
     String by, {
     String note = '',
   }) async => _setStatus(orderId, status, by, note: note);
+
+  @override
+  Future<void> unassignRider(String orderId, String adminId) async =>
+      _setStatus(
+        orderId,
+        OrderStatus.confirmed,
+        adminId,
+        note: 'Taken back from the rider',
+        extra: {'riderId': null, 'riderName': null, 'riderPhone': null},
+      );
 
   @override
   Stream<List<LpgOrder>> watchAvailable() => _s.watch(

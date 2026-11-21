@@ -311,6 +311,41 @@ void _suite(Repos Function() make) {
     expect(await r.orders.watchMessages('other').first, isEmpty);
   });
 
+  test('presence: only riders who are online AND recently seen count as live', () async {
+    final riders = r.riders;
+    await riders.saveRider(const RiderProfile(uid: 'a', name: 'A', phone: '0300'));
+    await riders.saveRider(const RiderProfile(uid: 'b', name: 'B', phone: '0301'));
+    expect(await riders.watchLiveRiderCount().first, 0);
+    await riders.setOnline('a', true);
+    await riders.setOnline('b', true);
+    expect(await riders.watchLiveRiderCount().first, 2);
+    await riders.setOnline('b', false);
+    expect(await riders.watchLiveRiderCount().first, 1);
+    await riders.setActive('a', false); // blocked riders are off shift
+    expect(await riders.watchLiveRiderCount().first, 0);
+    await riders.setActive('a', true);
+    await riders.setOnline('a', true);
+    await riders.heartbeat('a');
+    expect((await riders.watchAllRiders().first).firstWhere((x) => x.uid == 'a').isLive(), isTrue);
+    expect(
+      (await riders.watchAllRiders().first).firstWhere((x) => x.uid == 'a').isLive(DateTime.now().add(const Duration(minutes: 5))),
+      isFalse,
+      reason: 'a rider who stopped reporting in is not live',
+    );
+    await riders.deleteRider('b');
+    expect((await riders.watchAllRiders().first).map((x) => x.uid), ['a']);
+  });
+
+  test('admin takes an order back from a rider', () async {
+    final id = await r.orders.place(sampleOrder('u1'));
+    await r.orders.acceptOrder(id, riderId: 'r1', name: 'Imran', phone: '0300');
+    await r.orders.unassignRider(id, 'boss');
+    final o = (await r.orders.watchOrder(id).first)!;
+    expect(o.status, OrderStatus.confirmed);
+    expect(o.riderId, isNull);
+    expect(o.history.last.note, 'Taken back from the rider');
+  });
+
   test('riders: a cancelled order cannot be accepted', () async {
     final id = await r.orders.place(sampleOrder('u1'));
     await r.orders.updateStatus(id, OrderStatus.cancelled, 'u1');

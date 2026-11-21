@@ -56,8 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (!state.settings.acceptingOrders)
-                        _ClosedBanner(state.settings),
+                      _ShopStatus(state.ordering),
                       if (state.signedIn) const _OrderStrip(),
                       Text(
                         'Choose your cylinder',
@@ -575,40 +574,90 @@ class _MiniStepper extends StatelessWidget {
   );
 }
 
-class _ClosedBanner extends StatelessWidget {
-  const _ClosedBanner(this.settings);
-  final AppSettings settings;
+/// Whether the shop is taking orders right now (set by the owner), in words
+/// customers understand. Readable on the light and the dark theme.
+class _ShopStatus extends StatelessWidget {
+  const _ShopStatus(this.status);
+  final OrderingStatus status;
 
   @override
   Widget build(BuildContext context) {
     final pal = context.pal;
+    if (status.canOrder) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: const BoxDecoration(
+                color: Brand.success,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${status.headline} · ${status.message}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: pal.muted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final (IconData icon, Color tone) = switch (status.state) {
+      OrderingState.paused => (Icons.block_rounded, Brand.danger),
+      OrderingState.closedHours => (Icons.nightlight_round, Brand.flame),
+      OrderingState.noRiders => (Icons.two_wheeler_rounded, Brand.flame),
+      OrderingState.open => (Icons.check, Brand.success),
+    };
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          // A warm notice that reads well on both the light and dark theme.
           color: pal.isDark
-              ? Brand.flame.withValues(alpha: 0.16)
-              : const Color(0xFFFFF4D6),
+              ? tone.withValues(alpha: 0.16)
+              : (status.state == OrderingState.paused
+                    ? const Color(0xFFFFEEEB)
+                    : const Color(0xFFFFF4D6)),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Brand.flame.withValues(alpha: 0.45)),
+          border: Border.all(color: tone.withValues(alpha: 0.5)),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.info_outline,
-              color: pal.isDark ? Brand.flame : Brand.warning,
-            ),
-            const SizedBox(width: 10),
+            Icon(icon, color: tone, size: 26),
+            const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                settings.closedMessage.isNotEmpty ? settings.closedMessage : 'Online ordering is paused right now. Please call or WhatsApp us.',
-                style: TextStyle(
-                  color: pal.isDark ? pal.ink : const Color(0xFF4A3800),
-                  fontWeight: FontWeight.w600,
-                  height: 1.35,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    status.headline,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15.5,
+                      color: pal.isDark ? pal.ink : const Color(0xFF3A2C00),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    status.message,
+                    style: TextStyle(
+                      height: 1.35,
+                      color: pal.isDark ? pal.ink : const Color(0xFF4A3800),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

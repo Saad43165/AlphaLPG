@@ -201,7 +201,12 @@ void main() {
     test('garbage gives null, never a crash', () {
       expect(RouteClient.parseGeoapify({'features': []}), isNull);
       expect(RouteClient.parseGeoapify('nope'), isNull);
-      expect(RouteClient.parseOsrm({'routes': [{}]}), isNull);
+      expect(
+        RouteClient.parseOsrm({
+          'routes': [{}],
+        }),
+        isNull,
+      );
     });
   });
 }

@@ -12,6 +12,7 @@ import 'dart:convert';
 import 'package:alpha_admin/utils/photo.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart' show Switch, Size;
 
 class FakeAuth extends AdminAuth {
   @override
@@ -189,5 +190,46 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Rs 6,592'), findsWidgets);
     expect(find.text('Orders delivered'), findsOneWidget);
+  });
+
+  testWidgets('the owner closes the shop and ends a rider\'s shift', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    await tester.runAsync(() async {
+      await b.catalog.seed();
+      await b.riders.saveRider(
+        const RiderProfile(uid: 'r1', name: 'Imran', phone: '03001112222'),
+      );
+      await b.riders.setOnline('r1', true);
+    });
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    expect(find.text('Shop is open'), findsOneWidget);
+    expect(find.textContaining('1 rider on shift'), findsOneWidget);
+
+    await tester.tap(find.byType(Switch).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Close shop'));
+    await tester.pumpAndSettle();
+    final settings = await tester.runAsync(
+      () => b.catalog.watchStoredSettings().first,
+    );
+    expect(settings!.acceptingOrders, isFalse);
+    expect(find.text('Shop is closed'), findsWidgets);
+
+    await tester.tap(find.text('Riders'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('On shift'), findsWidgets);
+    await tester.tap(find.byTooltip('Rider options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Switch offline'));
+    await tester.pumpAndSettle();
+    final riders = await tester.runAsync(() => b.riders.watchAllRiders().first);
+    expect(riders!.single.online, isFalse);
   });
 }

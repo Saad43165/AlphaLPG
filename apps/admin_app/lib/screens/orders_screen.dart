@@ -104,6 +104,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       body: Constrained(
         child: Column(
           children: [
+            if (!_searching) const _ShopBar(),
             if (!_searching)
               SizedBox(
                 height: 92,
@@ -447,6 +448,93 @@ class OrderTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Open / close the shop for customers from the first screen, and see how
+/// many riders are on shift. Changes reach every customer immediately.
+class _ShopBar extends StatelessWidget {
+  const _ShopBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AdminSession>();
+    final open = s.settings.acceptingOrders;
+    final live = s.liveRiders.length;
+    final pal = context.pal;
+    final color = open ? Brand.success : Brand.danger;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(Brand.radius),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            open ? Icons.storefront_rounded : Icons.pause_circle_rounded,
+            color: color,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  open ? 'Shop is open' : 'Shop is closed',
+                  style: TextStyle(fontWeight: FontWeight.w800, color: color),
+                ),
+                Text(
+                  open
+                      ? (live == 0
+                            ? 'No rider on shift'
+                            : '$live rider${live == 1 ? '' : 's'} on shift')
+                      : 'Customers cannot place orders',
+                  style: TextStyle(color: pal.muted, fontSize: 12.5),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: open,
+            onChanged: (v) async {
+              if (!v) {
+                final ok = await showDialog<bool>(
+                  context: context,
+                  builder: (c) => AlertDialog(
+                    title: const Text('Close the shop?'),
+                    content: const Text(
+                      'Customers will see "Not taking orders" and cannot place new orders. Orders already placed continue.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(c, false),
+                        child: const Text('Keep open'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(c, true),
+                        child: const Text('Close shop'),
+                      ),
+                    ],
+                  ),
+                );
+                if (ok != true) return;
+              }
+              final err = await s.setShopOpen(v);
+              if (context.mounted) {
+                showMessage(
+                  context,
+                  err ?? (v ? 'Shop is open' : 'Shop is closed'),
+                  error: err != null,
+                );
+              }
+            },
+          ),
+        ],
       ),
     );
   }

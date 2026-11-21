@@ -115,6 +115,9 @@ class RiderSession extends ChangeNotifier {
     }
     _jobMessageSubs.clear();
     _messagesSeen.clear();
+    _beat?.cancel();
+    _beat = null;
+    notice = null;
     if (uid == null) KeepAlive.stop();
     if (uid != null) {
       _riderSubs.add(
@@ -123,8 +126,16 @@ class RiderSession extends ChangeNotifier {
             .listen(
               (p) {
                 final wasRider = isRider;
+                final wasOnline = online;
                 profile = p;
                 profileLoaded = true;
+                // Someone else (the shop) ended this rider's shift.
+                if (wasOnline && !online && wasRider && !_selfToggled) {
+                  notice = (p != null && !p.active)
+                      ? 'Your account was switched off by Alpha LPG.'
+                      : 'Alpha LPG switched you offline. Go online again when you are ready.';
+                }
+                _syncHeartbeat();
                 _syncKeepAlive();
                 if (isRider && !wasRider) _listenToWork(uid);
                 if (!isRider) {
@@ -280,10 +291,47 @@ class RiderSession extends ChangeNotifier {
 
   // ---- Actions ---------------------------------------------------------------
 
+  /// A message for the rider ("the shop switched you offline"), shown once.
+  String? notice;
+  bool _selfToggled = false;
+  Timer? _beat;
+
+  void dismissNotice() {
+    notice = null;
+    notifyListeners();
+  }
+
   Future<void> setOnline(bool value) async {
     final id = _uid;
     if (id == null) return;
-    await backend.riders.setOnline(id, value);
+    _selfToggled = true;
+    notice = null;
+    try {
+      await backend.riders.setOnline(id, value);
+    } finally {
+      // The profile stream will report the change; keep the flag until then.
+      Future<void>.delayed(
+        const Duration(seconds: 3),
+        () => _selfToggled = false,
+      );
+    }
+  }
+
+  /// While on shift, tell the shop and customers every minute that this
+  /// phone is still here. Stops when offline.
+  void _syncHeartbeat() {
+    final id = _uid;
+    if (id != null && online && isRider) {
+      _beat ??= Timer.periodic(const Duration(seconds: 60), (_) {
+        final u = _uid;
+        if (u != null && online) {
+          backend.riders.heartbeat(u).catchError((_) {});
+        }
+      });
+    } else {
+      _beat?.cancel();
+      _beat = null;
+    }
   }
 
   Future<AcceptResult> accept(LpgOrder order) async {
@@ -378,6 +426,7 @@ class RiderSession extends ChangeNotifier {
 
   @override
   void dispose() {
+    _beat?.cancel();
     backend.auth.removeListener(_onAuth);
     backend.tracker.removeListener(notifyListeners);
     for (final s in [..._subs, ..._riderSubs]) {

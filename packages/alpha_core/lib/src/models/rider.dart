@@ -10,6 +10,7 @@ class RiderProfile {
     this.vehicle = 'Motorbike',
     this.active = true,
     this.online = false,
+    this.lastSeen,
   });
 
   final String uid;
@@ -23,6 +24,17 @@ class RiderProfile {
   /// The rider's own "on shift" switch. Only online riders get new jobs.
   final bool online;
 
+  /// Last sign of life from the rider app (a heartbeat while online).
+  final DateTime? lastSeen;
+
+  /// A rider is really available only while their app keeps reporting in.
+  bool isLive([DateTime? now]) =>
+      active &&
+      online &&
+      lastSeen != null &&
+      (now ?? DateTime.now()).difference(lastSeen!) <
+          const Duration(minutes: 3);
+
   factory RiderProfile.fromMap(String uid, Map<String, dynamic> m) =>
       RiderProfile(
         uid: uid,
@@ -31,6 +43,7 @@ class RiderProfile {
         vehicle: m['vehicle'] as String? ?? 'Motorbike',
         active: m['active'] as bool? ?? true,
         online: m['online'] as bool? ?? false,
+        lastSeen: readDate(m['lastSeen']),
       );
 
   Map<String, dynamic> toMap() => {

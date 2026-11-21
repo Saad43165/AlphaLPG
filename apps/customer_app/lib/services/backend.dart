@@ -18,6 +18,7 @@ class Backend {
     required this.orders,
     required this.profiles,
     required this.quotes,
+    required this.riders,
     this.isDemo = false,
   });
 
@@ -27,6 +28,7 @@ class Backend {
     orders: OrderRepository.firestore(db),
     profiles: ProfileRepository.firestore(db),
     quotes: QuoteRepository.firestore(db),
+    riders: RiderRepository.firestore(db),
   );
 
   /// In-memory backend. With [simulateDispatch] new orders move through
@@ -39,6 +41,7 @@ class Backend {
       orders: OrderRepository.memory(store),
       profiles: ProfileRepository.memory(store),
       quotes: QuoteRepository.memory(store),
+      riders: RiderRepository.memory(store),
       isDemo: true,
     );
     if (simulateDispatch) _DemoDispatcher(backend.orders, store).start();
@@ -50,6 +53,7 @@ class Backend {
   final OrderRepository orders;
   final ProfileRepository profiles;
   final QuoteRepository quotes;
+  final RiderRepository riders;
   final bool isDemo;
 
   /// Connects to Firebase, or falls back to the in-memory demo backend when
