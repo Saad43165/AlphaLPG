@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/env.dart';
 import '../../services/auth_service.dart';
 import '../../services/backend.dart';
 import '../../state/app_state.dart';
@@ -113,7 +112,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDemo = context.read<Backend>().isDemo;
     final quick = !context.select<AppState, bool>((s) => s.settings.smsLogin);
     final codeStep = _sentTo != null && !quick;
     final text = Theme.of(context).textTheme;
@@ -223,19 +221,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ],
-              ),
-            ],
-            if (isDemo && !quick) ...[
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Brand.flame.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Demo mode: use any mobile number and code ${Env.demoOtp}.',
-                ),
               ),
             ],
           ],

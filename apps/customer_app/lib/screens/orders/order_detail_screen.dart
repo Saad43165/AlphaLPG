@@ -1125,7 +1125,6 @@ class _PaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<AppState>().settings;
     final paid = o.paymentStatus == PaymentStatus.paid;
     final needsTransfer =
         o.paymentMethod.isPrepaid && !paid && o.status != OrderStatus.cancelled;
@@ -1186,15 +1185,32 @@ class _PaymentCard extends StatelessWidget {
               PaymentRequestCard(o.paymentRequest!),
               const SizedBox(height: 12),
             ],
-            if (o.paymentReference.isEmpty && o.paymentRequest == null)
-              PaymentSteps(
-                method: o.paymentMethod,
-                settings: settings,
-                total: o.total,
-                orderNumber: o.displayNumber,
+            if (o.paymentRequest != null) ...[
+              const SizedBox(height: 10),
+              ReceiptSection(o),
+            ] else
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: context.pal.isDark
+                      ? const Color(0xFF2A2F3A)
+                      : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.hourglass_top_rounded, size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Waiting for Alpha LPG to send you the payment details. You will get a notification here as soon as they are ready. Please do not pay before that.',
+                        style: TextStyle(height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            const SizedBox(height: 10),
-            ReceiptSection(o),
           ],
           const SizedBox(height: 10),
           if (o.status != OrderStatus.cancelled)

@@ -111,17 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       const _AboutBanner(),
                       const SizedBox(height: 14),
                       _HelpCard(settings: state.settings),
-                      if (context.read<Backend>().isDemo) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          'Demo mode: nothing is saved, and orders move through each status automatically so you can see tracking.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.pal.muted,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),

@@ -10,18 +10,9 @@ import 'app.dart';
 import 'firebase_options.dart';
 import 'screens/status_screens.dart';
 import 'services/backend.dart';
-import 'services/demo.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kDemo) {
-    SharedPreferences? p;
-    try {
-      p = await SharedPreferences.getInstance();
-    } catch (_) {}
-    runApp(RiderApp(backend: await buildDemoBackend(), prefs: p));
-    return;
-  }
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

@@ -8,8 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'screens/not_configured_screen.dart';
-import 'config/env.dart';
-import 'services/location_service.dart';
 import 'services/backend.dart';
 
 Future<void> main() async {
@@ -49,9 +47,6 @@ Future<void> main() async {
       backend: backend,
       prefs: prefs,
       showSplash: true,
-      location: Env.fakeLocation
-          ? FakeLocationService()
-          : null, // null → Geoapify if a key was supplied
       showOnboarding: !(prefs?.getBool('onboarded') ?? false),
     ),
   );
