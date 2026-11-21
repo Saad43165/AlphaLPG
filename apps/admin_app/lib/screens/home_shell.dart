@@ -1,10 +1,13 @@
 import 'package:alpha_ui/alpha_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session.dart';
+import '../utils/order_x.dart';
 import 'catalogue_screen.dart';
 import 'more_screen.dart';
+import 'order_detail_screen.dart';
 import 'orders_screen.dart';
 import 'riders_screen.dart';
 
@@ -22,6 +25,35 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final s = context.watch<AdminSession>();
     final badge = s.newCount + s.toVerifyCount;
+    final alert = s.newOrderAlert;
+    if (alert != null) {
+      s.clearAlert();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        // Sound and buzz so a new order is noticed, then a tappable banner.
+        SystemSound.play(SystemSoundType.alert);
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              duration: const Duration(seconds: 8),
+              behavior: SnackBarBehavior.floating,
+              content: Text(
+                'New order: ${alert.customerName} · ${rs(alert.total)}',
+              ),
+              action: SnackBarAction(
+                label: 'OPEN',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => OrderDetailScreen(orderId: alert.id),
+                  ),
+                ),
+              ),
+            ),
+          );
+      });
+    }
     return Scaffold(
       body: IndexedStack(
         index: _tab,

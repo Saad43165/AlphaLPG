@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../state/session.dart';
 import '../utils/launch.dart';
 import '../widgets/common.dart';
+import 'reports_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -55,6 +56,15 @@ class MoreScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.insights_rounded),
+              title: const Text('Sales & cash report'),
+              subtitle: const Text('Today, 7 days, 30 days'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const ReportsScreen()),
+              ),
+            ),
             ListTile(
               leading: Badge(
                 isLabelVisible: newQuotes > 0,

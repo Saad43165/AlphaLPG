@@ -43,6 +43,12 @@ class AdminSession extends ChangeNotifier {
   bool _hasProducts = true, _hasSettings = true;
   bool ordersLoaded = false;
 
+  /// Set when a new order arrives while the app is open; the shell shows it.
+  LpgOrder? newOrderAlert;
+  final _knownIds = <String>{};
+
+  void clearAlert() => newOrderAlert = null;
+
   String? get uid => _uid;
   bool get signedIn => _uid != null;
 
@@ -143,6 +149,23 @@ class AdminSession extends ChangeNotifier {
 
   Future<String?> saveProduct(Product p) =>
       _run(() => backend.catalog.saveProduct(p));
+
+  /// Drag-to-reorder: renumbers the products and saves the ones that moved.
+  Future<String?> moveProduct(int from, int to) => _run(() async {
+    final list = [...products];
+    if (to > from) to -= 1;
+    final item = list.removeAt(from);
+    list.insert(to, item);
+    for (var i = 0; i < list.length; i++) {
+      final p = list[i];
+      if (p.sortOrder != i + 1) {
+        await backend.catalog.saveProduct(
+          Product.fromMap(p.id, {...p.toMap(), 'sortOrder': i + 1}),
+        );
+      }
+    }
+  });
+
   Future<String?> saveSettings(AppSettings s) =>
       _run(() => backend.catalog.saveSettings(s));
   Future<String?> loadDefaults() => _run(backend.catalog.seed);
@@ -214,6 +237,17 @@ class AdminSession extends ChangeNotifier {
       ),
     );
     listen(backend.orders.watchRecent(), (v) {
+      // After the first load, a placed order we have not seen is "new".
+      if (ordersLoaded) {
+        for (final o in v) {
+          if (o.status == OrderStatus.placed && !_knownIds.contains(o.id)) {
+            newOrderAlert = o;
+          }
+        }
+      }
+      _knownIds
+        ..clear()
+        ..addAll(v.map((o) => o.id));
       orders = v;
       ordersLoaded = true;
     });
@@ -241,6 +275,8 @@ class AdminSession extends ChangeNotifier {
     quotes = const [];
     products = const [];
     ordersLoaded = false;
+    newOrderAlert = null;
+    _knownIds.clear();
   }
 
   void _stop() {

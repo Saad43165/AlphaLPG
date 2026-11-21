@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -26,6 +29,14 @@ class ProductImage extends StatelessWidget {
   final Product product;
   final double height;
 
+  /// Decoded photos, so a list does not decode the same base64 again and again.
+  static final _decoded = <int, Uint8List>{};
+
+  static Uint8List _bytes(String data) => _decoded.putIfAbsent(
+    Object.hash(data.length, data.hashCode),
+    () => base64Decode(data),
+  );
+
   @override
   Widget build(BuildContext context) {
     final fallback = Icon(
@@ -33,6 +44,20 @@ class ProductImage extends StatelessWidget {
       size: height * 0.7,
       color: Brand.cylinderRed,
     );
+    // 1) the owner's own photo, 2) a web link, 3) the closest bundled picture.
+    if (product.hasUploadedImage) {
+      try {
+        return Image.memory(
+          _bytes(product.imageData),
+          height: height,
+          fit: BoxFit.contain,
+          gaplessPlayback: true,
+          errorBuilder: (_, _, _) => fallback,
+        );
+      } catch (_) {
+        // Damaged data: fall through to the automatic picture.
+      }
+    }
     if (product.imageUrl.isNotEmpty) {
       return Image.network(
         product.imageUrl,
@@ -41,17 +66,11 @@ class ProductImage extends StatelessWidget {
         errorBuilder: (_, _, _) => fallback,
       );
     }
-    if (product.imageAsset.isNotEmpty) {
-      return Image.asset(
-        product.imageAsset,
-        height: height,
-        fit: BoxFit.contain,
-        errorBuilder: (_, _, _) => fallback,
-      );
-    }
-    return SizedBox(
+    return Image.asset(
+      product.automaticImageAsset,
       height: height,
-      child: Center(child: fallback),
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) => fallback,
     );
   }
 }

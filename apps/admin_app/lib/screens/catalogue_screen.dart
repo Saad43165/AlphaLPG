@@ -1,11 +1,13 @@
 import 'package:alpha_core/alpha_core.dart';
 import 'package:alpha_ui/alpha_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session.dart';
 import '../utils/order_x.dart';
+import '../utils/photo.dart';
 import '../widgets/common.dart';
 
 /// Prices, stock and shop settings: everything the customer app reads live.
@@ -71,72 +73,120 @@ class CatalogueScreen extends StatelessWidget {
             ),
             const Heading('Cylinders and prices'),
             if (!s.storeReady) _Defaults(session: s),
-            for (final p in s.products)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Material(
-                  color: Colors.transparent,
-                  child: Ink(
-                    decoration: panel(context),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(Brand.radius),
-                      onTap: () => _editProduct(context, p),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    p.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                    ),
+            ReorderableListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              onReorderItem: (from, to) async {
+                final err = await s.moveProduct(from, to);
+                if (err != null && context.mounted) {
+                  showMessage(context, err, error: true);
+                }
+              },
+              children: [
+                for (final (i, p) in s.products.indexed)
+                  Padding(
+                    key: ValueKey(p.id),
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Ink(
+                        decoration: panel(context),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(Brand.radius),
+                          onTap: () => _editProduct(context, p),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(10, 10, 4, 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 64,
+                                  height: 64,
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: context.pal.tint,
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Refill ${rs(p.refillPrice)}'
-                                    '${p.newCylinderPrice != null ? '  ·  New ${rs(p.newCylinderPrice!)}' : ''}',
-                                    style: TextStyle(
-                                      color: context.pal.muted,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Wrap(
-                                    spacing: 6,
+                                  child: ProductPicture(p, height: 52),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      if (!p.active)
-                                        const Pill(
-                                          Icons.visibility_off_rounded,
-                                          'Hidden',
-                                          color: Brand.danger,
+                                      Text(
+                                        p.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
                                         ),
-                                      if (p.active && !p.inStock)
-                                        const Pill(
-                                          Icons.remove_shopping_cart_rounded,
-                                          'Out of stock',
-                                          color: Color(0xFF8A6D00),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Refill ${rs(p.refillPrice)}'
+                                        '${p.newCylinderPrice != null ? '  ·  New ${rs(p.newCylinderPrice!)}' : ''}',
+                                        style: TextStyle(
+                                          color: context.pal.muted,
+                                          fontSize: 13,
                                         ),
-                                      if (p.active && p.inStock)
-                                        const Pill(
-                                          Icons.check_rounded,
-                                          'On sale',
-                                          color: Brand.success,
-                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 4,
+                                        children: [
+                                          if (!p.active)
+                                            const Pill(
+                                              Icons.visibility_off_rounded,
+                                              'Hidden',
+                                              color: Brand.danger,
+                                            ),
+                                          if (p.active && !p.inStock)
+                                            const Pill(
+                                              Icons
+                                                  .remove_shopping_cart_rounded,
+                                              'Out of stock',
+                                              color: Color(0xFF8A6D00),
+                                            ),
+                                          if (p.active && p.inStock)
+                                            const Pill(
+                                              Icons.check_rounded,
+                                              'On sale',
+                                              color: Brand.success,
+                                            ),
+                                          if (!p.hasUploadedImage)
+                                            Pill(
+                                              Icons.auto_awesome_rounded,
+                                              'Auto picture',
+                                              color: context.pal.muted,
+                                            ),
+                                        ],
+                                      ),
                                     ],
                                   ),
-                                ],
-                              ),
+                                ),
+                                ReorderableDragStartListener(
+                                  index: i,
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: Icon(Icons.drag_handle_rounded),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const Icon(Icons.edit_rounded, size: 20),
-                          ],
+                          ),
                         ),
                       ),
                     ),
                   ),
+              ],
+            ),
+            if (s.products.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  'Hold the handle on the right and drag to change the order customers see.',
+                  style: TextStyle(color: context.pal.muted, fontSize: 12.5),
                 ),
               ),
             OutlinedButton.icon(
@@ -234,6 +284,10 @@ class _ProductEditor extends StatefulWidget {
 
 class _ProductEditorState extends State<_ProductEditor> {
   final _form = GlobalKey<FormState>();
+
+  /// null = unchanged, '' = back to the automatic picture, else new base64.
+  String? _photo;
+  bool _photoBusy = false;
   late final _name = TextEditingController(text: widget.product?.name ?? '');
   late final _size = TextEditingController(
     text: widget.product == null ? '' : '${widget.product!.sizeKg}',
@@ -263,6 +317,42 @@ class _ProductEditorState extends State<_ProductEditor> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    // The automatic picture depends on the size, so refresh the preview.
+    _size.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    setState(() {
+      _photoBusy = true;
+      _error = null;
+    });
+    try {
+      final file = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+      if (file == null) return;
+      final data = await compressProductPhoto(await file.readAsBytes());
+      if (mounted) setState(() => _photo = data);
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = e is String
+              ? e
+              : 'Could not use that photo. Please try another one.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
+
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
     final s = context.read<AdminSession>();
@@ -281,6 +371,7 @@ class _ProductEditorState extends State<_ProductEditor> {
       badge: _badge.text.trim(),
       imageUrl: old?.imageUrl ?? '',
       imageAsset: old?.imageAsset ?? '',
+      imageData: _photo ?? old?.imageData ?? '',
       segment: _segment,
       active: _active,
       inStock: _inStock,
@@ -330,6 +421,15 @@ class _ProductEditorState extends State<_ProductEditor> {
                   ? 'New cylinder'
                   : 'Edit ${widget.product!.name}',
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+            ),
+            const SizedBox(height: 14),
+            _PhotoPicker(
+              product: widget.product,
+              size: double.tryParse(_size.text.trim()),
+              photo: _photo,
+              busy: _photoBusy,
+              onPick: _pickPhoto,
+              onAuto: () => setState(() => _photo = ''),
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -683,4 +783,91 @@ class _SettingsEditorState extends State<SettingsEditor> {
       ),
     ),
   );
+}
+
+/// Preview of what customers will see, with ways to change it.
+class _PhotoPicker extends StatelessWidget {
+  const _PhotoPicker({
+    required this.product,
+    required this.size,
+    required this.photo,
+    required this.busy,
+    required this.onPick,
+    required this.onAuto,
+  });
+  final Product? product;
+  final double? size;
+  final String? photo;
+  final bool busy;
+  final Future<void> Function(ImageSource) onPick;
+  final VoidCallback onAuto;
+
+  @override
+  Widget build(BuildContext context) {
+    // Build a throw-away product so the preview picks the right automatic
+    // picture for the size typed so far.
+    final base =
+        product ??
+        Product(id: 'new', name: '', sizeKg: size ?? 11.8, refillPrice: 0);
+    final shown = Product(
+      id: base.id,
+      name: base.name,
+      sizeKg: size ?? base.sizeKg,
+      refillPrice: base.refillPrice,
+      imageUrl: base.imageUrl,
+      imageAsset: base.imageAsset,
+      imageData: photo ?? base.imageData,
+    );
+    final custom = shown.hasUploadedImage;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: panel(context),
+      child: Column(
+        children: [
+          Container(
+            height: 150,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: context.pal.tint,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            padding: const EdgeInsets.all(10),
+            child: busy
+                ? const Center(child: CircularProgressIndicator())
+                : ProductPicture(shown, height: 130),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            custom ? 'Your photo. Customers see this.' : 'Automatic picture for this size. Customers see this until you add a photo.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.pal.muted, fontSize: 12.5),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              OutlinedButton.icon(
+                onPressed: busy ? null : () => onPick(ImageSource.gallery),
+                icon: const Icon(Icons.photo_library_rounded, size: 18),
+                label: const Text('Choose photo'),
+              ),
+              OutlinedButton.icon(
+                onPressed: busy ? null : () => onPick(ImageSource.camera),
+                icon: const Icon(Icons.photo_camera_rounded, size: 18),
+                label: const Text('Take photo'),
+              ),
+              if (custom)
+                TextButton.icon(
+                  onPressed: busy ? null : onAuto,
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                  label: const Text('Use automatic'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -14,6 +14,7 @@ class Product {
     this.badge = '',
     this.imageUrl = '',
     this.imageAsset = '',
+    this.imageData = '',
     this.segment = CustomerSegment.both,
     this.active = true,
     this.inStock = true,
@@ -29,6 +30,30 @@ class Product {
   final String badge;
   final String imageUrl;
   final String imageAsset;
+
+  /// A photo uploaded by the shop owner, stored right in the product as
+  /// base64 (JPEG or PNG, kept small). Works on the free Firebase plan, which
+  /// has no file storage. Empty means "use the automatic picture".
+  final String imageData;
+
+  bool get hasUploadedImage => imageData.isNotEmpty;
+
+  /// The bundled cylinder picture closest in size, used when no photo has
+  /// been uploaded (so a new size always shows a sensible image).
+  String get automaticImageAsset {
+    if (imageAsset.isNotEmpty) return imageAsset;
+    const known = <(double, String)>[
+      (6.0, 'assets/products/6kg.png'),
+      (10.0, 'assets/products/10kg.png'),
+      (11.8, 'assets/products/11_8kg.png'),
+      (45.4, 'assets/products/45_4kg.png'),
+    ];
+    var best = known.first;
+    for (final e in known) {
+      if ((e.$1 - sizeKg).abs() < (best.$1 - sizeKg).abs()) best = e;
+    }
+    return best.$2;
+  }
   final CustomerSegment segment;
   final bool active;
   final bool inStock;
@@ -54,6 +79,7 @@ class Product {
     badge: m['badge'] as String? ?? '',
     imageUrl: m['imageUrl'] as String? ?? '',
     imageAsset: m['imageAsset'] as String? ?? '',
+    imageData: m['imageData'] as String? ?? '',
     segment: CustomerSegment.parse(m['segment'] as String?),
     active: m['active'] as bool? ?? true,
     inStock: m['inStock'] as bool? ?? true,
@@ -69,6 +95,7 @@ class Product {
     'badge': badge,
     'imageUrl': imageUrl,
     'imageAsset': imageAsset,
+    'imageData': imageData,
     'segment': segment.name,
     'active': active,
     'inStock': inStock,

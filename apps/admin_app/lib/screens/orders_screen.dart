@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session.dart';
+import '../utils/launch.dart';
 import '../utils/order_x.dart';
 import '../widgets/common.dart';
 import 'order_detail_screen.dart';
@@ -20,6 +21,8 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   _Filter _f = _Filter.fresh;
+  String _q = '';
+  bool _searching = false;
 
   List<LpgOrder> _list(AdminSession s) => switch (_f) {
     _Filter.fresh => s.ordersIn([OrderStatus.placed]),
@@ -36,10 +39,32 @@ class _OrdersScreenState extends State<OrdersScreen> {
     _Filter.cancelled => s.ordersIn([OrderStatus.cancelled]),
   };
 
+  /// Search across customer, phone, order number, area and rider.
+  bool _matches(LpgOrder o) {
+    final q = _q.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    final hay = [
+      o.customerName,
+      o.customerPhone,
+      o.displayNumber,
+      o.businessName,
+      o.address.area,
+      o.address.line1,
+      o.riderName ?? '',
+    ].join(' ').toLowerCase();
+    return hay.contains(q);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AdminSession>();
-    final list = _list(s);
+    // While searching, look through every order, not just the chosen tab.
+    final list = _q.trim().isEmpty
+        ? _list(s)
+        : [
+            for (final o in s.orders)
+              if (_matches(o)) o,
+          ];
     final counts = {
       _Filter.fresh: s.newCount,
       _Filter.active: s.activeCount,
@@ -48,78 +73,100 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 16,
-        title: const Row(
-          children: [
-            BrandLogo(height: 30),
-            SizedBox(width: 10),
-            Text('Orders'),
-          ],
-        ),
+        title: _searching
+            ? TextField(
+                autofocus: true,
+                onChanged: (v) => setState(() => _q = v),
+                decoration: const InputDecoration(
+                  hintText: 'Name, phone, order no. or area',
+                  border: InputBorder.none,
+                  filled: false,
+                ),
+              )
+            : const Row(
+                children: [
+                  BrandLogo(height: 30),
+                  SizedBox(width: 10),
+                  Text('Orders'),
+                ],
+              ),
+        actions: [
+          IconButton(
+            tooltip: _searching ? 'Close search' : 'Search orders',
+            icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
+            onPressed: () => setState(() {
+              _searching = !_searching;
+              if (!_searching) _q = '';
+            }),
+          ),
+        ],
       ),
       body: Constrained(
         child: Column(
           children: [
-            SizedBox(
-              height: 92,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                children: [
-                  _Stat(
-                    'New orders',
-                    '${s.newCount}',
-                    Icons.notifications_active_rounded,
-                    const Color(0xFFB58900),
-                  ),
-                  _Stat(
-                    'On the road',
-                    '${s.ordersIn([OrderStatus.outForDelivery]).length}',
-                    Icons.two_wheeler,
-                    const Color(0xFF6A3FC1),
-                  ),
-                  _Stat(
-                    'Sales today',
-                    rs(s.salesToday),
-                    Icons.payments_rounded,
-                    Brand.success,
-                  ),
-                  _Stat(
-                    'Delivered today',
-                    '${s.deliveredTodayCount}',
-                    Icons.check_circle_rounded,
-                    Brand.blueDark,
-                  ),
-                ],
+            if (!_searching)
+              SizedBox(
+                height: 92,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  children: [
+                    _Stat(
+                      'New orders',
+                      '${s.newCount}',
+                      Icons.notifications_active_rounded,
+                      const Color(0xFFB58900),
+                    ),
+                    _Stat(
+                      'On the road',
+                      '${s.ordersIn([OrderStatus.outForDelivery]).length}',
+                      Icons.two_wheeler,
+                      const Color(0xFF6A3FC1),
+                    ),
+                    _Stat(
+                      'Sales today',
+                      rs(s.salesToday),
+                      Icons.payments_rounded,
+                      Brand.success,
+                    ),
+                    _Stat(
+                      'Delivered today',
+                      '${s.deliveredTodayCount}',
+                      Icons.check_circle_rounded,
+                      Brand.blueDark,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(
-              height: 46,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                children: [
-                  for (final (f, label) in const [
-                    (_Filter.fresh, 'New'),
-                    (_Filter.active, 'In progress'),
-                    (_Filter.verify, 'Verify payment'),
-                    (_Filter.done, 'Delivered'),
-                    (_Filter.cancelled, 'Cancelled'),
-                  ])
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: ChoiceChip(
-                        selected: _f == f,
-                        onSelected: (_) => setState(() => _f = f),
-                        label: Text(
-                          (counts[f] ?? 0) > 0
-                              ? '$label · ${counts[f]}'
-                              : label,
+            if (!_searching)
+              SizedBox(
+                height: 46,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  children: [
+                    for (final (f, label) in const [
+                      (_Filter.fresh, 'New'),
+                      (_Filter.active, 'In progress'),
+                      (_Filter.verify, 'Verify payment'),
+                      (_Filter.done, 'Delivered'),
+                      (_Filter.cancelled, 'Cancelled'),
+                    ])
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: ChoiceChip(
+                          selected: _f == f,
+                          onSelected: (_) => setState(() => _f = f),
+                          label: Text(
+                            (counts[f] ?? 0) > 0
+                                ? '$label · ${counts[f]}'
+                                : label,
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
             if (s.error != null)
               Padding(
                 padding: const EdgeInsets.all(12),
@@ -282,6 +329,42 @@ class OrderTile extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (o.status == OrderStatus.placed) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 42),
+                          ),
+                          onPressed: () async {
+                            final s = context.read<AdminSession>();
+                            final err = await s.confirm(o);
+                            if (context.mounted) {
+                              showMessage(
+                                context,
+                                err ?? 'Order confirmed',
+                                error: err != null,
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.check_rounded, size: 18),
+                          label: const Text('Confirm'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 42),
+                        ),
+                        onPressed: () => Launch.call(o.customerPhone),
+                        icon: const Icon(Icons.call_rounded, size: 18),
+                        label: const Text('Call'),
+                      ),
+                    ],
+                  ),
+                ],
                 if (o.riderName != null && o.status.isActive) ...[
                   const SizedBox(height: 8),
                   Row(

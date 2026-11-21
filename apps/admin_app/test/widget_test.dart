@@ -1,10 +1,16 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:alpha_core/alpha_core.dart';
 import 'package:alpha_admin/app.dart';
 import 'package:alpha_admin/services/admin_auth.dart';
 import 'package:alpha_admin/services/backend.dart';
+
 import 'dart:ui' show Size;
+import 'dart:convert';
+
+import 'package:alpha_admin/utils/photo.dart';
+import 'package:image/image.dart' as img;
 import 'package:flutter_test/flutter_test.dart';
 
 class FakeAuth extends AdminAuth {
@@ -56,14 +62,23 @@ AdminBackend _backend(MemoryStore s, {bool admin = true}) => AdminBackend(
 );
 
 void main() {
-  testWidgets('owner sees a new order, confirms it and assigns a rider', (tester) async {
+  testWidgets('owner sees a new order, confirms it and assigns a rider', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(900, 1800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final store = MemoryStore();
     final b = _backend(store);
     await tester.runAsync(() async {
-      await b.riders.saveRider(const RiderProfile(uid: 'r1', name: 'Imran', phone: '03001112222', online: true));
+      await b.riders.saveRider(
+        const RiderProfile(
+          uid: 'r1',
+          name: 'Imran',
+          phone: '03001112222',
+          online: true,
+        ),
+      );
       await b.orders.place(_order());
     });
 
@@ -82,13 +97,19 @@ void main() {
     await tester.tap(find.text('Imran'));
     await tester.pumpAndSettle();
 
-    final o = (await tester.runAsync(() => b.orders.watchRecent().first))!.single;
+    final o = (await tester.runAsync(() => b.orders.watchRecent().first))!
+        .single;
     expect(o.status, OrderStatus.assigned);
     expect(o.riderId, 'r1');
 
     await tester.tap(find.text('Mark paid'));
     await tester.pumpAndSettle();
-    expect((await tester.runAsync(() => b.orders.watchRecent().first))!.single.paymentStatus, PaymentStatus.paid);
+    expect(
+      (await tester.runAsync(() => b.orders.watchRecent().first))!
+          .single
+          .paymentStatus,
+      PaymentStatus.paid,
+    );
   });
 
   testWidgets('a non-admin account is told how to become one', (tester) async {
@@ -110,7 +131,63 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Load the default catalogue'));
     await tester.pumpAndSettle();
-    expect((await tester.runAsync(() => b.catalog.watchAllProducts().first))!.length, 4);
+    expect(
+      (await tester.runAsync(() => b.catalog.watchAllProducts().first))!.length,
+      4,
+    );
     expect(find.text('11.8kg Gas Cylinder'), findsOneWidget);
+  });
+
+  test(
+    'photos are shrunk to a small record-friendly size, transparency kept',
+    () async {
+      final big = img.Image(width: 1800, height: 1400, numChannels: 4);
+      img.fill(big, color: img.ColorRgba8(220, 40, 30, 255));
+      final data = await compressProductPhoto(img.encodePng(big));
+      final bytes = base64Decode(data);
+      expect(bytes.length, lessThan(300 * 1024));
+      final out = img.decodeImage(bytes)!;
+      expect(out.width, lessThanOrEqualTo(520));
+      expect(out.hasAlpha, isTrue);
+      await expectLater(
+        compressProductPhoto(Uint8List.fromList([1, 2, 3])),
+        throwsA(isA<String>()),
+      );
+    },
+  );
+
+  test('a new size without a photo gets the closest bundled picture', () {
+    const p = Product(id: 'x', name: '14kg', sizeKg: 14, refillPrice: 1);
+    expect(p.hasUploadedImage, isFalse);
+    expect(p.automaticImageAsset, 'assets/products/11_8kg.png');
+    expect(
+      const Product(
+        id: 'y',
+        name: '50',
+        sizeKg: 48,
+        refillPrice: 1,
+      ).automaticImageAsset,
+      'assets/products/45_4kg.png',
+    );
+  });
+
+  testWidgets('sales report totals delivered orders', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    await tester.runAsync(() async {
+      final id = await b.orders.place(_order());
+      await b.orders.updateStatus(id, OrderStatus.delivered, 'boss');
+    });
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sales & cash report'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rs 6,592'), findsWidgets);
+    expect(find.text('Orders delivered'), findsOneWidget);
   });
 }
