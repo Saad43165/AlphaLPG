@@ -1,0 +1,312 @@
+rules_version = '2';
+
+// Alpha LPG: security rules shared by the customer, rider and admin apps.
+//
+// Staff are recognised from documents, so this works on the free Firebase plan:
+//   admins/{uid}  created by hand in the console for the owner
+//   riders/{uid}  created by the owner; `active: false` blocks a rider
+// (Custom claims { admin: true } / { rider: true } also work.)
+//
+// Prices are checked HERE, against products/* and config/app, so a modified
+// app cannot change what an order costs. That means products and config/app
+// must exist before anyone can order (run `npm run seed` or use the admin app).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- Who is calling -----------------------------------------------------
+
+    function signedIn() { return request.auth != null; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+
+    function isAdmin() {
+      return signedIn() && (request.auth.token.get('admin', false) == true
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+    function isRider() {
+      return signedIn() && (request.auth.token.get('rider', false) == true
+        || (exists(/databases/$(database)/documents/riders/$(request.auth.uid))
+            && get(/databases/$(database)/documents/riders/$(request.auth.uid)).data.get('active', true) == true));
+    }
+    function riderProfile() {
+      return get(/databases/$(database)/documents/riders/$(request.auth.uid)).data;
+    }
+
+    // Phone sign-in puts the verified number in the token; data that names a
+    // phone number must match it, so nobody can order "as" another number.
+    function phoneMatchesToken(phone) {
+      return !('phone_number' in request.auth.token) || phone == request.auth.token.phone_number;
+    }
+
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function isText(v, max) { return v is string && v.size() <= max; }
+    function isNum(v) { return v is int || v is float; }
+
+    // ---- Catalogue and business settings (public read, admin write) ---------
+
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---- Customers and their saved locations --------------------------------
+
+    match /customers/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create, update: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(
+             ['name', 'phone', 'type', 'businessName', 'businessType', 'email', 'createdAt', 'updatedAt'])
+        && isText(request.resource.data.name, 79)
+        && request.resource.data.name.size() > 1
+        && request.resource.data.type in ['home', 'business']
+        && isText(request.resource.data.get('phone', ''), 20)
+        && phoneMatchesToken(request.resource.data.get('phone', ''))
+        && isText(request.resource.data.get('businessName', ''), 80)
+        && isText(request.resource.data.get('businessType', ''), 40)
+        && isText(request.resource.data.get('email', ''), 100);
+      allow delete: if isAdmin();
+
+      match /addresses/{id} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create, update: if isSelf(uid)
+          && request.resource.data.keys().hasOnly(
+               ['label', 'line1', 'area', 'landmark', 'city', 'lat', 'lng', 'createdAt'])
+          && isText(request.resource.data.label, 20)
+          && isText(request.resource.data.line1, 160)
+          && isText(request.resource.data.area, 80)
+          && isText(request.resource.data.get('landmark', ''), 160)
+          && isText(request.resource.data.get('city', 'Lahore'), 40)
+          && (request.resource.data.get('lat', null) == null
+              || (isNum(request.resource.data.lat) && request.resource.data.lat >= 31.2 && request.resource.data.lat <= 31.8))
+          && (request.resource.data.get('lng', null) == null
+              || (isNum(request.resource.data.lng) && request.resource.data.lng >= 74.05 && request.resource.data.lng <= 74.7));
+        allow delete: if isSelf(uid) || isAdmin();
+      }
+    }
+
+    // ---- Orders -------------------------------------------------------------
+
+    // One order line is valid when it names an active, in-stock product at
+    // exactly the price in the catalogue. Index i beyond the list is fine.
+    function lineValid(it) {
+      let p = get(/databases/$(database)/documents/products/$(it.productId)).data;
+      return it.quantity is int && it.quantity >= 1 && it.quantity <= 99
+        && it.unitPrice is int
+        && p.get('active', true) == true
+        && p.get('inStock', true) == true
+        && it.unitPrice == (it.type == 'newCylinder'
+             ? p.get('newCylinderPrice', null)
+             : p.get('refillPrice', null));
+    }
+    function lineOk(items, i) { return items.size() <= i || lineValid(items[i]); }
+    function lineSum(items, i) { return items.size() <= i ? 0 : items[i].unitPrice * items[i].quantity; }
+
+    function feeFor(subtotal, s) {
+      return (subtotal == 0
+              || (s.get('freeDeliveryFrom', 0) > 0 && subtotal >= s.get('freeDeliveryFrom', 0)))
+        ? 0
+        : s.get('deliveryFee', 0);
+    }
+
+    // (Size checks use .size() directly; a wrongly typed value fails the rule.)
+    function addressOk(a) {
+      return a.keys().hasOnly(['label', 'line1', 'area', 'landmark', 'city', 'lat', 'lng'])
+        && a.get('line1', '').size() <= 160
+        && a.get('area', '').size() <= 80
+        && a.get('landmark', '').size() <= 160
+        && a.get('label', '').size() <= 20;
+    }
+
+    function validNewOrder() {
+      let d = request.resource.data;
+      let s = get(/databases/$(database)/documents/config/app).data;
+      let items = d.items;
+      return d.keys().hasOnly([
+            'orderNumber', 'customerId', 'customerName', 'customerPhone', 'customerType', 'businessName',
+            'items', 'subtotal', 'deliveryFee', 'total', 'address', 'paymentMethod', 'paymentStatus',
+            'paymentReference', 'status', 'history', 'scheduledFor', 'notes', 'riderId', 'riderName',
+            'riderPhone', 'cancelReason', 'rating', 'feedback', 'cashCollected', 'emptiesCollected',
+            'cylinderCount', 'emptiesToCollect', 'createdAt', 'updatedAt'])
+        && d.customerId == request.auth.uid
+        && d.customerName.size() <= 80
+        && phoneMatchesToken(d.customerPhone)
+        && d.customerType in ['home', 'business']
+        && d.status == 'placed'
+        && d.paymentStatus == 'pending'
+        && d.paymentMethod in ['cashOnDelivery', 'jazzCash', 'easyPaisa', 'bankTransfer']
+        && d.get('paymentReference', '').size() <= 40
+        && d.get('notes', '').size() <= 500
+        && d.get('businessName', '').size() <= 80
+        // Nothing a rider or the shop fills in later can be pre-filled.
+        && d.get('riderId', null) == null && d.get('riderName', null) == null
+        && d.get('riderPhone', null) == null && d.get('rating', null) == null
+        && d.get('cashCollected', null) == null && d.get('emptiesCollected', null) == null
+        && d.get('cancelReason', '') == ''
+        && d.history.size() == 1
+        && d.createdAt == request.time && d.updatedAt == request.time
+        && addressOk(d.address)
+        // Prices and totals must match the catalogue and shop settings.
+        // At most 6 lines (a Firestore rule may run at most 1000 steps).
+        && items.size() >= 1 && items.size() <= 6
+        && lineOk(items, 0) && lineOk(items, 1) && lineOk(items, 2)
+        && lineOk(items, 3) && lineOk(items, 4) && lineOk(items, 5)
+        && d.subtotal == lineSum(items, 0) + lineSum(items, 1) + lineSum(items, 2)
+                       + lineSum(items, 3) + lineSum(items, 4) + lineSum(items, 5)
+        && d.deliveryFee == feeFor(d.subtotal, s)
+        && d.total == d.subtotal + d.deliveryFee
+        && s.get('acceptingOrders', true) == true
+        && d.subtotal >= s.get('minOrderTotal', 0);
+    }
+
+    // The history list may only grow by one entry per status change.
+    function historyGrowsByOne() {
+      return request.resource.data.history is list
+        && request.resource.data.history.size() == resource.data.history.size() + 1;
+    }
+
+    match /orders/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.customerId == request.auth.uid)
+        || (isRider() && resource.data.riderId == request.auth.uid)
+        // Riders may see jobs nobody has taken yet.
+        || (isRider() && resource.data.riderId == null
+            && resource.data.status in ['placed', 'confirmed']);
+
+      allow create: if signedIn() && validNewOrder();
+
+      allow update: if isAdmin()
+        // Customer cancels while the order is still "placed".
+        || (signedIn()
+            && resource.data.customerId == request.auth.uid
+            && resource.data.status == 'placed'
+            && request.resource.data.status == 'cancelled'
+            && isText(request.resource.data.cancelReason, 200)
+            && historyGrowsByOne()
+            && changed().hasOnly(['status', 'history', 'cancelReason', 'updatedAt']))
+        // Customer adds the transaction ID of a prepaid order.
+        || (signedIn()
+            && resource.data.customerId == request.auth.uid
+            && resource.data.paymentStatus == 'pending'
+            && resource.data.paymentMethod != 'cashOnDelivery'
+            && resource.data.status != 'cancelled'
+            && isText(request.resource.data.paymentReference, 40)
+            && changed().hasOnly(['paymentReference', 'updatedAt']))
+        // Customer rates a delivered order once.
+        || (signedIn()
+            && resource.data.customerId == request.auth.uid
+            && resource.data.status == 'delivered'
+            && resource.data.get('rating', null) == null
+            && request.resource.data.rating is int
+            && request.resource.data.rating >= 1
+            && request.resource.data.rating <= 5
+            && isText(request.resource.data.get('feedback', ''), 500)
+            && changed().hasOnly(['rating', 'feedback', 'updatedAt']))
+        // An online rider takes an untaken order (first come, first served),
+        // under their own name from their rider record.
+        || (isRider()
+            && riderProfile().get('online', false) == true
+            && resource.data.riderId == null
+            && resource.data.status in ['placed', 'confirmed']
+            && request.resource.data.riderId == request.auth.uid
+            && request.resource.data.riderName == riderProfile().name
+            && request.resource.data.riderPhone == riderProfile().get('phone', '')
+            && request.resource.data.status == 'assigned'
+            && historyGrowsByOne()
+            && changed().hasOnly(['riderId', 'riderName', 'riderPhone', 'status', 'history', 'updatedAt']))
+        // The assigned rider sets off ...
+        || (isRider()
+            && resource.data.riderId == request.auth.uid
+            && resource.data.status == 'assigned'
+            && request.resource.data.status == 'outForDelivery'
+            && historyGrowsByOne()
+            && changed().hasOnly(['status', 'history', 'updatedAt']))
+        // ... and completes it, recording cash taken and empties collected.
+        // Cash can only mark a cash-on-delivery order as paid.
+        || (isRider()
+            && resource.data.riderId == request.auth.uid
+            && resource.data.status == 'outForDelivery'
+            && request.resource.data.status == 'delivered'
+            && historyGrowsByOne()
+            && request.resource.data.cashCollected is int
+            && request.resource.data.cashCollected >= 0
+            && request.resource.data.cashCollected <= 2000000
+            && request.resource.data.emptiesCollected is int
+            && request.resource.data.emptiesCollected >= 0
+            && request.resource.data.emptiesCollected <= 99
+            && changed().hasOnly(['status', 'history', 'paymentStatus', 'cashCollected', 'emptiesCollected', 'updatedAt'])
+            && (!changed().hasAny(['paymentStatus'])
+                || (resource.data.paymentMethod == 'cashOnDelivery'
+                    && request.resource.data.paymentStatus == 'paid')));
+
+      allow delete: if false;
+
+      // The rider's live position while delivering.
+      match /live/{doc} {
+        function orderDoc() {
+          return get(/databases/$(database)/documents/orders/$(id)).data;
+        }
+        allow create, update: if isRider()
+          && orderDoc().riderId == request.auth.uid
+          && orderDoc().status == 'outForDelivery'
+          && request.resource.data.keys().hasOnly(['lat', 'lng', 'heading', 'speedKmh', 'accuracy', 'updatedAt'])
+          && isNum(request.resource.data.lat) && request.resource.data.lat >= -90 && request.resource.data.lat <= 90
+          && isNum(request.resource.data.lng) && request.resource.data.lng >= -180 && request.resource.data.lng <= 180
+          && request.resource.data.updatedAt == request.time;
+        allow read: if isAdmin()
+          || (signedIn() && orderDoc().customerId == request.auth.uid)
+          || (isRider() && orderDoc().riderId == request.auth.uid);
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ---- Bulk / commercial quote requests (guests may submit too) -----------
+
+    match /quoteRequests/{id} {
+      allow create: if request.resource.data.keys().hasOnly(
+            ['customerId', 'businessName', 'contactName', 'phone', 'businessType', 'monthlyKg',
+             'preferredSize', 'area', 'notes', 'status', 'createdAt'])
+        && request.resource.data.status == 'new'
+        && request.resource.data.createdAt == request.time
+        && isText(request.resource.data.phone, 20)
+        && isText(request.resource.data.businessName, 100)
+        && isText(request.resource.data.contactName, 80)
+        && isText(request.resource.data.get('businessType', ''), 60)
+        && isText(request.resource.data.get('preferredSize', ''), 30)
+        && isText(request.resource.data.get('area', ''), 80)
+        && isText(request.resource.data.get('notes', ''), 1000)
+        && request.resource.data.get('monthlyKg', 0) is int
+        && (request.resource.data.customerId == ''
+            || (signedIn() && request.resource.data.customerId == request.auth.uid));
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.customerId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // ---- Riders --------------------------------------------------------------
+
+    // Admin managed. A rider reads their own record and may only flip their
+    // on-shift switch.
+    match /riders/{uid} {
+      allow read: if isAdmin() || isSelf(uid);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isSelf(uid)
+            && changed().hasOnly(['online', 'lastSeen'])
+            && request.resource.data.online is bool);
+    }
+
+    // Owners: listed by hand in the console. Nobody can write from the apps.
+    match /admins/{uid} {
+      allow read: if isSelf(uid);
+      allow write: if false;
+    }
+
+    // Server-only counters (order numbers).
+    match /counters/{doc} {
+      allow read, write: if false;
+    }
+  }
+}
