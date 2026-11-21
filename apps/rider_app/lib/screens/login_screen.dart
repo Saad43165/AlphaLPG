@@ -2,6 +2,7 @@ import 'package:alpha_ui/alpha_ui.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../services/demo.dart';
 import '../services/rider_auth.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
@@ -15,8 +16,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _form = GlobalKey<FormState>();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  final _email = TextEditingController(text: kDemo ? demoEmail : '');
+  final _password = TextEditingController(text: kDemo ? 'demo1234' : '');
   bool _hide = true;
   bool _busy = false;
   String? _error;
