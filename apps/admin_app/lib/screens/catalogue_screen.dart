@@ -766,6 +766,7 @@ class _SettingsEditorState extends State<SettingsEditor> {
             ),
             const Heading('How customers sign in'),
             SegmentedButton<String>(
+              showSelectedIcon: false,
               segments: const [
                 ButtonSegment(
                   value: 'quick',

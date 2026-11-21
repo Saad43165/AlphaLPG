@@ -125,11 +125,36 @@ class _ReportsScreenState extends State<ReportsScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             SegmentedButton<_Period>(
+              // No tick on the chosen one: it squeezed "Today" onto two lines.
+              showSelectedIcon: false,
+              style: const ButtonStyle(
+                padding: WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 4),
+                ),
+              ),
               segments: const [
-                ButtonSegment(value: _Period.today, label: Text('Today')),
-                ButtonSegment(value: _Period.week, label: Text('7 days')),
-                ButtonSegment(value: _Period.month, label: Text('30 days')),
-                ButtonSegment(value: _Period.all, label: Text('All')),
+                ButtonSegment(
+                  value: _Period.today,
+                  label: FittedBox(fit: BoxFit.scaleDown, child: Text('Today')),
+                ),
+                ButtonSegment(
+                  value: _Period.week,
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('7 days'),
+                  ),
+                ),
+                ButtonSegment(
+                  value: _Period.month,
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('30 days'),
+                  ),
+                ),
+                ButtonSegment(
+                  value: _Period.all,
+                  label: FittedBox(fit: BoxFit.scaleDown, child: Text('All')),
+                ),
               ],
               selected: {_p},
               onSelectionChanged: (v) => setState(() => _p = v.first),

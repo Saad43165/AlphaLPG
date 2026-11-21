@@ -86,6 +86,7 @@ class _ProductSheetState extends State<_ProductSheet> {
             const SizedBox(height: 16),
             if (p.sellsNewCylinder)
               SegmentedButton<PurchaseType>(
+                showSelectedIcon: false,
                 segments: [
                   for (final t in PurchaseType.values)
                     ButtonSegment(value: t, label: Text(t.label)),

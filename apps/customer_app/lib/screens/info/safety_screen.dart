@@ -158,6 +158,7 @@ class _SafetyScreenState extends State<SafetyScreen> {
             ),
             const _Kicker('SAFE HABITS', "Do's and don'ts"),
             SegmentedButton<bool>(
+              showSelectedIcon: false,
               segments: const [
                 ButtonSegment(
                   value: true,

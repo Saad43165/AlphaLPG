@@ -82,6 +82,7 @@ class MoreScreen extends StatelessWidget {
             ValueListenableBuilder<ThemeMode>(
               valueListenable: s.themeMode,
               builder: (_, mode, _) => SegmentedButton<ThemeMode>(
+                showSelectedIcon: false,
                 segments: const [
                   ButtonSegment(
                     value: ThemeMode.system,
