@@ -85,6 +85,11 @@ class AdminSession extends ChangeNotifier {
             o.status == OrderStatus.outForDelivery,
       )
       .length;
+
+  /// Online orders where the customer has sent a receipt to check.
+  int get receiptsToCheckCount =>
+      orders.where((o) => o.awaitingPaymentCheck && o.receiptAt != null).length;
+
   int get toVerifyCount => orders.where((o) => o.awaitingPaymentCheck).length;
 
   Iterable<LpgOrder> get _deliveredToday => orders.where(
@@ -311,9 +316,15 @@ class AdminSession extends ChangeNotifier {
   final _chatSeen = <String, int>{};
 
   void _watchChats(List<LpgOrder> list) {
+    // Orders in progress, plus ones delivered in the last 2 days (a customer
+    // may still report a problem or send a receipt).
+    final recent = DateTime.now().subtract(const Duration(days: 2));
     final active = [
       for (final o in list)
-        if (o.status.isActive) o,
+        if (o.status.isActive ||
+            (o.status == OrderStatus.delivered &&
+                (o.updatedAt ?? DateTime(0)).isAfter(recent)))
+          o,
     ];
     for (final o in active) {
       _chatSubs.putIfAbsent(

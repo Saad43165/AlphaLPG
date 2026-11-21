@@ -33,7 +33,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     ]),
     _Filter.verify => [
       for (final o in s.orders)
-        if (o.awaitingPaymentCheck) o,
+        if (o.awaitingPaymentCheck && o.receiptAt != null) o,
+      for (final o in s.orders)
+        if (o.awaitingPaymentCheck && o.receiptAt == null) o,
     ],
     _Filter.done => s.ordersIn([OrderStatus.delivered]),
     _Filter.cancelled => s.ordersIn([OrderStatus.cancelled]),
@@ -105,6 +107,38 @@ class _OrdersScreenState extends State<OrdersScreen> {
         child: Column(
           children: [
             if (!_searching) const _ShopBar(),
+            if (!_searching && s.receiptsToCheckCount > 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: Material(
+                  color: Brand.flame.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => setState(() => _f = _Filter.verify),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.receipt_long_rounded),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              s.receiptsToCheckCount == 1
+                                  ? '1 payment receipt to check'
+                                  : '${s.receiptsToCheckCount} payment receipts to check',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (!_searching)
               SizedBox(
                 height: 92,

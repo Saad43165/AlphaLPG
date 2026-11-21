@@ -137,7 +137,6 @@ class _TrackingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<AppState>().settings;
     final riderVisible = o.riderName != null && o.status.isActive;
     final payFirst =
         o.paymentMethod.isPrepaid &&
@@ -260,15 +259,10 @@ class _TrackingView extends StatelessWidget {
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () => Launch.whatsapp(
-                                  settings.whatsapp,
-                                  'Hi Alpha LPG, I have a question about order ${o.displayNumber}.',
-                                ),
-                                icon: const Icon(
-                                  Icons.chat_rounded,
-                                  color: Brand.whatsapp,
-                                ),
-                                label: const Text('Get help'),
+                                onPressed: () =>
+                                    context.push('/orders/${o.id}/chat'),
+                                icon: const Icon(Icons.forum_rounded),
+                                label: const Text('Message Alpha LPG'),
                               ),
                             ),
                             if (!o.status.isActive) ...[
@@ -1320,7 +1314,6 @@ class _DeliveredActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<AppState>().settings;
     Widget small(
       IconData icon,
       String label,
@@ -1366,11 +1359,7 @@ class _DeliveredActions extends StatelessWidget {
             small(
               Icons.chat_rounded,
               'Get help',
-              () => Launch.whatsapp(
-                settings.whatsapp,
-                'Hi Alpha LPG, I have a question about order ${o.displayNumber}.',
-              ),
-              color: Brand.whatsapp,
+              () => context.push('/orders/${o.id}/chat'),
             ),
             const SizedBox(width: 10),
             small(Icons.copy_rounded, 'Copy no.', () {
@@ -1514,7 +1503,6 @@ class _ProblemButton extends StatelessWidget {
       context: context,
       showDragHandle: true,
       builder: (sheet) {
-        final whatsapp = context.read<AppState>().settings.whatsapp;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -1528,7 +1516,7 @@ class _ProblemButton extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'We will message you on WhatsApp about order ${o.displayNumber}.',
+                  'This goes straight to Alpha LPG for order ${o.displayNumber}. You can follow up in the chat.',
                   style: TextStyle(color: context.pal.muted),
                 ),
                 const SizedBox(height: 8),
@@ -1540,11 +1528,7 @@ class _ProblemButton extends StatelessWidget {
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () {
                       Navigator.pop(sheet);
-                      Launch.whatsapp(
-                        whatsapp,
-                        'Hi Alpha LPG, there is a problem with order '
-                        '${o.displayNumber}: $label.',
-                      );
+                      reportProblem(context, o, label);
                     },
                   ),
               ],
@@ -1711,5 +1695,38 @@ class _ChatCard extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// Sends the problem to Alpha LPG inside the app (the order chat), where the
+/// shop is alerted, then opens the chat so the customer can add details.
+Future<void> reportProblem(
+  BuildContext context,
+  LpgOrder o,
+  String label,
+) async {
+  final backend = context.read<Backend>();
+  final state = context.read<AppState>();
+  final router = GoRouter.of(context);
+  try {
+    await backend.orders.sendMessage(
+      o.id,
+      uid: o.customerId,
+      role: MessageRole.customer,
+      name: state.profile?.name ?? 'Customer',
+      text: '⚠ Problem with this order: $label.',
+    );
+    if (context.mounted) {
+      showMessage(context, 'Sent to Alpha LPG. They will reply in the chat.');
+    }
+    router.push('/orders/${o.id}/chat');
+  } catch (_) {
+    if (context.mounted) {
+      showMessage(
+        context,
+        'Could not send. Check your internet and try again.',
+        error: true,
+      );
+    }
   }
 }

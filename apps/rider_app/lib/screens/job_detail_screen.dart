@@ -120,7 +120,9 @@ class JobDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (o.address.hasLocation) ...[
+                  if (o.status == OrderStatus.assigned ||
+                      o.status == OrderStatus.outForDelivery ||
+                      o.address.hasLocation) ...[
                     JobMap(address: o.address),
                     const SizedBox(height: 12),
                   ],

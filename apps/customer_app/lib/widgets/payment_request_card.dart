@@ -138,6 +138,17 @@ class _ReceiptSectionState extends State<ReceiptSection> {
         uid: widget.order.customerId,
         data: data,
       );
+      // A chat line too, so the shop is alerted and sees it in the thread.
+      try {
+        await backend.orders.sendMessage(
+          widget.order.id,
+          uid: widget.order.customerId,
+          role: MessageRole.customer,
+          name: 'Customer',
+          text:
+              '📎 I sent my payment receipt (${widget.order.paymentMethod.label}).',
+        );
+      } catch (_) {}
       if (messenger.mounted) {
         showMessage(messenger, 'Receipt sent. We will confirm your payment.');
       }
