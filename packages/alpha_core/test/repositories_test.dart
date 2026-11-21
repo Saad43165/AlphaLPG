@@ -23,11 +23,12 @@ LpgOrder sampleOrder(String uid) => LpgOrder(
 );
 
 class Repos {
-  Repos(this.catalog, this.orders, this.profiles, this.quotes);
+  Repos(this.catalog, this.orders, this.profiles, this.quotes, this.riders);
   final CatalogRepository catalog;
   final OrderRepository orders;
   final ProfileRepository profiles;
   final QuoteRepository quotes;
+  final RiderRepository riders;
 }
 
 void main() {
@@ -39,6 +40,7 @@ void main() {
         OrderRepository.firestore(db),
         ProfileRepository.firestore(db),
         QuoteRepository.firestore(db),
+        RiderRepository.firestore(db),
       );
     },
     'memory': () {
@@ -48,6 +50,7 @@ void main() {
         OrderRepository.memory(s),
         ProfileRepository.memory(s),
         QuoteRepository.memory(s),
+        RiderRepository.memory(s),
       );
     },
   };
@@ -188,6 +191,117 @@ void _suite(Repos Function() make) {
     final q = await repo.watchForCustomer('u1').first;
     expect(q.single.status, 'new');
     expect(q.single.monthlyKg, 900);
+  });
+
+  test(
+    'riders: available list, first-come accept, start, complete with cash',
+    () async {
+      final orders = r.orders;
+      final id = await orders.place(sampleOrder('u1'));
+      final other = await orders.place(sampleOrder('u2'));
+
+      var open = await orders.watchAvailable().first;
+      expect(open.map((o) => o.id), containsAll([id, other]));
+
+      expect(
+        await orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran',
+          phone: '0300',
+        ),
+        isTrue,
+      );
+      // A second rider is too late.
+      expect(
+        await orders.acceptOrder(
+          id,
+          riderId: 'r2',
+          name: 'Bilal',
+          phone: '0301',
+        ),
+        isFalse,
+      );
+
+      open = await orders.watchAvailable().first;
+      expect(open.map((o) => o.id), [
+        other,
+      ], reason: 'taken order is no longer available');
+
+      var o = (await orders.watchOrder(id).first)!;
+      expect(o.status, OrderStatus.assigned);
+      expect(o.riderId, 'r1');
+      expect((await orders.watchRiderOrders('r1').first).single.id, id);
+
+      await orders.startDelivery(id, 'r1');
+      expect(
+        (await orders.watchOrder(id).first)!.status,
+        OrderStatus.outForDelivery,
+      );
+
+      await orders.completeDelivery(
+        id,
+        'r1',
+        cashCollected: 6592,
+        emptiesCollected: 2,
+      );
+      o = (await orders.watchOrder(id).first)!;
+      expect(o.status, OrderStatus.delivered);
+      expect(o.cashCollected, 6592);
+      expect(o.emptiesCollected, 2);
+      expect(o.paymentStatus, PaymentStatus.paid);
+      expect(o.history.map((e) => e.status), [
+        OrderStatus.placed,
+        OrderStatus.assigned,
+        OrderStatus.outForDelivery,
+        OrderStatus.delivered,
+      ]);
+
+      final history = await orders.watchRiderHistory('r1').first;
+      expect(history.single.id, id);
+      expect(await orders.watchRiderOrders('r1').first, isEmpty);
+    },
+  );
+
+  test('riders: a cancelled order cannot be accepted', () async {
+    final id = await r.orders.place(sampleOrder('u1'));
+    await r.orders.updateStatus(id, OrderStatus.cancelled, 'u1');
+    expect(
+      await r.orders.acceptOrder(id, riderId: 'r1', name: 'I', phone: '0'),
+      isFalse,
+    );
+  });
+
+  test('live tracking: rider position reaches the customer', () async {
+    final id = await r.orders.place(sampleOrder('u1'));
+    expect(await r.orders.watchRiderLocation(id).first, isNull);
+    await r.orders.publishRiderLocation(
+      id,
+      const RiderLocation(
+        lat: 31.5107,
+        lng: 74.3445,
+        heading: 90,
+        speedKmh: 24,
+        accuracy: 8,
+      ),
+    );
+    final l = (await r.orders.watchRiderLocation(id).first)!;
+    expect(l.lat, closeTo(31.5107, 1e-6));
+    expect(l.speedKmh, 24);
+    expect(l.isFresh(), isTrue);
+    expect(l.isFresh(DateTime.now().add(const Duration(minutes: 5))), isFalse);
+  });
+
+  test('rider profile and shift switch', () async {
+    await r.riders.saveRider(
+      const RiderProfile(uid: 'r1', name: 'Imran', phone: '0300'),
+    );
+    var p = (await r.riders.watchRider('r1').first)!;
+    expect(p.online, isFalse);
+    await r.riders.setOnline('r1', true);
+    p = (await r.riders.watchRider('r1').first)!;
+    expect(p.online, isTrue);
+    expect(await r.riders.watchRider('nobody').first, isNull);
   });
 }
 

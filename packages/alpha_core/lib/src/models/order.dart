@@ -97,6 +97,8 @@ class LpgOrder {
     this.cancelReason = '',
     this.rating,
     this.feedback = '',
+    this.cashCollected,
+    this.emptiesCollected,
     this.createdAt,
     this.updatedAt,
   });
@@ -132,6 +134,12 @@ class LpgOrder {
   /// 1–5 stars left by the customer after delivery.
   final int? rating;
   final String feedback;
+
+  /// Cash the rider took at the door (set when delivered).
+  final int? cashCollected;
+
+  /// Empty cylinders the rider took back.
+  final int? emptiesCollected;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -190,6 +198,8 @@ class LpgOrder {
     cancelReason: m['cancelReason'] as String? ?? '',
     rating: (m['rating'] as num?)?.toInt(),
     feedback: m['feedback'] as String? ?? '',
+    cashCollected: (m['cashCollected'] as num?)?.round(),
+    emptiesCollected: (m['emptiesCollected'] as num?)?.toInt(),
     createdAt: readDate(m['createdAt']),
     updatedAt: readDate(m['updatedAt']),
   );
@@ -219,6 +229,8 @@ class LpgOrder {
     'cancelReason': cancelReason,
     'rating': rating,
     'feedback': feedback,
+    'cashCollected': cashCollected,
+    'emptiesCollected': emptiesCollected,
     'cylinderCount': cylinderCount,
     'emptiesToCollect': emptiesToCollect,
   };

@@ -7,8 +7,19 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
-    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
-    function isRider() { return signedIn() && request.auth.token.rider == true; }
+    // Staff are listed in the database (no server code or paid plan needed):
+    //   admins/{uid}   - created by hand in the console for the owner
+    //   riders/{uid}   - created by the owner; `active: false` blocks a rider
+    // Custom claims { admin: true } / { rider: true } still work too.
+    function isAdmin() {
+      return signedIn() && (request.auth.token.admin == true
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+    function isRider() {
+      return signedIn() && (request.auth.token.rider == true
+        || (exists(/databases/$(database)/documents/riders/$(request.auth.uid))
+            && get(/databases/$(database)/documents/riders/$(request.auth.uid)).data.get('active', true) == true));
+    }
     function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
@@ -41,7 +52,10 @@ service cloud.firestore {
     match /orders/{id} {
       allow read: if isAdmin()
         || (signedIn() && resource.data.customerId == request.auth.uid)
-        || (isRider() && resource.data.riderId == request.auth.uid);
+        || (isRider() && resource.data.riderId == request.auth.uid)
+        // Riders may see jobs nobody has taken yet.
+        || (isRider() && resource.data.riderId == null
+            && resource.data.status in ['placed', 'confirmed']);
 
       // Customers create their own orders, always as "placed". Totals are
       // re-calculated server-side by the onOrderCreated function.
@@ -80,13 +94,32 @@ service cloud.firestore {
             && request.resource.data.rating >= 1
             && request.resource.data.rating <= 5
             && changed().hasOnly(['rating', 'feedback', 'updatedAt']))
-        // Assigned rider moves the order along and records cash collected.
+        // A rider takes an untaken order (first come, first served).
+        || (isRider()
+            && resource.data.riderId == null
+            && resource.data.status in ['placed', 'confirmed']
+            && request.resource.data.riderId == request.auth.uid
+            && request.resource.data.status == 'assigned'
+            && changed().hasOnly(['riderId', 'riderName', 'riderPhone', 'status', 'history', 'updatedAt']))
+        // The assigned rider starts the delivery and completes it, recording
+        // cash taken and empties collected. Cash can only mark it paid.
         || (isRider()
             && resource.data.riderId == request.auth.uid
             && request.resource.data.status in ['outForDelivery', 'delivered']
-            && changed().hasOnly(['status', 'history', 'paymentStatus', 'updatedAt']));
+            && changed().hasOnly(['status', 'history', 'paymentStatus', 'cashCollected', 'emptiesCollected', 'updatedAt'])
+            && (!changed().hasAny(['paymentStatus']) || request.resource.data.paymentStatus == 'paid'));
 
       allow delete: if false;
+
+      // The rider's live position while delivering.
+      match /live/{doc} {
+        allow write: if isRider()
+          && get(/databases/$(database)/documents/orders/$(id)).data.riderId == request.auth.uid
+          && get(/databases/$(database)/documents/orders/$(id)).data.status == 'outForDelivery';
+        allow read: if isAdmin()
+          || (signedIn() && get(/databases/$(database)/documents/orders/$(id)).data.customerId == request.auth.uid)
+          || (isRider() && get(/databases/$(database)/documents/orders/$(id)).data.riderId == request.auth.uid);
+      }
     }
 
     // Bulk / commercial quote requests (guests may submit too).
@@ -101,10 +134,19 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // Riders directory (admin managed, riders can read their own).
+    // Riders directory: admin managed. A rider reads their own record and
+    // may only flip their on-shift switch.
     match /riders/{uid} {
       allow read: if isAdmin() || isSelf(uid);
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isSelf(uid) && changed().hasOnly(['online', 'lastSeen']));
+    }
+
+    // Owners: listed by hand in the console. Nobody can write from the apps.
+    match /admins/{uid} {
+      allow read: if isSelf(uid);
+      allow write: if false;
     }
 
     // Server-only counters (order numbers).

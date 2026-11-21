@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../firestore_paths.dart';
 import '../models/order.dart';
 import '../models/order_status.dart';
+import '../models/rider.dart';
 import 'memory_store.dart';
 
 abstract interface class OrderRepository {
@@ -41,6 +42,42 @@ abstract interface class OrderRepository {
     String by, {
     String note = '',
   });
+
+  // ---- Rider workflow ----------------------------------------------------
+
+  /// New orders nobody has taken yet (placed or confirmed, no rider).
+  Stream<List<LpgOrder>> watchAvailable();
+
+  /// A rider takes an order. Returns false if someone else got it first.
+  Future<bool> acceptOrder(
+    String orderId, {
+    required String riderId,
+    required String name,
+    required String phone,
+  });
+
+  /// The rider has picked up the cylinders and is on the way.
+  Future<void> startDelivery(String orderId, String riderId);
+
+  /// Delivered: records the cash taken at the door and empties collected.
+  /// Cash marks a cash-on-delivery order as paid.
+  Future<void> completeDelivery(
+    String orderId,
+    String riderId, {
+    required int cashCollected,
+    required int emptiesCollected,
+  });
+
+  /// A rider's finished and cancelled orders, newest first.
+  Stream<List<LpgOrder>> watchRiderHistory(String riderId, {int limit = 100});
+
+  // ---- Live tracking -----------------------------------------------------
+
+  /// The assigned rider shares their position for this order.
+  Future<void> publishRiderLocation(String orderId, RiderLocation location);
+
+  /// The customer (or admin) watches the rider.
+  Stream<RiderLocation?> watchRiderLocation(String orderId);
 }
 
 /// "AL-261120-K3F9" — replaced by a sequential number server-side.
@@ -162,6 +199,105 @@ class _FirestoreOrders implements OrderRepository {
     String by, {
     String note = '',
   }) => _setStatus(orderId, status, by, note: note);
+
+  @override
+  Stream<List<LpgOrder>> watchAvailable() => _orders
+      .where('riderId', isNull: true)
+      .where(
+        'status',
+        whereIn: [OrderStatus.placed.name, OrderStatus.confirmed.name],
+      )
+      .snapshots()
+      .map(
+        (s) => _list(s)
+          ..sort(
+            (a, b) => a.createdAt?.compareTo(b.createdAt ?? DateTime(0)) ?? 0,
+          ),
+      );
+
+  @override
+  Future<bool> acceptOrder(
+    String orderId, {
+    required String riderId,
+    required String name,
+    required String phone,
+  }) => _db.runTransaction((tx) async {
+    final ref = _orders.doc(orderId);
+    final snap = await tx.get(ref);
+    final d = snap.data();
+    final status = OrderStatus.parse(d?['status'] as String?);
+    if (d == null ||
+        d['riderId'] != null ||
+        (status != OrderStatus.placed && status != OrderStatus.confirmed)) {
+      return false;
+    }
+    tx.update(ref, {
+      'riderId': riderId,
+      'riderName': name,
+      'riderPhone': phone,
+      'status': OrderStatus.assigned.name,
+      'history': FieldValue.arrayUnion([
+        StatusEvent(
+          status: OrderStatus.assigned,
+          at: DateTime.now(),
+          by: riderId,
+        ).toMap(),
+      ]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return true;
+  });
+
+  @override
+  Future<void> startDelivery(String orderId, String riderId) =>
+      _setStatus(orderId, OrderStatus.outForDelivery, riderId);
+
+  @override
+  Future<void> completeDelivery(
+    String orderId,
+    String riderId, {
+    required int cashCollected,
+    required int emptiesCollected,
+  }) => _setStatus(
+    orderId,
+    OrderStatus.delivered,
+    riderId,
+    extra: {
+      'cashCollected': cashCollected,
+      'emptiesCollected': emptiesCollected,
+      if (cashCollected > 0) 'paymentStatus': PaymentStatus.paid.name,
+    },
+  );
+
+  @override
+  Stream<List<LpgOrder>> watchRiderHistory(String riderId, {int limit = 100}) =>
+      _orders.where('riderId', isEqualTo: riderId).snapshots().map((s) {
+        final all =
+            _list(s)
+                .where(
+                  (o) =>
+                      o.status == OrderStatus.delivered ||
+                      o.status == OrderStatus.cancelled,
+                )
+                .toList()
+              ..sort(
+                (a, b) => (b.updatedAt ?? DateTime(0)).compareTo(
+                  a.updatedAt ?? DateTime(0),
+                ),
+              );
+        return all.take(limit).toList();
+      });
+
+  @override
+  Future<void> publishRiderLocation(String orderId, RiderLocation l) => _db
+      .doc('${FirestorePaths.live(orderId)}/${FirestorePaths.liveDoc}')
+      .set({...l.toMap(), 'updatedAt': FieldValue.serverTimestamp()});
+
+  @override
+  Stream<RiderLocation?> watchRiderLocation(String orderId) => _db
+      .doc('${FirestorePaths.live(orderId)}/${FirestorePaths.liveDoc}')
+      .snapshots()
+      .map((d) => d.exists ? RiderLocation.fromMap(d.data()!) : null);
 
   Future<void> _setStatus(
     String id,
@@ -299,6 +435,91 @@ class _MemoryOrders implements OrderRepository {
     String by, {
     String note = '',
   }) async => _setStatus(orderId, status, by, note: note);
+
+  @override
+  Stream<List<LpgOrder>> watchAvailable() => _s.watch(
+    _path,
+    (docs) => _sorted(
+      docs.entries.where(
+        (e) =>
+            e.value['riderId'] == null &&
+            (e.value['status'] == OrderStatus.placed.name ||
+                e.value['status'] == OrderStatus.confirmed.name),
+      ),
+    ).reversed.toList(),
+  );
+
+  @override
+  Future<bool> acceptOrder(
+    String orderId, {
+    required String riderId,
+    required String name,
+    required String phone,
+  }) async {
+    final d = _s.get(_path, orderId);
+    final status = OrderStatus.parse(d?['status'] as String?);
+    if (d == null ||
+        d['riderId'] != null ||
+        (status != OrderStatus.placed && status != OrderStatus.confirmed)) {
+      return false;
+    }
+    _setStatus(
+      orderId,
+      OrderStatus.assigned,
+      riderId,
+      extra: {'riderId': riderId, 'riderName': name, 'riderPhone': phone},
+    );
+    return true;
+  }
+
+  @override
+  Future<void> startDelivery(String orderId, String riderId) async =>
+      _setStatus(orderId, OrderStatus.outForDelivery, riderId);
+
+  @override
+  Future<void> completeDelivery(
+    String orderId,
+    String riderId, {
+    required int cashCollected,
+    required int emptiesCollected,
+  }) async => _setStatus(
+    orderId,
+    OrderStatus.delivered,
+    riderId,
+    extra: {
+      'cashCollected': cashCollected,
+      'emptiesCollected': emptiesCollected,
+      if (cashCollected > 0) 'paymentStatus': PaymentStatus.paid.name,
+    },
+  );
+
+  @override
+  Stream<List<LpgOrder>> watchRiderHistory(String riderId, {int limit = 100}) =>
+      _s.watch(
+        _path,
+        (docs) => _sorted(
+          docs.entries.where(
+            (e) =>
+                e.value['riderId'] == riderId &&
+                (e.value['status'] == OrderStatus.delivered.name ||
+                    e.value['status'] == OrderStatus.cancelled.name),
+          ),
+        ).take(limit).toList(),
+      );
+
+  @override
+  Future<void> publishRiderLocation(String orderId, RiderLocation l) async =>
+      _s.set(FirestorePaths.live(orderId), FirestorePaths.liveDoc, {
+        ...l.toMap(),
+        'updatedAt': DateTime.now(),
+      });
+
+  @override
+  Stream<RiderLocation?> watchRiderLocation(String orderId) =>
+      _s.watch(FirestorePaths.live(orderId), (docs) {
+        final d = docs[FirestorePaths.liveDoc];
+        return d == null ? null : RiderLocation.fromMap(d);
+      });
 
   void _setStatus(
     String id,
