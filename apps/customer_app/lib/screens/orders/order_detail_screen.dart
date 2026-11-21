@@ -136,6 +136,8 @@ class _TrackingView extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = context.watch<AppState>().settings;
     final riderVisible = o.riderName != null && o.status.isActive;
+    final expanded =
+        320 + (MediaQuery.textScalerOf(context).scale(15) - 15) * 8;
     return AnnotatedRegion(
       value: Brand.lightStatusBar,
       child: Scaffold(
@@ -144,8 +146,7 @@ class _TrackingView extends StatelessWidget {
             SliverAppBar(
               leading: const ScreenBack(),
               pinned: true,
-              expandedHeight:
-                  320 + (MediaQuery.textScalerOf(context).scale(15) - 15) * 8,
+              expandedHeight: expanded,
               backgroundColor: o.heroGradient.colors.last,
               foregroundColor: Colors.white,
               systemOverlayStyle: Brand.lightStatusBar,
@@ -173,9 +174,20 @@ class _TrackingView extends StatelessWidget {
                   icon: const Icon(Icons.copy_rounded),
                 ),
               ],
-              flexibleSpace: FlexibleSpaceBar(
-                collapseMode: CollapseMode.pin,
-                background: _Hero(o),
+              // While the bar collapses the hero is cut off at the toolbar, so
+              // its text can never slide over the back arrow and order number.
+              flexibleSpace: LayoutBuilder(
+                builder: (context, box) {
+                  final top = MediaQuery.paddingOf(context).top;
+                  final cut = (expanded - box.maxHeight) + kToolbarHeight + top;
+                  return FlexibleSpaceBar(
+                    collapseMode: CollapseMode.pin,
+                    background: ClipRect(
+                      clipper: _CutTop(cut < 0 ? 0 : cut),
+                      child: _Hero(o),
+                    ),
+                  );
+                },
               ),
             ),
             SliverToBoxAdapter(
@@ -313,85 +325,94 @@ class _Hero extends StatelessWidget {
       decoration: BoxDecoration(gradient: o.heroGradient),
       child: SafeArea(
         bottom: false,
-        child: Constrained(
-          // Anchored to the bottom; clips instead of overflowing with very
-          // large text sizes.
-          child: SingleChildScrollView(
-            reverse: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 64, 20, 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  layoutBuilder: (current, _) => current ?? const SizedBox(),
-                  child: Column(
-                    key: ValueKey(o.status),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        o.headline,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.8,
-                        ),
+        child: Padding(
+          // Content is clipped below the pinned toolbar, so it can never
+          // slide over the back arrow and order number while collapsing.
+          padding: const EdgeInsets.only(top: kToolbarHeight),
+          child: Opacity(
+            opacity: 1,
+            child: Constrained(
+              // Anchored to the bottom; clips instead of overflowing with very
+              // large text sizes.
+              child: SingleChildScrollView(
+                reverse: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      layoutBuilder: (current, _) =>
+                          current ?? const SizedBox(),
+                      child: Column(
+                        key: ValueKey(o.status),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            o.headline,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            o.status == OrderStatus.cancelled &&
+                                    o.cancelReason.isNotEmpty
+                                ? 'Reason: ${o.cancelReason}'
+                                : o.status.description,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        o.status == OrderStatus.cancelled &&
-                                o.cancelReason.isNotEmpty
-                            ? 'Reason: ${o.cancelReason}'
-                            : o.status.description,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 15,
+                    ),
+                    if (eta != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              o.status == OrderStatus.delivered
+                                  ? Icons.check_circle_rounded
+                                  : Icons.schedule_rounded,
+                              color: Brand.flame,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                eta,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
+                    const SizedBox(height: 22),
+                    if (o.status != OrderStatus.cancelled) _Route(o),
+                  ],
                 ),
-                if (eta != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          o.status == OrderStatus.delivered
-                              ? Icons.check_circle_rounded
-                              : Icons.schedule_rounded,
-                          color: Brand.flame,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            eta,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 22),
-                if (o.status != OrderStatus.cancelled) _Route(o),
-              ],
+              ),
             ),
           ),
         ),
@@ -573,7 +594,7 @@ class _StepTracker extends StatelessWidget {
   static const _short = {
     OrderStatus.placed: 'Placed',
     OrderStatus.confirmed: 'Confirmed',
-    OrderStatus.assigned: 'Rider ready',
+    OrderStatus.assigned: 'Assigned',
     OrderStatus.outForDelivery: 'On the way',
     OrderStatus.delivered: 'Delivered',
   };
@@ -656,17 +677,24 @@ class _StepTracker extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    _short[steps[i]]!,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    softWrap: true,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: i == current
-                          ? FontWeight.w800
-                          : FontWeight.w500,
-                      color: i <= current ? context.pal.ink : context.pal.muted,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _short[steps[i]]!,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: i == current
+                              ? FontWeight.w800
+                              : FontWeight.w500,
+                          color: i <= current
+                              ? context.pal.ink
+                              : context.pal.muted,
+                        ),
+                      ),
                     ),
                   ),
                   if (o.timeOf(steps[i]) case final at?)
@@ -1121,6 +1149,7 @@ class _RateCardState extends State<_RateCard> {
         ),
         const SizedBox(height: 8),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             for (var i = 1; i <= 5; i++)
               IconButton(
@@ -1133,17 +1162,19 @@ class _RateCardState extends State<_RateCard> {
                 icon: Icon(
                   i <= _stars ? Icons.star_rounded : Icons.star_outline_rounded,
                   color: i <= _stars ? Brand.flame : context.pal.muted,
-                  size: 34,
+                  size: 36,
                 ),
               ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _labels[_stars],
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
           ],
+        ),
+        SizedBox(
+          height: 24,
+          child: Center(
+            child: Text(
+              _labels[_stars],
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
         ),
         if (_stars > 0) ...[
           const SizedBox(height: 8),
@@ -1328,4 +1359,16 @@ class _PaymentCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Clips everything above [top] (used to hide the hero behind the toolbar).
+class _CutTop extends CustomClipper<Rect> {
+  const _CutTop(this.top);
+  final double top;
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTRB(0, top, size.width, size.height);
+
+  @override
+  bool shouldReclip(_CutTop old) => old.top != top;
 }

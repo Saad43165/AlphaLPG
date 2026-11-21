@@ -154,8 +154,8 @@ class _Summary extends StatelessWidget {
       child: Row(
         children: [
           cell('${orders.length}', 'Orders'),
-          cell('$cylinders', 'Cylinders delivered'),
-          cell(formatRupees(spent), 'Total spent'),
+          cell('$cylinders', 'Cylinders'),
+          cell(formatRupees(spent), 'Spent'),
         ],
       ),
     );
