@@ -57,22 +57,31 @@ class _FirestoreRiders implements RiderRepository {
       .snapshots()
       .map((d) => d.exists ? RiderProfile.fromMap(d.id, d.data()!) : null);
 
+  /// The rider record is the source of truth and must succeed. The public
+  /// presence record is a bonus for the customer app, so it must never stop
+  /// someone from going online.
+  Future<void> _presenceSet(String uid, bool online) async {
+    try {
+      await _presence.doc(uid).set({
+        'online': online,
+        'lastSeen': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
+  }
+
   @override
   Future<void> setOnline(String uid, bool online) async {
-    final batch = _db.batch();
-    final now = FieldValue.serverTimestamp();
-    batch.update(_col.doc(uid), {'online': online, 'lastSeen': now});
-    batch.set(_presence.doc(uid), {'online': online, 'lastSeen': now});
-    await batch.commit();
+    await _col.doc(uid).update({
+      'online': online,
+      'lastSeen': FieldValue.serverTimestamp(),
+    });
+    await _presenceSet(uid, online);
   }
 
   @override
   Future<void> heartbeat(String uid) async {
-    final batch = _db.batch();
-    final now = FieldValue.serverTimestamp();
-    batch.update(_col.doc(uid), {'lastSeen': now});
-    batch.set(_presence.doc(uid), {'online': true, 'lastSeen': now});
-    await batch.commit();
+    await _col.doc(uid).update({'lastSeen': FieldValue.serverTimestamp()});
+    await _presenceSet(uid, true);
   }
 
   @override
@@ -81,23 +90,19 @@ class _FirestoreRiders implements RiderRepository {
 
   @override
   Future<void> setActive(String uid, bool active) async {
-    final batch = _db.batch();
-    batch.update(_col.doc(uid), {'active': active, if (!active) 'online': false});
-    if (!active) {
-      batch.set(_presence.doc(uid), {
-        'online': false,
-        'lastSeen': FieldValue.serverTimestamp(),
-      });
-    }
-    await batch.commit();
+    await _col.doc(uid).update({
+      'active': active,
+      if (!active) 'online': false,
+    });
+    if (!active) await _presenceSet(uid, false);
   }
 
   @override
   Future<void> deleteRider(String uid) async {
-    final batch = _db.batch();
-    batch.delete(_col.doc(uid));
-    batch.delete(_presence.doc(uid));
-    await batch.commit();
+    await _col.doc(uid).delete();
+    try {
+      await _presence.doc(uid).delete();
+    } catch (_) {}
   }
 
   @override

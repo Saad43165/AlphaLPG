@@ -192,6 +192,11 @@ class AdminSession extends ChangeNotifier {
     AppSettings.fromMap({...settings.toMap(), 'acceptingOrders': open}),
   );
 
+  /// Puts a rider on or off shift from here. (Their phone then keeps the
+  /// status fresh; if their app is not running they show as "No signal".)
+  Future<String?> setRiderOnline(RiderProfile r, bool online) =>
+      _run(() => backend.riders.setOnline(r.uid, online));
+
   /// Ends a rider's shift from here. They are told in their app.
   Future<String?> switchRiderOffline(RiderProfile r) =>
       _run(() => backend.riders.setOnline(r.uid, false));

@@ -229,8 +229,26 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Switch offline'));
     await tester.pumpAndSettle();
-    final riders = await tester.runAsync(() => b.riders.watchAllRiders().first);
+    var riders = await tester.runAsync(() => b.riders.watchAllRiders().first);
     expect(riders!.single.online, isFalse);
+    // ... and the shop can put them back on shift with the switch.
+    expect(find.text('Off shift'), findsOneWidget);
+    await tester.tap(find.byType(Switch).last);
+    await tester.pumpAndSettle();
+    riders = await tester.runAsync(() => b.riders.watchAllRiders().first);
+    expect(riders!.single.online, isTrue);
+    // A blocked rider gets a clear Unblock button.
+    await tester.tap(find.byTooltip('Rider options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Block rider'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Block'));
+    await tester.pumpAndSettle();
+    expect(find.text('Unblock this rider'), findsOneWidget);
+    await tester.tap(find.text('Unblock this rider'));
+    await tester.pumpAndSettle();
+    riders = await tester.runAsync(() => b.riders.watchAllRiders().first);
+    expect(riders!.single.active, isTrue);
   });
 
   testWidgets(

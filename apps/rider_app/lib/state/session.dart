@@ -308,13 +308,20 @@ class RiderSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setOnline(bool value) async {
+  /// Goes on or off shift. Returns a message if it did not work.
+  Future<String?> setOnline(bool value) async {
     final id = _uid;
-    if (id == null) return;
+    if (id == null) return 'Please sign in again.';
     _selfToggled = true;
     notice = null;
     try {
       await backend.riders.setOnline(id, value);
+      return null;
+    } catch (e) {
+      _selfToggled = false;
+      return '$e'.contains('permission-denied')
+          ? 'Alpha LPG has not allowed this account to go online. Ask the shop to check your rider account.'
+          : 'Could not change your status. Check your internet and try again.';
     } finally {
       // The profile stream will report the change; keep the flag until then.
       Future<void>.delayed(

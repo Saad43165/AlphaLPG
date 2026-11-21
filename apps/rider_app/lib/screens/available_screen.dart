@@ -72,7 +72,12 @@ class AvailableScreen extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => s.setOnline(true),
+                    onPressed: () async {
+                      final err = await s.setOnline(true);
+                      if (err != null && context.mounted) {
+                        showMessage(context, err, error: true);
+                      }
+                    },
                     child: const Text('Go online'),
                   ),
                 ],

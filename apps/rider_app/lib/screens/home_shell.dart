@@ -147,9 +147,12 @@ class _Header extends StatelessWidget {
                     value: online,
                     activeTrackColor: Brand.success,
                     inactiveTrackColor: Colors.white.withValues(alpha: 0.25),
-                    onChanged: (v) {
+                    onChanged: (v) async {
                       HapticFeedback.selectionClick();
-                      session.setOnline(v);
+                      final err = await session.setOnline(v);
+                      if (err != null && context.mounted) {
+                        showMessage(context, err, error: true);
+                      }
                     },
                   ),
                   Text(

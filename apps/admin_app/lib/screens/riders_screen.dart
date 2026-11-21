@@ -316,6 +316,42 @@ class _RiderCard extends StatelessWidget {
               ],
             ),
           ),
+          // The shop can put a rider on or off shift, or unblock them, right here.
+          Padding(
+            padding: const EdgeInsets.only(top: 8, right: 8),
+            child: !r.active
+                ? SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => run(
+                        s.setRiderActive(r, true),
+                        '${r.name} is unblocked',
+                      ),
+                      icon: const Icon(Icons.lock_open_rounded, size: 18),
+                      label: const Text('Unblock this rider'),
+                    ),
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          r.online ? 'On shift' : 'Off shift',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      Switch(
+                        value: r.online,
+                        onChanged: (v) => run(
+                          s.setRiderOnline(r, v),
+                          v ? '${r.name} is on shift' : '${r.name} is offline',
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
           for (final o in jobs)
             Padding(
               padding: const EdgeInsets.only(top: 8, right: 8),
