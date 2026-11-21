@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/env.dart';
+import '../../services/location_service.dart';
 import '../../state/app_state.dart';
 import '../../theme/brand.dart';
 import '../../widgets/common.dart';
@@ -135,7 +136,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 20),
             Center(
               child: Text(
-                'Map data © OpenStreetMap contributors',
+                context.read<LocationService>().attribution,
                 style: TextStyle(color: pal.muted, fontSize: 12),
               ),
             ),

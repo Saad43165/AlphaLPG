@@ -285,6 +285,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   Widget _buildMap(LocationService svc, AppPalette pal) {
     if (!svc.hasMap) return _MapPlaceholder(dark: pal.isDark);
+    final tiles = svc.tiles(dark: pal.isDark);
     return FlutterMap(
       mapController: _map,
       options: MapOptions(
@@ -306,14 +307,17 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          urlTemplate: tiles.urlTemplate,
           userAgentPackageName: 'pk.alphalpg.customer',
           maxNativeZoom: 19,
-          tileBuilder: pal.isDark ? darkModeTileBuilder : null,
+          retinaMode: MediaQuery.devicePixelRatioOf(context) > 1.5,
+          tileBuilder: pal.isDark && !tiles.darkIsNative
+              ? darkModeTileBuilder
+              : null,
         ),
-        const SimpleAttributionWidget(
-          source: Text('© OpenStreetMap contributors'),
-          backgroundColor: Color(0xB3FFFFFF),
+        SimpleAttributionWidget(
+          source: Text(svc.attribution),
+          backgroundColor: const Color(0xB3FFFFFF),
           alignment: Alignment.bottomLeft,
         ),
       ],

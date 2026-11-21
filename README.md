@@ -107,6 +107,21 @@ and an **admin app** can share the same data model and backend.
   - A sticky cart bar.
   - Live status tracking.
 
+## Map and search key (Geoapify)
+
+The map, address search and "address from a pin" use Geoapify (free plan, no
+card needed; the credit line is shown on the map). The key lives in
+`apps/customer_app/config/keys.json`, which is **git-ignored**. Copy
+`keys.example.json`, paste the key, then build with:
+
+```bash
+flutter build apk --release --dart-define-from-file=config/keys.json
+```
+
+Without the file the app falls back to OpenStreetMap and the phone's own
+geocoder. Anything in an APK can be extracted, so set the daily limits in the
+Geoapify dashboard and rotate the key if it leaks.
+
 ## Run it
 
 ```bash

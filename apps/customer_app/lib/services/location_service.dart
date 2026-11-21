@@ -35,9 +35,32 @@ class PlaceHit {
 
 /// Everything location-related, behind an interface so tests (and the demo
 /// on devices without Google services) can swap it.
+/// Where map tiles come from for the current theme.
+@immutable
+class MapTiles {
+  const MapTiles(this.urlTemplate, {this.darkIsNative = false});
+
+  /// OpenStreetMap's public tiles: free, but meant for light use only.
+  const MapTiles.osm()
+    : urlTemplate = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      darkIsNative = false;
+
+  /// `{z}/{x}/{y}` (and optionally `{r}` for retina) template.
+  final String urlTemplate;
+
+  /// True when [urlTemplate] already is a dark map, so no colour filter is needed.
+  final bool darkIsNative;
+}
+
 abstract class LocationService {
   /// Whether real map tiles should be drawn.
   bool get hasMap => true;
+
+  /// Tile source for the light or dark theme.
+  MapTiles tiles({required bool dark}) => const MapTiles.osm();
+
+  /// Credit line the map provider requires on screen.
+  String get attribution => '© OpenStreetMap contributors';
 
   Future<LocationAccess> access();
   Future<LocationAccess> requestAccess();

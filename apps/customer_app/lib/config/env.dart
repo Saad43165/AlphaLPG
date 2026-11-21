@@ -7,6 +7,10 @@ abstract final class Env {
   static const forceDemo = bool.fromEnvironment('DEMO');
   static const demoOtp = '123456';
 
+  /// Geoapify map/search key. Supply with
+  /// `--dart-define-from-file=config/keys.json` (that file is git-ignored).
+  static const geoapifyKey = String.fromEnvironment('GEOAPIFY_KEY');
+
   /// Screenshots/demos on machines without GPS or map access.
   static const fakeLocation = bool.fromEnvironment('FAKE_LOCATION');
 }

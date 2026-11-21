@@ -20,7 +20,9 @@ Future<void> main() async {
       backend: backend,
       prefs: prefs,
       showSplash: true,
-      location: Env.fakeLocation ? FakeLocationService() : null,
+      location: Env.fakeLocation
+          ? FakeLocationService()
+          : null, // null → Geoapify if a key was supplied
       showOnboarding: !(prefs?.getBool('onboarded') ?? false),
     ),
   );

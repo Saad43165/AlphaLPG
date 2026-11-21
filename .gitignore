@@ -9,3 +9,6 @@
 **/service-account*.json
 **/key.json
 release/
+
+# API keys (never commit)
+apps/customer_app/config/keys.json

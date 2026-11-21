@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'router.dart';
 import 'screens/splash_screen.dart';
 import 'services/backend.dart';
+import 'config/env.dart';
+import 'services/geoapify.dart';
 import 'services/location_service.dart';
 import 'state/app_state.dart';
 import 'state/cart.dart';
@@ -42,7 +44,7 @@ class _AlphaAppState extends State<AlphaApp> {
   late final Cart _cart = Cart(prefs: widget.prefs);
   late final GoRouter _router = buildRouter(_state);
   late final LocationService _location =
-      widget.location ?? DeviceLocationService();
+      widget.location ?? defaultLocationService(Env.geoapifyKey);
   late bool _splash = widget.showSplash;
   final _light = Brand.theme(Brightness.light);
   final _dark = Brand.theme(Brightness.dark);
