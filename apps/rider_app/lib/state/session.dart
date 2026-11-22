@@ -349,10 +349,39 @@ class RiderSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Orders already on the road. A rider cannot end the shift with these.
+  int get onRoadCount =>
+      jobs.where((o) => o.status == OrderStatus.outForDelivery).length;
+
+  /// Orders given to this rider that have not started yet (a scheduled order
+  /// for another day does not count: it is not due).
+  List<LpgOrder> get notStarted => [
+    for (final o in jobs)
+      if (o.status == OrderStatus.assigned && !o.isUpcoming()) o,
+  ];
+
+  /// Hands every order that has not started back to the shop, so the shift
+  /// can end without leaving customers waiting.
+  Future<bool> releaseNotStarted() async {
+    var all = true;
+    for (final o in notStarted) {
+      if (!await release(o)) all = false;
+    }
+    return all;
+  }
+
   /// Goes on or off shift. Returns a message if it did not work.
   Future<String?> setOnline(bool value) async {
     final id = _uid;
     if (id == null) return 'Please sign in again.';
+    if (!value && onRoadCount > 0) {
+      return onRoadCount == 1
+          ? 'You have an order on the road. Deliver it first, then go offline.'
+          : 'You have $onRoadCount orders on the road. Deliver them first, then go offline.';
+    }
+    if (!value && notStarted.isNotEmpty) {
+      return 'You still have orders to deliver. Give them back to the shop, or deliver them, before going offline.';
+    }
     _selfToggled = true;
     notice = null;
     try {

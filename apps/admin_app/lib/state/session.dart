@@ -544,18 +544,37 @@ class AdminSession extends ChangeNotifier {
 
   /// Puts a rider on or off shift from here. (Their phone then keeps the
   /// status fresh; if their app is not running they show as "No signal".)
-  Future<String?> setRiderOnline(RiderProfile r, bool online) =>
-      _run(() => backend.riders.setOnline(r.uid, online));
+  Future<String?> setRiderOnline(RiderProfile r, bool online) => online
+      ? _run(() => backend.riders.setOnline(r.uid, true))
+      : switchRiderOffline(r);
 
   /// Ends a rider's shift from here. They are told in their app.
-  Future<String?> switchRiderOffline(RiderProfile r) =>
-      _run(() => backend.riders.setOnline(r.uid, false));
-
-  Future<String?> switchAllRidersOffline() => _run(() async {
-    for (final r in riders.where((r) => r.online)) {
-      await backend.riders.setOnline(r.uid, false);
+  Future<String?> switchRiderOffline(RiderProfile r) {
+    final n = jobsOf(r.uid).where((o) => !o.isUpcoming()).length;
+    if (n > 0) {
+      return Future.value(
+        '${r.name} is carrying $n order${n == 1 ? '' : 's'}. Take them back first, or wait until they are delivered.',
+      );
     }
-  });
+    return _run(() => backend.riders.setOnline(r.uid, false));
+  }
+
+  Future<String?> switchAllRidersOffline() async {
+    final skipped = <String>[];
+    final err = await _run(() async {
+      for (final r in riders.where((r) => r.online)) {
+        if (jobsOf(r.uid).any((o) => !o.isUpcoming())) {
+          skipped.add(r.name);
+          continue;
+        }
+        await backend.riders.setOnline(r.uid, false);
+      }
+    });
+    if (err != null) return err;
+    return skipped.isEmpty
+        ? null
+        : 'Switched off everyone except ${skipped.join(', ')}: they are carrying orders.';
+  }
 
   /// Change a rider's name, phone or vehicle.
   Future<String?> editRider(

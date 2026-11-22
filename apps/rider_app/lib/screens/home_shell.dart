@@ -149,6 +149,44 @@ class _Header extends StatelessWidget {
                     inactiveTrackColor: Colors.white.withValues(alpha: 0.25),
                     onChanged: (v) async {
                       HapticFeedback.selectionClick();
+                      if (!v &&
+                          session.onRoadCount == 0 &&
+                          session.notStarted.isNotEmpty) {
+                        // Orders not started yet: give them back, or stay.
+                        final n = session.notStarted.length;
+                        final go = await showDialog<bool>(
+                          context: context,
+                          builder: (d) => AlertDialog(
+                            title: const Text('Go offline?'),
+                            content: Text(
+                              n == 1
+                                  ? 'You have 1 order you have not started. It goes back to the shop so another rider can take it.'
+                                  : 'You have $n orders you have not started. They go back to the shop so other riders can take them.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(d, false),
+                                child: const Text('Stay online'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(d, true),
+                                child: const Text('Give back and go offline'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (go != true || !context.mounted) return;
+                        if (!await session.releaseNotStarted()) {
+                          if (context.mounted) {
+                            showMessage(
+                              context,
+                              'Could not give the orders back. Check your internet.',
+                              error: true,
+                            );
+                          }
+                          return;
+                        }
+                      }
                       final err = await session.setOnline(v);
                       if (err != null && context.mounted) {
                         showMessage(context, err, error: true);

@@ -813,4 +813,75 @@ void main() {
       expect(third.riderId, isNull);
     },
   );
+
+  testWidgets(
+    'a rider with an order on the road cannot go offline; unstarted orders can be given back',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      final a = await placeOrder(tester, rig);
+      final b = await placeOrder(tester, rig);
+      await tester.runAsync(() => rig.backend.riders.setOnline('r1', true));
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      for (final id in [a, b]) {
+        await tester.runAsync(
+          () => rig.backend.orders.acceptOrder(
+            id,
+            riderId: 'r1',
+            name: 'Imran',
+            phone: '0300',
+          ),
+        );
+      }
+      await tester.runAsync(() => rig.backend.orders.startDelivery(a, 'r1'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 80)),
+      );
+      await tester.pumpAndSettle();
+
+      // One order is on the road: going offline is refused, with the reason.
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('on the road'), findsWidgets);
+      RiderProfile? p = await tester.runAsync<RiderProfile?>(
+        () => rig.backend.riders.watchRider('r1').first,
+      );
+      expect(p!.online, isTrue);
+
+      // Deliver it. Now only the unstarted order is left: offer to give it back.
+      await tester.runAsync(
+        () => rig.backend.orders.completeDelivery(
+          a,
+          'r1',
+          cashCollected: 6592,
+          emptiesCollected: 2,
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 80)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(find.text('Go offline?'), findsOneWidget);
+      await tester.tap(find.text('Give back and go offline'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 80)),
+      );
+      await tester.pumpAndSettle();
+      p = await tester.runAsync<RiderProfile?>(
+        () => rig.backend.riders.watchRider('r1').first,
+      );
+      expect(p!.online, isFalse);
+      final back = await orderOf(tester, rig, b);
+      expect(
+        back.riderId,
+        isNull,
+        reason: 'the unstarted order went back to the shop',
+      );
+      // Let the short "I switched it myself" timer finish.
+      await tester.pump(const Duration(seconds: 4));
+    },
+  );
 }
