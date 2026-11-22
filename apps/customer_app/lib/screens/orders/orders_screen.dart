@@ -486,18 +486,6 @@ class OrderTile extends StatelessWidget {
                         fontSize: 17,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    if (delivered)
-                      Flexible(
-                        child: Text(
-                          o.paymentStatus == PaymentStatus.paid
-                              ? 'Paid · ${o.paymentMethod.label}'
-                              : o.paymentMethod.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: pal.muted, fontSize: 12.5),
-                        ),
-                      ),
                     const Spacer(),
                     if (delivered && o.rating != null)
                       Row(
@@ -515,6 +503,15 @@ class OrderTile extends StatelessWidget {
                       ),
                   ],
                 ),
+                if (delivered) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    o.paymentStatus == PaymentStatus.paid
+                        ? 'Paid · ${o.paymentMethod.label}'
+                        : o.paymentMethod.label,
+                    style: TextStyle(color: pal.muted, fontSize: 12.5),
+                  ),
+                ],
                 if (needsRating) ...[
                   const SizedBox(height: 10),
                   Container(
@@ -561,7 +558,10 @@ class OrderTile extends StatelessWidget {
                             Icons.receipt_long_rounded,
                             size: 18,
                           ),
-                          label: const Text('Invoice'),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('Invoice', maxLines: 1),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -576,7 +576,10 @@ class OrderTile extends StatelessWidget {
                           context.push('/cart');
                         },
                         icon: const Icon(Icons.replay_rounded, size: 18),
-                        label: const Text('Order again'),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Order again', maxLines: 1),
+                        ),
                       ),
                     ),
                   ],

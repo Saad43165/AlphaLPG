@@ -273,8 +273,8 @@ void main() {
       // Today's totals on the History tab.
       await tapText(tester, 'History');
       expect(find.text('Rs. 6,592'), findsWidgets);
-      expect(find.text('Cash with you'), findsOneWidget);
-      expect(find.text('Delivered today'), findsOneWidget);
+      expect(find.text('Cash to hand to Alpha LPG'), findsOneWidget);
+      expect(find.text('Done today'), findsOneWidget);
     },
   );
 
