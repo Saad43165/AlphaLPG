@@ -28,20 +28,38 @@ class PushDrawerState extends State<PushDrawerHost>
   static PushDrawerState? maybeOf(BuildContext context) =>
       context.findAncestorStateOfType<PushDrawerState>();
 
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 340),
-    reverseDuration: const Duration(milliseconds: 280),
-  );
+  // The value is the finger's progress (0 closed, 1 open); the easing is in
+  // the animation itself, so dragging and releasing feel the same.
+  late final AnimationController _c = AnimationController(vsync: this);
+
+  bool _edge = false;
 
   bool get isOpen => _c.value > 0.5 || _c.status == AnimationStatus.forward;
 
   void open() {
-    Haptics.light();
-    _c.fling(velocity: 2.2);
+    if (_c.value < 0.05) Haptics.light();
+    _c.animateTo(
+      1,
+      duration: Duration(milliseconds: (320 * (1 - _c.value)).round() + 80),
+      curve: Curves.easeOutCubic,
+    );
   }
 
-  void close() => _c.fling(velocity: -2.2);
+  void close() => _c.animateTo(
+    0,
+    duration: Duration(milliseconds: (260 * _c.value).round() + 60),
+    curve: Curves.easeOutCubic,
+  );
+
+  /// Finish a drag: carry on in the direction the finger was going.
+  void _settle(double velocity, double w) {
+    final v = velocity / w; // screens per second, toward open is positive
+    if (v.abs() > 0.8) {
+      v > 0 ? open() : close();
+    } else {
+      _c.value >= 0.5 ? open() : close();
+    }
+  }
 
   void toggle() => isOpen ? close() : open();
 
@@ -61,7 +79,10 @@ class PushDrawerState extends State<PushDrawerHost>
     return AnimatedBuilder(
       animation: _c,
       builder: (context, content) {
-        final t = Curves.easeOutCubic.transform(_c.value);
+        final t = _c.value;
+        // In Urdu the menu button is on the right, so the menu opens from there.
+        final rtl = Directionality.of(context) == TextDirection.rtl;
+        final dir = rtl ? -1.0 : 1.0;
         return PopScope(
           // The Back button closes the menu first.
           canPop: _c.value == 0,
@@ -84,9 +105,11 @@ class PushDrawerState extends State<PushDrawerHost>
                     child: Opacity(
                       opacity: (0.3 + 0.7 * t).clamp(0.0, 1.0),
                       child: Transform.translate(
-                        offset: Offset(-24 * (1 - t), 0),
+                        offset: Offset(-24 * (1 - t) * dir, 0),
                         child: Align(
-                          alignment: Alignment.centerLeft,
+                          alignment: rtl
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
                           child: SizedBox(
                             width: w,
                             // Follows the app theme (light menu in light mode).
@@ -99,25 +122,23 @@ class PushDrawerState extends State<PushDrawerHost>
                 ),
                 // The screen, pushed right and shrunk.
                 Transform(
-                  alignment: Alignment.centerLeft,
+                  alignment: rtl ? Alignment.centerRight : Alignment.centerLeft,
                   transform: Matrix4.identity()
-                    ..translateByDouble(w * t, 0, 0, 1)
+                    ..translateByDouble(dir * w * t, 0, 0, 1)
                     ..scaleByDouble(1 - 0.12 * t, 1 - 0.12 * t, 1, 1),
                   child: GestureDetector(
                     behavior: HitTestBehavior.translucent,
                     onHorizontalDragUpdate: (d) {
                       if (_c.value > 0) {
-                        _c.value = (_c.value + d.delta.dx / w).clamp(0.0, 1.0);
+                        _c.value = (_c.value + dir * d.delta.dx / w).clamp(
+                          0.0,
+                          1.0,
+                        );
                       }
                     },
                     onHorizontalDragEnd: (d) {
                       if (_c.value == 0) return;
-                      final v = d.primaryVelocity ?? 0;
-                      if (v < -300 || (v.abs() <= 300 && _c.value < 0.5)) {
-                        close();
-                      } else {
-                        open();
-                      }
+                      _settle(dir * (d.primaryVelocity ?? 0), w);
                     },
                     child: DecoratedBox(
                       decoration: BoxDecoration(
@@ -154,6 +175,30 @@ class PushDrawerState extends State<PushDrawerHost>
                     ),
                   ),
                 ),
+                // Swipe in from the edge to open the menu.
+                if (_c.value == 0 || _edge)
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: rtl ? null : 0,
+                    right: rtl ? 0 : null,
+                    width: 22,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onHorizontalDragStart: (_) => _edge = true,
+                      onHorizontalDragUpdate: (d) {
+                        _c.value = (_c.value + dir * d.delta.dx / w).clamp(
+                          0.0,
+                          1.0,
+                        );
+                      },
+                      onHorizontalDragEnd: (d) {
+                        _edge = false;
+                        _settle(dir * (d.primaryVelocity ?? 0), w);
+                      },
+                      onHorizontalDragCancel: () => _edge = false,
+                    ),
+                  ),
               ],
             ),
           ),

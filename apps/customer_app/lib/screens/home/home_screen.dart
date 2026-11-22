@@ -168,7 +168,7 @@ class _Header extends StatelessWidget {
             child: Constrained(
               maxWidth: 980,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 8, 22),
+                padding: const EdgeInsets.fromLTRB(16, 4, 8, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -193,7 +193,7 @@ class _Header extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: _DeliverToPill(
@@ -205,7 +205,7 @@ class _Header extends StatelessWidget {
                         onTap: () => showAddressPicker(context),
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 12),
                     Text(
                       name == null || name.isEmpty
                           ? 'Need LPG today?'
@@ -227,30 +227,27 @@ class _Header extends StatelessWidget {
                         height: 1.35,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (context.watch<PromoState>().stats.showable)
-                          _TrustChip(
+                    if (context.watch<PromoState>().stats.showable) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          const Icon(
                             Icons.star_rounded,
-                            _ratingLabel(context.watch<PromoState>().stats),
+                            size: 18,
+                            color: Brand.flame,
                           ),
-                        const _TrustChip(
-                          Icons.bolt_rounded,
-                          'Same-day delivery',
-                        ),
-                        const _TrustChip(
-                          Icons.verified_rounded,
-                          'Safety-checked',
-                        ),
-                        const _TrustChip(
-                          Icons.payments_outlined,
-                          'Cash on delivery',
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 5),
+                          Text(
+                            _ratingLabel(context.watch<PromoState>().stats),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -312,37 +309,6 @@ class _DeliverToPill extends StatelessWidget {
           ],
         ),
       ),
-    ),
-  );
-}
-
-class _TrustChip extends StatelessWidget {
-  const _TrustChip(this.icon, this.label);
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 15, color: Brand.flame),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     ),
   );
 }
