@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../state/session.dart';
 import '../utils/launch.dart';
 import '../widgets/common.dart';
+import '../widgets/setup_check.dart';
 import '../utils/export.dart';
 import 'cash_screen.dart';
 import 'customers_screen.dart';
@@ -29,6 +30,7 @@ class MoreScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
+            const SetupCheck(),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: panel(context),

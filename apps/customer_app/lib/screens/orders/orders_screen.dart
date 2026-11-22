@@ -389,202 +389,210 @@ class OrderTile extends StatelessWidget {
     final delivered = o.status == OrderStatus.delivered;
     final color = StatusPill.colorOf(o.status);
     final needsRating = delivered && o.rating == null;
-    return Container(
-      decoration: BoxDecoration(
-        color: pal.card,
-        borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: pal.shadow,
-        border: pal.isDark ? Border.all(color: pal.line) : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+    return Opacity(
+      opacity: delivered ? 1 : 0.78,
+      child: Container(
+        decoration: BoxDecoration(
+          color: pal.card,
           borderRadius: BorderRadius.circular(Brand.radius),
-          onTap: () => context.push('/orders/${o.id}'),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Number, date and status.
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: color.withValues(alpha: 0.14),
-                      child: Icon(
-                        delivered ? Icons.check_rounded : Icons.close_rounded,
-                        color: color,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            o.displayNumber,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          Text(
-                            o.createdAt != null
-                                ? formatDateTime(o.createdAt!)
-                                : 'Just now',
-                            style: TextStyle(color: pal.muted, fontSize: 12.5),
-                          ),
-                        ],
-                      ),
-                    ),
-                    StatusPill(o.status),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // What was in it.
-                for (final i in o.items.take(3))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 3),
-                    child: Row(
-                      children: [
-                        Text(
-                          '${i.quantity}×',
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${i.name} (${i.type.label.toLowerCase()})',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (o.items.length > 3)
-                  Text(
-                    '+ ${o.items.length - 3} more',
-                    style: TextStyle(color: pal.muted, fontSize: 12.5),
-                  ),
-                if (!delivered && o.cancelReason.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Reason: ${o.cancelReason}',
-                    style: TextStyle(color: pal.muted, fontSize: 12.5),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                // Money and rating.
-                Row(
-                  children: [
-                    Text(
-                      formatRupees(o.total),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 17,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (delivered && o.rating != null)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (var n = 1; n <= 5; n++)
-                            Icon(
-                              n <= o.rating!
-                                  ? Icons.star_rounded
-                                  : Icons.star_border_rounded,
-                              size: 17,
-                              color: const Color(0xFFF5A623),
-                            ),
-                        ],
-                      ),
-                  ],
-                ),
-                if (delivered) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    o.paymentStatus == PaymentStatus.paid
-                        ? 'Paid · ${o.paymentMethod.label}'
-                        : o.paymentMethod.label,
-                    style: TextStyle(color: pal.muted, fontSize: 12.5),
-                  ),
-                ],
-                if (needsRating) ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5A623).withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.star_border_rounded,
-                          color: Color(0xFFF5A623),
-                        ),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'How was your delivery? Tap to rate.',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                // Two equal actions.
-                Row(
-                  children: [
-                    if (delivered) ...[
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(0, 44),
-                          ),
-                          onPressed: () => context.push('/invoice', extra: o),
-                          icon: const Icon(
-                            Icons.receipt_long_rounded,
-                            size: 18,
-                          ),
-                          label: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text('Invoice', maxLines: 1),
-                          ),
+          boxShadow: pal.shadow,
+          border: pal.isDark ? Border.all(color: pal.line) : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(Brand.radius),
+            onTap: () => context.push('/orders/${o.id}'),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Number, date and status.
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: color.withValues(alpha: 0.14),
+                        child: Icon(
+                          delivered ? Icons.check_rounded : Icons.close_rounded,
+                          color: color,
+                          size: 20,
                         ),
                       ),
                       const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              o.displayNumber,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              o.createdAt != null
+                                  ? formatDateTime(o.createdAt!)
+                                  : 'Just now',
+                              style: TextStyle(
+                                color: pal.muted,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      StatusPill(o.status),
                     ],
-                    Expanded(
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 44),
+                  ),
+                  const SizedBox(height: 12),
+                  // What was in it.
+                  for (final i in o.items.take(3))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 3),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${i.quantity}×',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${i.name} (${i.type.label.toLowerCase()})',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (o.items.length > 3)
+                    Text(
+                      '+ ${o.items.length - 3} more',
+                      style: TextStyle(color: pal.muted, fontSize: 12.5),
+                    ),
+                  if (!delivered && o.cancelReason.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Reason: ${o.cancelReason}',
+                      style: TextStyle(color: pal.muted, fontSize: 12.5),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  // Money and rating.
+                  Row(
+                    children: [
+                      Text(
+                        formatRupees(o.total),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 17,
                         ),
-                        onPressed: () {
-                          context.read<Cart>().reorder(o);
-                          context.push('/cart');
-                        },
-                        icon: const Icon(Icons.replay_rounded, size: 18),
-                        label: const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text('Order again', maxLines: 1),
+                      ),
+                      const Spacer(),
+                      if (delivered && o.rating != null)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (var n = 1; n <= 5; n++)
+                              Icon(
+                                n <= o.rating!
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                size: 17,
+                                color: const Color(0xFFF5A623),
+                              ),
+                          ],
                         ),
+                    ],
+                  ),
+                  if (delivered) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      o.paymentStatus == PaymentStatus.paid
+                          ? 'Paid · ${o.paymentMethod.label}'
+                          : o.paymentMethod.label,
+                      style: TextStyle(color: pal.muted, fontSize: 12.5),
+                    ),
+                  ],
+                  if (needsRating) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5A623).withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.star_border_rounded,
+                            color: Color(0xFFF5A623),
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'How was your delivery? Tap to rate.',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  // Two equal actions.
+                  Row(
+                    children: [
+                      if (delivered) ...[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                            ),
+                            onPressed: () => context.push('/invoice', extra: o),
+                            icon: const Icon(
+                              Icons.receipt_long_rounded,
+                              size: 18,
+                            ),
+                            label: const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text('Invoice', maxLines: 1),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 44),
+                          ),
+                          onPressed: () {
+                            context.read<Cart>().reorder(o);
+                            context.push('/cart');
+                          },
+                          icon: const Icon(Icons.replay_rounded, size: 18),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('Order again', maxLines: 1),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
