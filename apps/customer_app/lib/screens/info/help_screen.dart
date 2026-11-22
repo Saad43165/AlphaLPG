@@ -1,3 +1,4 @@
+import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -120,15 +121,15 @@ class HelpScreen extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Brand.whatsapp,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(54),
                     ),
                     onPressed: () => Launch.whatsapp(
                       s.whatsapp,
                       'Assalam-o-Alaikum, I need help with my LPG order.',
                     ),
-                    icon: const Icon(Icons.chat_rounded),
+                    icon: const WhatsAppIcon(size: 22),
                     label: const Text('WhatsApp'),
                   ),
                 ),

@@ -4,7 +4,6 @@ library;
 export 'src/chat_inbox.dart';
 export 'src/dates.dart';
 export 'src/firestore_paths.dart';
-export 'src/gauge.dart';
 export 'src/geo.dart';
 export 'src/models/address.dart';
 export 'src/models/blocked_customer.dart';

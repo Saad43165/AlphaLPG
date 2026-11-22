@@ -1,3 +1,4 @@
+import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -111,7 +112,7 @@ class AppDrawer extends StatelessWidget {
                       settings.whatsapp,
                       'Assalam-o-Alaikum, I need help with Alpha LPG.',
                     );
-                  }, color: Brand.whatsapp),
+                  }, iconWidget: const WhatsAppIcon(size: 26)),
                   const _Gap(),
                   _Tile(
                     Icons.settings_rounded,
@@ -265,7 +266,8 @@ class _Header extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile(this.icon, this.label, this.onTap, {this.color});
+  const _Tile(this.icon, this.label, this.onTap, {this.color, this.iconWidget});
+  final Widget? iconWidget;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -280,23 +282,25 @@ class _Tile extends StatelessWidget {
         dense: true,
         visualDensity: const VisualDensity(vertical: 0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        leading: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: (color ?? Brand.blueDark).withValues(
-              alpha: pal.isDark ? 0.22 : 0.1,
-            ),
-            borderRadius: BorderRadius.circular(11),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color:
-                color ??
-                (pal.isDark ? const Color(0xFF4DB3F0) : Brand.blueDark),
-          ),
-        ),
+        leading: iconWidget != null
+            ? SizedBox(width: 36, height: 36, child: Center(child: iconWidget))
+            : Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: (color ?? Brand.blueDark).withValues(
+                    alpha: pal.isDark ? 0.22 : 0.1,
+                  ),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color:
+                      color ??
+                      (pal.isDark ? const Color(0xFF4DB3F0) : Brand.blueDark),
+                ),
+              ),
         title: Text(
           label,
           style: TextStyle(

@@ -7,7 +7,6 @@ import '../../services/location_service.dart';
 import '../../state/app_state.dart';
 import '../../theme/brand.dart';
 import '../../widgets/common.dart';
-import '../../widgets/gas_meter_card.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -16,7 +15,6 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final pal = context.pal;
-    final cycle = state.cycleDaysOverride;
     return Scaffold(
       appBar: AppBar(
         leading: const ScreenBack(),
@@ -59,18 +57,6 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   value: state.haptics,
                   onChanged: state.setHaptics,
-                ),
-                const Divider(indent: 16, endIndent: 16),
-                ListTile(
-                  leading: const Icon(Icons.local_fire_department_rounded),
-                  title: const Text('How long a cylinder lasts'),
-                  subtitle: Text(
-                    cycle == null
-                        ? 'Automatic, from your orders'
-                        : 'About $cycle days',
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => showCycleSheet(context, null),
                 ),
               ],
             ),

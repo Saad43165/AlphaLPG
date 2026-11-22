@@ -1,3 +1,4 @@
+import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -11,7 +12,6 @@ import '../../utils/launch.dart';
 import '../../widgets/address_picker.dart';
 import '../../widgets/push_drawer.dart';
 import '../../widgets/common.dart';
-import '../../widgets/gas_meter_card.dart';
 import '../../widgets/live.dart';
 import '../info/safety_screen.dart';
 import 'product_sheet.dart';
@@ -668,8 +668,8 @@ class _ShopStatus extends StatelessWidget {
   }
 }
 
-/// Live tracking card for an in-progress order, plus the gas meter once the
-/// customer has had a delivery.
+/// Live tracking card for an in-progress order, or a one-tap "Order again"
+/// for the last delivered one.
 class _OrderStrip extends StatelessWidget {
   const _OrderStrip();
 
@@ -677,7 +677,6 @@ class _OrderStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final backend = context.read<Backend>();
     final uid = context.select<AppState, String?>((s) => s.uid);
-    final cycle = context.select<AppState, int?>((s) => s.cycleDaysOverride);
     if (uid == null) return const SizedBox.shrink();
     return Live<List<LpgOrder>>(
       cacheKey: uid,
@@ -686,7 +685,6 @@ class _OrderStrip extends StatelessWidget {
         final orders = snap.data ?? const <LpgOrder>[];
         if (orders.isEmpty) return const SizedBox.shrink();
         final active = orders.where((o) => o.status.isActive).toList();
-        final gauge = CylinderGauge.from(orders, cycleDaysOverride: cycle);
         final lastDelivered = orders.where(
           (o) => o.status == OrderStatus.delivered,
         );
@@ -695,17 +693,73 @@ class _OrderStrip extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (active.isNotEmpty) _TrackingCard(active.first),
-              if (active.isNotEmpty && gauge != null)
-                const SizedBox(height: 14),
-              if (gauge != null && lastDelivered.isNotEmpty)
-                GasMeterCard(gauge: gauge, lastOrder: lastDelivered.first),
+              if (active.isNotEmpty)
+                _TrackingCard(active.first)
+              else if (lastDelivered.isNotEmpty)
+                _ReorderRow(lastDelivered.first),
             ],
           ),
         );
       },
     );
   }
+}
+
+/// "Order again": the last delivered order, back in the cart in one tap.
+class _ReorderRow extends StatelessWidget {
+  const _ReorderRow(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: context.pal.card,
+      borderRadius: BorderRadius.circular(Brand.radius),
+      boxShadow: context.pal.shadow,
+    ),
+    child: Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(Brand.radius),
+        onTap: () {
+          Haptics.medium();
+          context.read<Cart>().reorder(o);
+          context.push('/cart');
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              const Icon(Icons.replay_rounded, color: Brand.blueDark),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Order again',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    Text(
+                      o.items.map((i) => '${i.quantity}× ${i.name}').join(', '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: context.pal.muted, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                formatRupees(o.total),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _TrackingCard extends StatelessWidget {
@@ -917,16 +971,15 @@ class _HelpCard extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Brand.whatsapp,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: () => Launch.whatsapp(
                   settings.whatsapp,
                   'Assalam-o-Alaikum, I would like to order LPG.',
                 ),
-                icon: const Icon(Icons.chat_rounded),
+                icon: const WhatsAppIcon(size: 22),
                 label: const Text('WhatsApp'),
               ),
             ),

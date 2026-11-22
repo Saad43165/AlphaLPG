@@ -194,7 +194,7 @@ void main() {
     await tester.tap(find.text('Ali Raza'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Deposit taken'));
+    await tester.tap(find.text('Took a deposit'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextField, 'Amount (Rs)'),
@@ -208,7 +208,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Rs 4,000'), findsWidgets);
 
-    await tester.tap(find.text('Block this customer'));
+    await tester.tap(find.text('Block customer'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Block'));
     await tester.pumpAndSettle();
@@ -587,6 +587,13 @@ void main() {
         await tester.tap(find.text(item));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: item);
+        if (item == 'Customers') {
+          await tester.tap(find.text('Ali Raza').first);
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull, reason: 'customer detail');
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+        }
         await tester.pageBack();
         await tester.pumpAndSettle();
       }

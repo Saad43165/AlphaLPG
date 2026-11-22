@@ -1,3 +1,4 @@
+import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -194,10 +195,7 @@ class AboutScreen extends StatelessWidget {
                           ),
                           const Divider(indent: 16, endIndent: 16),
                           ListTile(
-                            leading: const Icon(
-                              Icons.chat_rounded,
-                              color: Brand.whatsapp,
-                            ),
+                            leading: const WhatsAppIcon(size: 26),
                             title: const Text('WhatsApp'),
                             subtitle: Text(s.phone),
                             onTap: () => Launch.whatsapp(s.whatsapp),

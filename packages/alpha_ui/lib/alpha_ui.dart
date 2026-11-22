@@ -6,3 +6,4 @@ export 'src/app_guard.dart';
 export 'src/brand.dart';
 export 'src/chat.dart';
 export 'src/photo.dart';
+export 'src/whatsapp_icon.dart';

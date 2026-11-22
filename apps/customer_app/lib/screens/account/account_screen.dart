@@ -1,3 +1,4 @@
+import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -110,7 +111,7 @@ class AccountScreen extends StatelessWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.chat, color: Brand.whatsapp),
+                    leading: const WhatsAppIcon(size: 26),
                     title: const Text('WhatsApp'),
                     subtitle: Text(prettyPkMobile('+${s.whatsapp}')),
                     onTap: () => Launch.whatsapp(s.whatsapp),

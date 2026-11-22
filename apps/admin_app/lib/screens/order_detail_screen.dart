@@ -60,6 +60,56 @@ class OrderDetailScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
           children: [
+            // ---- What to do now, and how far along the order is ----------------
+            _NextStep(order: o),
+            _Progress(order: o),
+
+            // ---- First order from this customer ----------------------------
+            if (s.isNewCustomer(o))
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Brand.blueDark.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(Brand.radius),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'New customer: call to confirm',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'This is their first order. Phone numbers are not verified by SMS, '
+                      'so call once to confirm the person and the address before sending a rider. '
+                      'After their first delivery this reminder goes away.',
+                      style: TextStyle(height: 1.4),
+                    ),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 44),
+                      ),
+                      onPressed: () => Launch.call(o.customerPhone),
+                      icon: const Icon(Icons.call_rounded, size: 18),
+                      label: Text('Call ${prettyPhone(o.customerPhone)}'),
+                    ),
+                  ],
+                ),
+              ),
+
+            // ---- Customer reports on this order ----------------------------
+            for (final r in s.reports.where((x) => x.orderId == o.id))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ReportCard(r, showOrderLink: false),
+              ),
+
             // ---- Summary: the amount, front and centre -----------------------
             _Section(
               children: [
@@ -193,7 +243,7 @@ class OrderDetailScreen extends StatelessWidget {
                                 wa,
                                 'Alpha LPG order ${o.displayNumber}: ',
                               ),
-                        color: Brand.whatsapp,
+                        iconWidget: const WhatsAppIcon(size: 20),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -343,52 +393,6 @@ class OrderDetailScreen extends StatelessWidget {
               ],
             ),
 
-            // ---- First order from this customer ----------------------------
-            if (s.isNewCustomer(o))
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Brand.blueDark.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(Brand.radius),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'New customer: call to confirm',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'This is their first order. Phone numbers are not verified by SMS, '
-                      'so call once to confirm the person and the address before sending a rider. '
-                      'After their first delivery this reminder goes away.',
-                      style: TextStyle(height: 1.4),
-                    ),
-                    const SizedBox(height: 10),
-                    FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 44),
-                      ),
-                      onPressed: () => Launch.call(o.customerPhone),
-                      icon: const Icon(Icons.call_rounded, size: 18),
-                      label: Text('Call ${prettyPhone(o.customerPhone)}'),
-                    ),
-                  ],
-                ),
-              ),
-
-            // ---- Customer reports on this order ----------------------------
-            for (final r in s.reports.where((x) => x.orderId == o.id))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ReportCard(r, showOrderLink: false),
-              ),
-
             // ---- Payment ----------------------------------------------------
             _Section(
               title: 'Payment',
@@ -527,23 +531,232 @@ class OrderDetailScreen extends StatelessWidget {
                 ],
               ),
 
-            // ---- Timeline ---------------------------------------------------
-            _Section(
-              title: 'Timeline',
-              icon: Icons.timeline_rounded,
-              children: [
-                for (final (i, e) in o.history.indexed)
-                  _TimelineRow(
-                    title: e.note.isEmpty
-                        ? e.status.label
-                        : '${e.status.label} · ${e.note}',
-                    time: fmt.format(e.at),
-                    last: i == o.history.length - 1,
+            // ---- Timeline (collapsed: it is long) ----------------------------
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              decoration: panel(context),
+              child: Material(
+                type: MaterialType.transparency,
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                    leading: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Brand.blueDark.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.timeline_rounded,
+                        size: 18,
+                        color: Brand.blueDark,
+                      ),
+                    ),
+                    title: const Text(
+                      'History',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Text('${o.history.length} steps'),
+                    children: [
+                      for (final (i, e) in o.history.indexed)
+                        _TimelineRow(
+                          title: e.note.isEmpty
+                              ? e.status.label
+                              : '${e.status.label} · ${e.note}',
+                          time: fmt.format(e.at),
+                          last: i == o.history.length - 1,
+                        ),
+                    ],
                   ),
-              ],
+                ),
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One line telling the admin what to do with this order right now.
+class _NextStep extends StatelessWidget {
+  const _NextStep({required this.order});
+  final LpgOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    final o = order;
+    final rider = o.riderName ?? 'The rider';
+    final pay = o.payStage;
+    final payNote = switch (pay) {
+      PayStage.sendDetails =>
+        ' Also send the ${o.paymentMethod.label} payment details.',
+      PayStage.receipt => ' A payment receipt is waiting for you to check.',
+      PayStage.issue => ' Waiting for the customer to send a new receipt.',
+      PayStage.waiting => ' Waiting for the customer to pay.',
+      null => '',
+    };
+    final (
+      IconData icon,
+      Color color,
+      String title,
+      String text,
+    ) = switch (o.status) {
+      OrderStatus.placed => (
+        Icons.touch_app_rounded,
+        Brand.blueDark,
+        'Confirm this order',
+        'Check the items and address, then confirm.$payNote',
+      ),
+      OrderStatus.confirmed => (
+        Icons.two_wheeler_rounded,
+        Brand.flame,
+        'Give it to a rider',
+        'Choose a rider who is on shift.$payNote',
+      ),
+      OrderStatus.assigned => (
+        Icons.hourglass_top_rounded,
+        Brand.blueDark,
+        'Waiting for $rider to start',
+        '$rider has this order. You can still take it back until they leave.$payNote',
+      ),
+      OrderStatus.outForDelivery => (
+        Icons.navigation_rounded,
+        Brand.success,
+        '$rider is on the way',
+        'Follow the live location below.$payNote',
+      ),
+      OrderStatus.delivered =>
+        o.paymentStatus == PaymentStatus.paid
+            ? (
+                Icons.check_circle_rounded,
+                Brand.success,
+                'Delivered and paid',
+                'Nothing more to do for this order.',
+              )
+            : (
+                Icons.payments_rounded,
+                Brand.flame,
+                'Delivered: payment not confirmed',
+                'Check the money, then tap Mark paid.$payNote',
+              ),
+      OrderStatus.cancelled => (
+        Icons.cancel_rounded,
+        Brand.danger,
+        'Order cancelled',
+        o.cancelReason.isEmpty ? 'This order was cancelled.' : o.cancelReason,
+      ),
+    };
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(Brand.radius),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 26),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(text, style: const TextStyle(height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Placed → Confirmed → Rider → On the way → Delivered.
+class _Progress extends StatelessWidget {
+  const _Progress({required this.order});
+  final LpgOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    final o = order;
+    if (o.status == OrderStatus.cancelled) return const SizedBox.shrink();
+    const labels = ['Placed', 'Confirmed', 'Rider', 'On the way', 'Delivered'];
+    final at = switch (o.status) {
+      OrderStatus.placed => 0,
+      OrderStatus.confirmed => 1,
+      OrderStatus.assigned => 2,
+      OrderStatus.outForDelivery => 3,
+      OrderStatus.delivered => 4,
+      OrderStatus.cancelled => 0,
+    };
+    final pal = context.pal;
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.fromLTRB(10, 14, 10, 12),
+      decoration: panel(context),
+      child: Row(
+        children: [
+          for (var i = 0; i < labels.length; i++) ...[
+            Expanded(
+              child: Column(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: i <= at ? Brand.success : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: i <= at ? Brand.success : pal.line,
+                        width: 2,
+                      ),
+                    ),
+                    child: i < at || (i == at && at == 4)
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          )
+                        : i == at
+                        ? const Icon(Icons.circle, size: 9, color: Colors.white)
+                        : null,
+                  ),
+                  const SizedBox(height: 6),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      labels[i],
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: i == at ? FontWeight.w800 : FontWeight.w500,
+                        color: i <= at ? null : pal.muted,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -569,19 +782,29 @@ class _Section extends StatelessWidget {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 18, color: Brand.blueDark),
-                const SizedBox(width: 8),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Brand.blueDark.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, size: 18, color: Brand.blueDark),
+                ),
+                const SizedBox(width: 10),
               ],
-              Text(
-                title!,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15.5,
+              Expanded(
+                child: Text(
+                  title!,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
         ],
         ...children,
       ],
@@ -668,11 +891,11 @@ class _Mini extends StatelessWidget {
 
 /// An equal-width action button.
 class _Act extends StatelessWidget {
-  const _Act(this.icon, this.label, this.onTap, {this.color});
+  const _Act(this.icon, this.label, this.onTap, {this.iconWidget});
+  final Widget? iconWidget;
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
-  final Color? color;
 
   @override
   Widget build(BuildContext context) => OutlinedButton.icon(
@@ -681,7 +904,7 @@ class _Act extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
     ),
     onPressed: onTap,
-    icon: Icon(icon, size: 19, color: color),
+    icon: iconWidget ?? Icon(icon, size: 19),
     label: FittedBox(fit: BoxFit.scaleDown, child: Text(label)),
   );
 }

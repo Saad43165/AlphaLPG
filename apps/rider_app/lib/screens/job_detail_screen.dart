@@ -240,16 +240,13 @@ class JobDetailScreen extends StatelessWidget {
                     ),
                   ),
                   if (wa != null)
-                    IconButton.filled(
+                    IconButton.outlined(
                       tooltip: 'WhatsApp customer',
-                      style: IconButton.styleFrom(
-                        backgroundColor: Brand.whatsapp,
-                      ),
                       onPressed: () => Launch.whatsapp(
                         wa,
                         'Assalam-o-Alaikum, I am your Alpha LPG rider for order ${o.displayNumber}.',
                       ),
-                      icon: const Icon(Icons.chat_rounded, color: Colors.white),
+                      icon: const WhatsAppIcon(size: 26),
                     ),
                   const SizedBox(width: 6),
                   IconButton.filled(

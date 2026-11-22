@@ -168,10 +168,7 @@ class AccountScreen extends StatelessWidget {
                     endIndent: 16,
                   ),
                   ListTile(
-                    leading: const Icon(
-                      Icons.chat_rounded,
-                      color: Brand.whatsapp,
-                    ),
+                    leading: const WhatsAppIcon(size: 26),
                     title: const Text('WhatsApp Alpha LPG'),
                     onTap: () => Launch.whatsapp(
                       shop.whatsapp,

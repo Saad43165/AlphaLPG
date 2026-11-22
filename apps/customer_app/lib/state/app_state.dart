@@ -20,7 +20,6 @@ class AppState extends ChangeNotifier {
         _ => ThemeMode.system,
       };
       haptics = p.getBool('haptics') ?? true;
-      cycleDaysOverride = p.getInt('cycleDays');
     }
     Haptics.enabled = haptics;
     _subs.add(
@@ -74,9 +73,6 @@ class AppState extends ChangeNotifier {
   final themeMode = ValueNotifier<ThemeMode>(ThemeMode.system);
   bool haptics = true;
 
-  /// How long a cylinder lasts for this household, if the customer set it.
-  int? cycleDaysOverride;
-
   void setThemeMode(ThemeMode m) {
     themeMode.value = m;
     prefs?.setString('theme', m.name);
@@ -86,16 +82,6 @@ class AppState extends ChangeNotifier {
     haptics = v;
     Haptics.enabled = v;
     prefs?.setBool('haptics', v);
-    notifyListeners();
-  }
-
-  void setCycleDays(int? days) {
-    cycleDaysOverride = days;
-    if (days == null) {
-      prefs?.remove('cycleDays');
-    } else {
-      prefs?.setInt('cycleDays', days);
-    }
     notifyListeners();
   }
 

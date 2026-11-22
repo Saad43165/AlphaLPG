@@ -1,3 +1,4 @@
+import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -680,17 +681,14 @@ class _OrderSafelyCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            IconButton.filled(
+            IconButton.outlined(
               tooltip: 'Order on WhatsApp',
-              style: IconButton.styleFrom(
-                backgroundColor: Brand.whatsapp,
-                minimumSize: const Size(46, 46),
-              ),
+              style: IconButton.styleFrom(minimumSize: const Size(46, 46)),
               onPressed: () => Launch.whatsapp(
                 whatsapp,
                 'Assalam-o-Alaikum, I would like to order LPG.',
               ),
-              icon: const Icon(Icons.chat_rounded, color: Colors.white),
+              icon: const WhatsAppIcon(size: 26),
             ),
           ],
         ),
