@@ -243,7 +243,7 @@ class JobDetailScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (wa != null)
+                  if (wa != null && o.status.isActive)
                     IconButton.outlined(
                       tooltip: 'WhatsApp customer',
                       onPressed: () => Launch.whatsapp(
@@ -252,13 +252,17 @@ class JobDetailScreen extends StatelessWidget {
                       ),
                       icon: const WhatsAppIcon(size: 26),
                     ),
-                  const SizedBox(width: 6),
-                  IconButton.filled(
-                    tooltip: 'Call customer',
-                    style: IconButton.styleFrom(backgroundColor: Brand.success),
-                    onPressed: () => Launch.call(o.customerPhone),
-                    icon: const Icon(Icons.call_rounded, color: Colors.white),
-                  ),
+                  if (o.status.isActive) ...[
+                    const SizedBox(width: 6),
+                    IconButton.filled(
+                      tooltip: 'Call customer',
+                      style: IconButton.styleFrom(
+                        backgroundColor: Brand.success,
+                      ),
+                      onPressed: () => Launch.call(o.customerPhone),
+                      icon: const Icon(Icons.call_rounded, color: Colors.white),
+                    ),
+                  ],
                 ],
               ),
             ),

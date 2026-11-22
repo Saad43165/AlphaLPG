@@ -526,15 +526,10 @@ class AdminSession extends ChangeNotifier {
   final _chatSeen = <String, int>{};
 
   void _watchChats(List<LpgOrder> list) {
-    // Orders in progress, plus ones delivered in the last 2 days (a customer
-    // may still report a problem or send a receipt).
-    final recent = DateTime.now().subtract(const Duration(days: 2));
+    // Chat only exists while an order is open.
     final active = [
       for (final o in list)
-        if (o.status.isActive ||
-            (o.status == OrderStatus.delivered &&
-                (o.updatedAt ?? DateTime(0)).isAfter(recent)))
-          o,
+        if (o.status.isActive) o,
     ];
     for (final o in active) {
       _chatSubs.putIfAbsent(

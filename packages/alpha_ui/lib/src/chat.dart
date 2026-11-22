@@ -37,6 +37,7 @@ class ChatPage extends StatefulWidget {
     this.onOpened,
     this.loadError,
     this.onRetry,
+    this.closedNote,
   });
 
   final String title;
@@ -53,6 +54,10 @@ class ChatPage extends StatefulWidget {
   /// "no messages" text, with a Try again button.
   final String? loadError;
   final VoidCallback? onRetry;
+
+  /// Set when the order is finished (delivered or cancelled): the chat is
+  /// read-only and this text is shown instead of the message box.
+  final String? closedNote;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -86,7 +91,7 @@ class _ChatPageState extends State<ChatPage> {
       if (mounted) {
         setState(
           () => _error = '$e'.contains('permission-denied')
-              ? 'Chat is not switched on yet. Alpha LPG needs to publish the latest database rules.'
+              ? 'This chat is closed or not switched on yet. If the order is still open, ask Alpha LPG to publish the latest database rules.'
               : 'Could not send. Check your internet.',
         );
       }
@@ -312,7 +317,7 @@ class _ChatPageState extends State<ChatPage> {
                 style: const TextStyle(color: Brand.danger, fontSize: 13),
               ),
             ),
-          if (widget.quickReplies.isNotEmpty)
+          if (widget.closedNote == null && widget.quickReplies.isNotEmpty)
             SizedBox(
               height: 44,
               child: ListView(
@@ -330,36 +335,63 @@ class _ChatPageState extends State<ChatPage> {
                 ],
               ),
             ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _text,
-                      minLines: 1,
-                      maxLines: 4,
-                      maxLength: 500,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(
-                        hintText: 'Type a message',
-                        counterText: '',
+          if (widget.closedNote != null)
+            SafeArea(
+              top: false,
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: pal.card,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: pal.line),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_outline_rounded, color: pal.muted),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        widget.closedNote!,
+                        style: TextStyle(color: pal.muted, height: 1.35),
                       ),
-                      onSubmitted: (_) => _send(),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _sending ? null : _send,
-                    icon: const Icon(Icons.send_rounded),
-                    tooltip: 'Send',
-                  ),
-                ],
+                  ],
+                ),
+              ),
+            )
+          else
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _text,
+                        minLines: 1,
+                        maxLines: 4,
+                        maxLength: 500,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          hintText: 'Type a message',
+                          counterText: '',
+                        ),
+                        onSubmitted: (_) => _send(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      onPressed: _sending ? null : _send,
+                      icon: const Icon(Icons.send_rounded),
+                      tooltip: 'Send',
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

@@ -311,6 +311,13 @@ describe('order chat', () => {
     await assertFails(addDoc(collection(staff('r2'), 'orders/o1/messages'), msg('r2', 'rider')));
     await assertFails(addDoc(collection(customer('u2', '+923111111111'), 'orders/o1/messages'), msg('u2', 'customer')));
   });
+  it('chat closes once the order is delivered or cancelled', async () => {
+    await seedOrder({ riderId: 'r1', status: 'delivered' });
+    await assertFails(addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'customer')));
+    await assertFails(addDoc(collection(staff('r1'), 'orders/o1/messages'), msg('r1', 'rider')));
+    await assertFails(addDoc(collection(staff('boss'), 'orders/o1/messages'), msg('boss', 'admin')));
+    await assertSucceeds(getDocs(collection(customer(), 'orders/o1/messages')));
+  });
   it('nobody can write as someone else, or send huge or empty messages', async () => {
     await seedOrder({ riderId: 'r1', status: 'assigned' });
     await assertFails(addDoc(collection(customer(), 'orders/o1/messages'), msg('u1', 'admin')));

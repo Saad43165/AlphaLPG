@@ -147,7 +147,7 @@ class _TrackingView extends StatelessWidget {
                 ),
               ),
               actions: [
-                if (o.status != OrderStatus.cancelled)
+                if (o.status.isActive)
                   Badge(
                     isLabelVisible: context.watch<ChatInbox>().unread(o.id) > 0,
                     label: Text('${context.watch<ChatInbox>().unread(o.id)}'),
@@ -205,7 +205,7 @@ class _TrackingView extends StatelessWidget {
                         const SizedBox(height: 10),
                         _ShareRow(o),
                       ],
-                      if (o.status != OrderStatus.cancelled) ...[
+                      if (o.status.isActive) ...[
                         const SizedBox(height: 10),
                         _ChatCard(o),
                       ],

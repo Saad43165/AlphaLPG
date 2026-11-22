@@ -328,7 +328,10 @@ service cloud.firestore {
         allow read: if isAdmin()
           || (signedIn() && orderDoc().customerId == request.auth.uid)
           || (isRider() && orderDoc().riderId == request.auth.uid);
+        // Chat is only open while the order is: once it is delivered or
+        // cancelled nobody can write to it any more.
         allow create: if request.resource.data.keys().hasOnly(['uid', 'role', 'name', 'text', 'createdAt'])
+          && orderDoc().status in ['placed', 'confirmed', 'assigned', 'outForDelivery']
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() >= 1

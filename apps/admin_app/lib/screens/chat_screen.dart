@@ -36,6 +36,9 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
     return ListenableBuilder(
       listenable: _chat,
       builder: (context, _) => ChatPage(
+        closedNote: order.status.isActive
+            ? null
+            : 'This order is finished, so the chat is closed.',
         title: order.customerName,
         subtitle: order.riderName != null
             ? 'Order ${order.displayNumber} · rider ${order.riderName}'

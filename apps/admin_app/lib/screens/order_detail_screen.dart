@@ -247,19 +247,20 @@ class OrderDetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: _Act(
-                        Icons.forum_rounded,
-                        s.chat.unread(o.id) > 0
-                            ? 'Chat (${s.chat.unread(o.id)})'
-                            : 'Chat',
-                        () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => OrderChatScreen(order: o),
+                    if (o.status.isActive)
+                      Expanded(
+                        child: _Act(
+                          Icons.forum_rounded,
+                          s.chat.unread(o.id) > 0
+                              ? 'Chat (${s.chat.unread(o.id)})'
+                              : 'Chat',
+                          () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => OrderChatScreen(order: o),
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ],
