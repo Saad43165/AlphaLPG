@@ -721,4 +721,65 @@ void main() {
     final l = (await tester.runAsync(() => b.promo.watchLoyalty('c1').first))!;
     expect(l.points, 0);
   });
+
+  testWidgets(
+    'a scheduled order waits under Scheduled and says when it is due',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final b = _backend(MemoryStore());
+      final day = DateTime.now().add(const Duration(days: 2));
+      await tester.runAsync(() async {
+        final id = await b.orders.place(
+          LpgOrder(
+            customerId: 'c1',
+            customerName: 'Ali Raza',
+            customerPhone: '+923001234567',
+            items: const [
+              OrderItem(
+                productId: 'cyl-11-8kg',
+                name: '11.8kg Gas Cylinder',
+                sizeKg: 11.8,
+                type: PurchaseType.refill,
+                unitPrice: 3296,
+                quantity: 1,
+              ),
+            ],
+            subtotal: 3296,
+            deliveryFee: 150,
+            total: 3446,
+            address: const Address(
+              label: 'Home',
+              line1: '12-B',
+              area: 'Gulberg',
+            ),
+            scheduledFor: DateTime(day.year, day.month, day.day, 12),
+            notes: 'Slot: Afternoon 12pm–4pm\nCall at the gate',
+          ),
+        );
+        await b.orders.updateStatus(id, OrderStatus.confirmed, 'boss');
+      });
+      await tester.pumpWidget(AdminApp(backend: b));
+      await tester.pumpAndSettle();
+      // Not in progress yet: it is for the day after tomorrow.
+      await tester.tap(find.text('In progress'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ali Raza'), findsNothing);
+      await tester.tap(find.textContaining('Scheduled · 1'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ali Raza'), findsOneWidget);
+      expect(find.textContaining('Afternoon 12pm–4pm'), findsOneWidget);
+      await tester.tap(find.text('Ali Raza'));
+      await tester.pumpAndSettle();
+      expect(find.text('SCHEDULED DELIVERY'), findsOneWidget);
+      expect(
+        find.textContaining('Confirmed: send a rider on the day'),
+        findsOneWidget,
+      );
+      // The automatic slot line is not repeated in the notes.
+      expect(find.text('Call at the gate'), findsOneWidget);
+      expect(find.text('Slot: Afternoon 12pm–4pm'), findsNothing);
+    },
+  );
 }

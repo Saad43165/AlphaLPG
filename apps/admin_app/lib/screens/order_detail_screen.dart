@@ -10,6 +10,7 @@ import '../utils/launch.dart';
 import '../utils/order_x.dart';
 import '../utils/payment_checks.dart';
 import '../widgets/common.dart';
+import '../widgets/schedule.dart';
 import '../widgets/payment_panel.dart';
 import 'chat_screen.dart';
 import 'reports_inbox_screen.dart';
@@ -61,6 +62,7 @@ class OrderDetailScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
           children: [
             // ---- What to do now, and how far along the order is ----------------
+            ScheduleBanner(o),
             _NextStep(order: o),
             _Progress(order: o),
 
@@ -280,7 +282,7 @@ class OrderDetailScreen extends StatelessWidget {
                     ),
                   ),
                 Text(o.address.oneLine, style: const TextStyle(height: 1.4)),
-                if (o.notes.isNotEmpty) ...[
+                if (o.customerNotes.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Container(
                     width: double.infinity,
@@ -290,7 +292,7 @@ class OrderDetailScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      o.notes,
+                      o.customerNotes,
                       style: const TextStyle(
                         fontStyle: FontStyle.italic,
                         height: 1.35,
@@ -616,12 +618,20 @@ class _NextStep extends StatelessWidget {
         'Confirm this order',
         'Check the items and address, then confirm.$payNote',
       ),
-      OrderStatus.confirmed => (
-        Icons.two_wheeler_rounded,
-        Brand.flame,
-        'Give it to a rider',
-        'Choose a rider who is on shift.$payNote',
-      ),
+      OrderStatus.confirmed =>
+        o.isUpcoming()
+            ? (
+                Icons.event_available_rounded,
+                const Color(0xFF6A3FC1),
+                'Confirmed: send a rider on the day',
+                'Nothing to do for the rider yet. It becomes a normal job ${LpgOrder.scheduleLead.inHours} hours before the window.$payNote',
+              )
+            : (
+                Icons.two_wheeler_rounded,
+                Brand.flame,
+                'Give it to a rider',
+                'Choose a rider who is on shift.$payNote',
+              ),
       OrderStatus.assigned => (
         Icons.hourglass_top_rounded,
         Brand.blueDark,
@@ -1081,6 +1091,30 @@ class _ActionsState extends State<_Actions> {
 
   Future<void> _assign() async {
     final s = context.read<AdminSession>();
+    if (widget.order.isUpcoming() && widget.order.riderId == null) {
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (d) => AlertDialog(
+          title: const Text('This order is for later'),
+          content: Text(
+            'The customer wants it ${scheduleLabel(widget.order)}. '
+            'If you give it to a rider now, they see it as their job straight away. '
+            'Usually you assign on the day.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(d, false),
+              child: const Text('Later'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(d, true),
+              child: const Text('Assign now'),
+            ),
+          ],
+        ),
+      );
+      if (go != true || !mounted) return;
+    }
     final r = await showModalBottomSheet<RiderProfile>(
       context: context,
       showDragHandle: true,

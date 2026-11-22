@@ -188,6 +188,33 @@ class LpgOrder {
 
   int get discount => couponDiscount + pointsDiscount;
 
+  // ---- Scheduled delivery ------------------------------------------------------
+
+  /// How long before a scheduled window starts the order becomes a normal job
+  /// (riders see it, the shop starts looking for someone).
+  static const scheduleLead = Duration(hours: 2);
+
+  bool get isScheduled => scheduledFor != null;
+
+  /// "Afternoon 12pm–4pm": the time window the customer picked.
+  String get slotText {
+    final first = notes.split('\n').first;
+    return first.startsWith('Slot: ') ? first.substring(6).trim() : '';
+  }
+
+  /// The customer's own notes, without the automatic "Slot: …" line.
+  String get customerNotes =>
+      notes.split('\n').where((l) => !l.startsWith('Slot: ')).join('\n').trim();
+
+  /// Scheduled, still open, and the window is further away than [scheduleLead]:
+  /// nobody needs to act on delivery yet.
+  bool isUpcoming([DateTime? now]) =>
+      scheduledFor != null &&
+      (status == OrderStatus.placed ||
+          status == OrderStatus.confirmed ||
+          status == OrderStatus.assigned) &&
+      scheduledFor!.isAfter((now ?? DateTime.now()).add(scheduleLead));
+
   bool get canBeRated => status == OrderStatus.delivered && rating == null;
 
   int get cylinderCount => items.fold(0, (n, i) => n + i.quantity);

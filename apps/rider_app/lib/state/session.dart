@@ -58,7 +58,14 @@ class RiderSession extends ChangeNotifier {
   String? _uid;
   RiderProfile? profile;
   bool profileLoaded = false;
-  List<LpgOrder> available = const [];
+  List<LpgOrder> _availableRaw = const [];
+
+  /// Orders nobody has taken. A scheduled order for another day stays out of
+  /// this list until its window is about to open.
+  List<LpgOrder> get available => [
+    for (final o in _availableRaw)
+      if (!o.isUpcoming()) o,
+  ];
   List<LpgOrder> jobs = const [];
   List<LpgOrder> history = const [];
   List<CashHandover> handovers = const [];
@@ -117,7 +124,7 @@ class RiderSession extends ChangeNotifier {
     _uid = uid;
     profile = null;
     profileLoaded = false;
-    available = jobs = history = const [];
+    _availableRaw = jobs = history = const [];
     trackingProblem = null;
     _knownAvailable = _knownJobs = null;
     _selfDone.clear();
@@ -152,7 +159,7 @@ class RiderSession extends ChangeNotifier {
                 if (isRider && !wasRider) _listenToWork(uid);
                 if (!isRider) {
                   // Blocked or removed: drop everything.
-                  available = jobs = history = const [];
+                  _availableRaw = jobs = history = const [];
                 }
                 notifyListeners();
               },
@@ -254,8 +261,8 @@ class RiderSession extends ChangeNotifier {
     Alerts.askPermission();
     _riderSubs.add(
       backend.orders.watchAvailable().listen((o) {
-        available = o;
-        _alertAvailable(o);
+        _availableRaw = o;
+        _alertAvailable(available);
         notifyListeners();
       }, onError: (_) {}),
     );
@@ -379,6 +386,9 @@ class RiderSession extends ChangeNotifier {
       _beat ??= Timer.periodic(const Duration(seconds: 60), (_) {
         final u = _uid;
         if (u != null && online) _beatNow(u);
+        // A scheduled order may have just come due.
+        _alertAvailable(available);
+        notifyListeners();
       });
     } else {
       _beat?.cancel();

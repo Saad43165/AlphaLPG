@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:alpha_core/alpha_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart' show ThemeMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -212,12 +213,30 @@ class AdminSession extends ChangeNotifier {
 
   int get newCount =>
       orders.where((o) => o.status == OrderStatus.placed).length;
-  int get activeCount => orders
+
+  /// Orders being delivered now (a scheduled order joins when its day comes).
+  List<LpgOrder> get activeOrders => [
+    for (final o in orders)
+      if ((o.status == OrderStatus.confirmed ||
+              o.status == OrderStatus.assigned ||
+              o.status == OrderStatus.outForDelivery) &&
+          !o.isUpcoming())
+        o,
+  ];
+  int get activeCount => activeOrders.length;
+
+  /// Scheduled orders whose day has not come yet, soonest first.
+  List<LpgOrder> get upcomingOrders => [
+    for (final o in orders)
+      if (o.isUpcoming()) o,
+  ]..sort((a, b) => a.scheduledFor!.compareTo(b.scheduledFor!));
+
+  /// Scheduled orders for the next 24 hours.
+  int get scheduledSoonCount => upcomingOrders
       .where(
-        (o) =>
-            o.status == OrderStatus.confirmed ||
-            o.status == OrderStatus.assigned ||
-            o.status == OrderStatus.outForDelivery,
+        (o) => o.scheduledFor!.isBefore(
+          DateTime.now().add(const Duration(hours: 24)),
+        ),
       )
       .length;
 
@@ -684,9 +703,13 @@ class AdminSession extends ChangeNotifier {
         if ((o.status == OrderStatus.placed ||
                 o.status == OrderStatus.confirmed) &&
             o.riderId == null &&
-            o.scheduledFor == null &&
-            o.createdAt != null &&
-            o.createdAt!.isBefore(cutoff))
+            !o.isUpcoming() &&
+            // A scheduled order starts waiting when its window opens.
+            (o.isScheduled
+                ? o.scheduledFor!
+                      .subtract(LpgOrder.scheduleLead)
+                      .isBefore(cutoff)
+                : (o.createdAt != null && o.createdAt!.isBefore(cutoff))))
           o,
     ];
   }
@@ -769,7 +792,9 @@ class AdminSession extends ChangeNotifier {
             newOrderAlert = o;
             Alerts.show(
               id: 200 + (o.id.hashCode & 0xffff),
-              title: o.paymentMethod.isPrepaid
+              title: o.isScheduled
+                  ? 'Scheduled order · ${rs(o.total)} · ${DateFormat('EEE d MMM').format(o.scheduledFor!)} ${o.slotText}'
+                  : o.paymentMethod.isPrepaid
                   ? 'New order · ${rs(o.total)} · send ${o.paymentMethod.label} details'
                   : 'New order · ${rs(o.total)}',
               body: '${o.customerName} · ${o.itemsLine} · ${o.areaLine}',

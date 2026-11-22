@@ -8,9 +8,10 @@ import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
 import '../widgets/common.dart';
+import '../widgets/schedule.dart';
 import 'order_detail_screen.dart';
 
-enum _Filter { fresh, active, verify, done, cancelled }
+enum _Filter { fresh, scheduled, active, verify, done, cancelled }
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -24,13 +25,62 @@ class _OrdersScreenState extends State<OrdersScreen> {
   String _q = '';
   bool _searching = false;
 
+  /// What the list shows: orders, with plain-text headings between groups.
+  List<Object> _items(AdminSession s) {
+    final out = <Object>[];
+    switch (_f) {
+      case _Filter.active:
+        final active = s.activeOrders;
+        for (final (title, test) in <(String, bool Function(LpgOrder))>[
+          (
+            'Waiting for a rider',
+            (o) => o.status == OrderStatus.confirmed && o.riderId == null,
+          ),
+          (
+            'Rider assigned, not left yet',
+            (o) =>
+                o.status == OrderStatus.assigned ||
+                (o.status == OrderStatus.confirmed && o.riderId != null),
+          ),
+          ('On the road', (o) => o.status == OrderStatus.outForDelivery),
+        ]) {
+          final g = active.where(test).toList();
+          if (g.isEmpty) continue;
+          out.add('$title · ${g.length}');
+          out.addAll(g);
+        }
+      case _Filter.scheduled:
+        String? day;
+        for (final o in s.upcomingOrders) {
+          final d = _dayName(o.scheduledFor!);
+          if (d != day) {
+            day = d;
+            out.add(d);
+          }
+          out.add(o);
+        }
+      default:
+        out.addAll(_list(s));
+    }
+    return out;
+  }
+
+  static String _dayName(DateTime d) {
+    final now = DateTime.now();
+    final a = DateTime(d.year, d.month, d.day);
+    final t = DateTime(now.year, now.month, now.day);
+    final diff = a.difference(t).inDays;
+    return diff == 0
+        ? 'Today'
+        : diff == 1
+        ? 'Tomorrow'
+        : DateFormat('EEEE d MMM').format(d);
+  }
+
   List<LpgOrder> _list(AdminSession s) => switch (_f) {
     _Filter.fresh => s.ordersIn([OrderStatus.placed]),
-    _Filter.active => s.ordersIn([
-      OrderStatus.confirmed,
-      OrderStatus.assigned,
-      OrderStatus.outForDelivery,
-    ]),
+    _Filter.scheduled => s.upcomingOrders,
+    _Filter.active => s.activeOrders,
     _Filter.verify => [
       for (final stage in [
         PayStage.sendDetails,
@@ -66,13 +116,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final s = context.watch<AdminSession>();
     // While searching, look through every order, not just the chosen tab.
     final list = _q.trim().isEmpty
-        ? _list(s)
-        : [
+        ? _items(s)
+        : <Object>[
             for (final o in s.orders)
               if (_matches(o)) o,
           ];
     final counts = {
       _Filter.fresh: s.newCount,
+      _Filter.scheduled: s.upcomingOrders.length,
       _Filter.active: s.activeCount,
       _Filter.verify: s.toVerifyCount,
     };
@@ -118,6 +169,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     ? '1 order has waited ${AdminSession.waitingMinutes}+ min for a rider'
                     : '${s.waitingForRider.length} orders have waited ${AdminSession.waitingMinutes}+ min for a rider',
                 onTap: () => setState(() => _f = _Filter.fresh),
+              ),
+            if (!_searching && s.scheduledSoonCount > 0)
+              _PayBanner(
+                icon: Icons.event_rounded,
+                text: s.scheduledSoonCount == 1
+                    ? '1 scheduled order in the next 24 hours'
+                    : '${s.scheduledSoonCount} scheduled orders in the next 24 hours',
+                onTap: () => setState(() => _f = _Filter.scheduled),
               ),
             if (!_searching && s.needDetailsCount > 0)
               _PayBanner(
@@ -170,6 +229,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ],
                 ),
               ),
+            if (!_searching && s.riders.any((r) => r.active)) _RiderStrip(s),
             if (!_searching)
               SizedBox(
                 height: 46,
@@ -179,6 +239,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   children: [
                     for (final (f, label) in const [
                       (_Filter.fresh, 'New'),
+                      (_Filter.scheduled, 'Scheduled'),
                       (_Filter.active, 'In progress'),
                       (_Filter.verify, 'Online payments'),
                       (_Filter.done, 'Delivered'),
@@ -215,6 +276,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       icon: Icons.inbox_rounded,
                       title: switch (_f) {
                         _Filter.fresh => 'No new orders',
+                        _Filter.scheduled => 'No scheduled orders',
                         _Filter.active => 'Nothing in progress',
                         _Filter.verify => 'No payments to check',
                         _Filter.done => 'No delivered orders yet',
@@ -226,7 +288,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: list.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (_, i) => OrderTile(order: list[i]),
+                      itemBuilder: (_, i) {
+                        final item = list[i];
+                        if (item is String) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              item,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: context.pal.muted,
+                              ),
+                            ),
+                          );
+                        }
+                        return OrderTile(order: item as LpgOrder);
+                      },
                     ),
             ),
           ],
@@ -381,6 +458,10 @@ class OrderTile extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (o.isScheduled) ...[
+                  const SizedBox(height: 10),
+                  ScheduleChip(o),
+                ],
                 Divider(height: 22, color: pal.line),
                 // Money and rider on one line; payment tags on their own
                 // line below so nothing gets squeezed.
@@ -643,4 +724,164 @@ class _PayBanner extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Every rider at a glance: free, on a job, or offline. Tap one to see what
+/// they are carrying.
+class _RiderStrip extends StatelessWidget {
+  const _RiderStrip(this.s);
+  final AdminSession s;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    final riders =
+        [
+          for (final r in s.riders)
+            if (r.active) r,
+        ]..sort((a, b) {
+          int rank(RiderProfile r) =>
+              r.isLive() ? (s.jobsOf(r.uid).isEmpty ? 0 : 1) : 2;
+          return rank(a).compareTo(rank(b));
+        });
+    return SizedBox(
+      height: 62 + (MediaQuery.textScalerOf(context).scale(14) - 14) * 3,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        children: [
+          for (final r in riders)
+            Builder(
+              builder: (context) {
+                final jobs = s.jobsOf(r.uid);
+                final live = r.isLive();
+                final (String label, Color color) = !live
+                    ? ('Offline', pal.muted)
+                    : jobs.isEmpty
+                    ? ('Free', Brand.success)
+                    : (
+                        '${jobs.length} job${jobs.length == 1 ? '' : 's'}',
+                        Brand.flame,
+                      );
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Material(
+                    color: pal.card,
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => showModalBottomSheet<void>(
+                        context: context,
+                        showDragHandle: true,
+                        isScrollControlled: true,
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: s,
+                          child: _RiderJobsSheet(r),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  r.name,
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                                Text(
+                                  label,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RiderJobsSheet extends StatelessWidget {
+  const _RiderJobsSheet(this.rider);
+  final RiderProfile rider;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AdminSession>();
+    final jobs = s.jobsOf(rider.uid);
+    final pal = context.pal;
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [
+            Text(
+              rider.name,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+            ),
+            Text(
+              rider.isLive()
+                  ? (jobs.isEmpty
+                        ? 'On shift and free'
+                        : 'On shift, ${jobs.length} job${jobs.length == 1 ? '' : 's'}')
+                  : 'Not on shift',
+              style: TextStyle(color: pal.muted),
+            ),
+            const SizedBox(height: 12),
+            if (jobs.isEmpty)
+              Text(
+                'No orders with this rider right now.',
+                style: TextStyle(color: pal.muted),
+              ),
+            for (final o in jobs)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: OrderTile(order: o),
+              ),
+            if (rider.phone.isNotEmpty)
+              OutlinedButton.icon(
+                onPressed: () => Launch.call(rider.phone),
+                icon: const Icon(Icons.call_rounded),
+                label: Text('Call ${rider.name}'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

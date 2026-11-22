@@ -78,7 +78,9 @@ LpgOrder sampleOrder({
   String customer = 'u1',
   PaymentMethod method = PaymentMethod.cashOnDelivery,
   int qty = 2,
+  DateTime? scheduledFor,
 }) => LpgOrder(
+  scheduledFor: scheduledFor,
   customerId: customer,
   customerName: 'Bilal Ahmed',
   customerPhone: '+923001234567',
@@ -660,6 +662,35 @@ void main() {
         () => rig.backend.orders.watchMessages(id).first,
       );
       expect(chat, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'a scheduled order for another day stays off the New list until its day',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      await tester.runAsync(() async {
+        final later = DateTime.now().add(const Duration(days: 2));
+        await rig.backend.orders.place(
+          sampleOrder(
+            scheduledFor: DateTime(later.year, later.month, later.day, 12),
+          ),
+        );
+      });
+      await tester.runAsync(() => rig.backend.riders.setOnline('r1', true));
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      await tapText(tester, 'New');
+      expect(find.text('Accept job'), findsNothing);
+
+      // An ordinary order is still offered.
+      await tester.runAsync(() => rig.backend.orders.place(sampleOrder()));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 80)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Accept job'), findsOneWidget);
     },
   );
 }
