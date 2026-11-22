@@ -297,7 +297,7 @@ void main() {
     expect(find.text('Invite friends'), findsOneWidget);
     expect(find.text('Refill plan'), findsNothing);
     expect(find.text('Rewards and invite friends'), findsNothing);
-    expect(find.text('Help center'), findsOneWidget);
+    expect(find.text('Help'), findsWidgets);
     GoRouter.of(tester.element(find.byType(Navigator).first)).go('/rewards');
     await tester.pumpAndSettle();
     expect(find.text('Your points'), findsNothing);

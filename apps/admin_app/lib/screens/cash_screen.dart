@@ -11,7 +11,8 @@ import '../widgets/common.dart';
 
 /// Cash each rider collected, what they have handed in, and today's closing.
 class CashScreen extends StatelessWidget {
-  const CashScreen({super.key});
+  const CashScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   Future<void> _handover(
     BuildContext context,
@@ -107,7 +108,7 @@ class CashScreen extends StatelessWidget {
     final totalPending = rows.fold(0, (n, e) => n + e.$2.pending);
     final fmt = DateFormat('d MMM, h:mm a');
     return Scaffold(
-      appBar: AppBar(title: const Text('Cash handover')),
+      appBar: embedded ? null : AppBar(title: const Text('Cash handover')),
       body: Constrained(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),

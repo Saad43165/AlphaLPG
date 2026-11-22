@@ -85,23 +85,41 @@ class AccountScreen extends StatelessWidget {
                 ),
               ),
             if (state.signedIn) ...[
-              const SectionTitle('My account'),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _quick(
+                      context,
+                      Icons.receipt_long_rounded,
+                      'Orders',
+                      () => context.go('/orders'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _quick(
+                      context,
+                      Icons.location_on_rounded,
+                      'Addresses',
+                      () => context.push('/account/addresses'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _quick(
+                      context,
+                      Icons.support_agent_rounded,
+                      'Help',
+                      () => context.push('/support'),
+                    ),
+                  ),
+                ],
+              ),
+              const SectionTitle('Offers and business'),
               Card(
                 child: Column(
                   children: [
-                    _tile(
-                      context,
-                      Icons.location_on_outlined,
-                      'Saved addresses',
-                      '/account/addresses',
-                    ),
-                    _tile(
-                      context,
-                      Icons.receipt_long_outlined,
-                      'Order history',
-                      '/orders',
-                      go: true,
-                    ),
                     _tile(
                       context,
                       Icons.card_giftcard_rounded,
@@ -117,12 +135,6 @@ class AccountScreen extends StatelessWidget {
                         'Refill plan',
                         '/plan',
                       ),
-                    _tile(
-                      context,
-                      Icons.support_agent_rounded,
-                      'Help center',
-                      '/support',
-                    ),
                     _tile(
                       context,
                       Icons.factory_outlined,
@@ -289,6 +301,47 @@ class AccountScreen extends StatelessWidget {
       }
     }
   }
+
+  /// A big square button for the three things used most.
+  Widget _quick(
+    BuildContext context,
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) => Container(
+    decoration: BoxDecoration(
+      color: context.pal.card,
+      borderRadius: BorderRadius.circular(Brand.radius),
+      boxShadow: context.pal.shadow,
+    ),
+    child: Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(Brand.radius),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Brand.blue.withValues(alpha: 0.13),
+                child: Icon(icon, color: Brand.blueDark, size: 26),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 
   Widget _tile(
     BuildContext context,

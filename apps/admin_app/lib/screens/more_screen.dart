@@ -23,10 +23,19 @@ import 'team_screen.dart';
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
 
+  static Future<void> _go(BuildContext context, AdminSession s, Widget page) =>
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ChangeNotifierProvider.value(value: s, child: page),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AdminSession>();
+    final pal = context.pal;
     final newQuotes = s.quotes.where((q) => q.status == 'new').length;
+    final inbox = s.openReportCount + newQuotes;
     return Scaffold(
       appBar: AppBar(title: const Text('More')),
       body: Constrained(
@@ -34,33 +43,37 @@ class MoreScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             const SetupCheck(),
+            // Who is signed in.
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: panel(context),
               child: Row(
                 children: [
                   const CircleAvatar(
+                    radius: 26,
                     backgroundColor: Brand.navy,
                     child: Icon(
                       Icons.admin_panel_settings_rounded,
                       color: Brand.flame,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Owner',
-                          style: TextStyle(fontWeight: FontWeight.w800),
+                        Text(
+                          s.isOwner ? 'Owner' : 'Staff',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 17,
+                          ),
                         ),
                         Text(
                           s.backend.auth.email ?? '',
-                          style: TextStyle(
-                            color: context.pal.muted,
-                            fontSize: 13,
-                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: pal.muted, fontSize: 13),
                         ),
                       ],
                     ),
@@ -68,205 +81,72 @@ class MoreScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            ListTile(
-              leading: const Icon(Icons.menu_book_rounded),
-              title: const Text('How the app works'),
-              subtitle: const Text(
-                'Guide in English and اردو, for you and new staff',
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => GuideScreen(shopPhone: s.settings.phone),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.local_offer_rounded),
-              title: const Text('Coupons and rewards'),
-              subtitle: const Text('Discount codes, points, invite a friend'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ChangeNotifierProvider.value(
-                    value: s,
-                    child: const RewardsScreen(),
+            const SizedBox(height: 14),
+            // What you open every day.
+            Row(
+              children: [
+                Expanded(
+                  child: _Quick(
+                    icon: Icons.inbox_rounded,
+                    label: 'Inbox',
+                    badge: inbox,
+                    onTap: () => _go(context, s, const InboxScreen()),
                   ),
                 ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.insights_rounded),
-              title: const Text('Sales & cash report'),
-              subtitle: const Text('Today, 7 days, 30 days'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const ReportsScreen()),
-              ),
-            ),
-            ListTile(
-              leading: Badge(
-                isLabelVisible: s.openReportCount > 0,
-                label: Text('${s.openReportCount}'),
-                child: const Icon(Icons.report_rounded),
-              ),
-              title: const Text('Reports and problems'),
-              subtitle: const Text('From customers and riders'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ChangeNotifierProvider.value(
-                    value: s,
-                    child: const ReportsInboxScreen(),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _Quick(
+                    icon: Icons.account_balance_wallet_rounded,
+                    label: 'Money',
+                    onTap: () => _go(context, s, const MoneyScreen()),
                   ),
                 ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.people_alt_rounded),
-              title: const Text('Customers'),
-              subtitle: const Text('Orders, empties owed, deposits, block'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ChangeNotifierProvider.value(
-                    value: s,
-                    child: const CustomersScreen(),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _Quick(
+                    icon: Icons.people_alt_rounded,
+                    label: 'Customers',
+                    onTap: () => _go(context, s, const CustomersScreen()),
                   ),
                 ),
-              ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.payments_rounded),
-              title: const Text('Cash handover'),
-              subtitle: const Text('What each rider owes you, daily closing'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ChangeNotifierProvider.value(
-                    value: s,
-                    child: const CashScreen(),
-                  ),
-                ),
+            _Group('Shop', [
+              _Item(
+                icon: Icons.local_offer_rounded,
+                title: 'Coupons and rewards',
+                subtitle: 'Discount codes, points, invite a friend',
+                onTap: () => _go(context, s, const RewardsScreen()),
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.table_view_rounded),
-              title: const Text('Export orders (Excel / CSV)'),
-              subtitle: const Text('A spreadsheet of orders, to read or print'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () async {
-                try {
-                  await shareBytes(
-                    Uint8List.fromList(utf8.encode(ordersCsv(s.orders))),
-                    name:
-                        'alpha-lpg-orders-${DateFormat('yyyyMMdd').format(DateTime.now())}.csv',
-                    mime: 'text/csv',
-                  );
-                } catch (_) {
-                  if (context.mounted)
-                    showMessage(context, 'Could not export', error: true);
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.cloud_download_rounded),
-              title: const Text('Backup all data (safety copy)'),
-              subtitle: const Text(
-                'Orders, customers, riders, products, settings',
+              _Item(
+                icon: Icons.table_view_rounded,
+                title: 'Export orders',
+                subtitle: 'A spreadsheet of orders, to read or print',
+                onTap: () => exportOrders(context, s),
               ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () async {
-                try {
-                  final text = backupJson(
-                    orders: s.orders,
-                    customers: s.customers,
-                    riders: s.riders,
-                    products: s.products,
-                    settings: s.settings,
-                    ledger: s.ledger,
-                    handovers: s.handovers,
-                  );
-                  await shareBytes(
-                    Uint8List.fromList(utf8.encode(text)),
-                    name:
-                        'alpha-lpg-backup-${DateFormat('yyyyMMdd').format(DateTime.now())}.json',
-                    mime: 'application/json',
-                  );
-                } catch (_) {
-                  if (context.mounted)
-                    showMessage(
-                      context,
-                      'Could not make the backup',
-                      error: true,
-                    );
-                }
-              },
-            ),
-            if (!s.isOwner)
-              const ListTile(
-                enabled: false,
-                leading: Icon(Icons.groups_rounded),
-                title: Text('Team and activity log'),
-                subtitle: Text('Owner only'),
-              ),
-            if (s.isOwner)
-              ListTile(
-                leading: const Icon(Icons.cleaning_services_rounded),
-                title: const Text('Free up space'),
-                subtitle: const Text(
-                  'Delete old payment receipts and delivery photos',
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => _freeUpSpace(context, s),
-              ),
-            if (s.isOwner)
-              ListTile(
-                leading: const Icon(Icons.groups_rounded),
-                title: const Text('Team and activity log'),
-                subtitle: const Text('Add staff, see who did what'),
-                trailing: const Icon(Icons.chevron_right_rounded),
+            ]),
+            _Group('Help', [
+              _Item(
+                icon: Icons.menu_book_rounded,
+                title: 'How the app works',
+                subtitle: 'Guide in English and اردو',
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => ChangeNotifierProvider.value(
-                      value: s,
-                      child: const TeamScreen(),
-                    ),
+                    builder: (_) => GuideScreen(shopPhone: s.settings.phone),
                   ),
                 ),
               ),
-            ListTile(
-              leading: Badge(
-                isLabelVisible: s.errorLog.isNotEmpty,
-                label: Text('${s.errorLog.length}'),
-                child: const Icon(Icons.bug_report_rounded),
-              ),
-              title: const Text('App errors'),
-              subtitle: const Text('Crashes reported by the apps'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ChangeNotifierProvider.value(
-                    value: s,
-                    child: const ErrorLogScreen(),
-                  ),
+            ]),
+            if (s.isOwner)
+              _Group('Owner', [
+                _Item(
+                  icon: Icons.shield_rounded,
+                  title: 'Owner tools',
+                  subtitle: 'Team, backup, free up space, app errors',
+                  badge: s.errorLog.length,
+                  onTap: () => _go(context, s, const OwnerToolsScreen()),
                 ),
-              ),
-            ),
-            ListTile(
-              leading: Badge(
-                isLabelVisible: newQuotes > 0,
-                label: Text('$newQuotes'),
-                child: const Icon(Icons.business_center_rounded),
-              ),
-              title: const Text('Business quotes'),
-              subtitle: const Text('Bulk supply enquiries'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const QuotesScreen()),
-              ),
-            ),
+              ]),
             const Heading('Appearance'),
             ValueListenableBuilder<ThemeMode>(
               valueListenable: s.themeMode,
@@ -293,17 +173,17 @@ class MoreScreen extends StatelessWidget {
                 onSelectionChanged: (v) => s.setThemeMode(v.first),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             OutlinedButton.icon(
               onPressed: s.signOut,
               icon: const Icon(Icons.logout_rounded),
               label: const Text('Sign out'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Center(
               child: Text(
                 'Alpha LPG Admin ${AppInfo.current.label}',
-                style: TextStyle(color: context.pal.muted, fontSize: 12),
+                style: TextStyle(color: pal.muted, fontSize: 12),
               ),
             ),
           ],
@@ -313,15 +193,296 @@ class MoreScreen extends StatelessWidget {
   }
 }
 
+/// A big square button for the things opened every day.
+class _Quick extends StatelessWidget {
+  const _Quick({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.badge = 0,
+  });
+  final IconData icon;
+  final String label;
+  final int badge;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Container(
+      decoration: panel(context),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(Brand.radius),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              children: [
+                Badge(
+                  isLabelVisible: badge > 0,
+                  label: Text('$badge'),
+                  backgroundColor: Brand.cylinderRed,
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Brand.blue.withValues(alpha: 0.13),
+                    child: Icon(icon, color: Brand.blueDark, size: 26),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    color: pal.ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A titled card holding a few rows.
+class _Group extends StatelessWidget {
+  const _Group(this.title, this.items);
+  final String title;
+  final List<_Item> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(6, 22, 6, 8),
+          child: Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              color: pal.muted,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+        Container(
+          decoration: panel(context),
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  if (i > 0) Divider(height: 1, indent: 66, color: pal.line),
+                  items[i],
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Item extends StatelessWidget {
+  const _Item({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.subtitle,
+    this.badge = 0,
+  });
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final int badge;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+    leading: Badge(
+      isLabelVisible: badge > 0,
+      label: Text('$badge'),
+      backgroundColor: Brand.cylinderRed,
+      child: CircleAvatar(
+        backgroundColor: Brand.blue.withValues(alpha: 0.13),
+        child: Icon(icon, color: Brand.blueDark),
+      ),
+    ),
+    title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+    subtitle: subtitle == null ? null : Text(subtitle!),
+    trailing: const Icon(Icons.chevron_right_rounded),
+    onTap: onTap,
+  );
+}
+
+/// Everything about problems and enquiries in one place.
+class InboxScreen extends StatelessWidget {
+  const InboxScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AdminSession>();
+    final quotes = s.quotes.where((q) => q.status == 'new').length;
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Inbox'),
+          bottom: TabBar(
+            tabs: [
+              Tab(
+                text: s.openReportCount > 0
+                    ? 'Problems · ${s.openReportCount}'
+                    : 'Problems',
+              ),
+              Tab(text: quotes > 0 ? 'Quotes · $quotes' : 'Quotes'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            ReportsInboxScreen(embedded: true),
+            QuotesScreen(embedded: true),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Cash from riders and sales numbers.
+class MoneyScreen extends StatelessWidget {
+  const MoneyScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => DefaultTabController(
+    length: 2,
+    child: Scaffold(
+      appBar: AppBar(
+        title: const Text('Money'),
+        bottom: const TabBar(
+          tabs: [
+            Tab(text: 'Cash handover'),
+            Tab(text: 'Sales report'),
+          ],
+        ),
+      ),
+      body: const TabBarView(
+        children: [CashScreen(embedded: true), ReportsScreen(embedded: true)],
+      ),
+    ),
+  );
+}
+
+/// Rarely used, owner-only tools.
+class OwnerToolsScreen extends StatelessWidget {
+  const OwnerToolsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AdminSession>();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Owner tools')),
+      body: Constrained(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+          children: [
+            _Group('People', [
+              _Item(
+                icon: Icons.groups_rounded,
+                title: 'Team and activity log',
+                subtitle: 'Add staff, see who did what',
+                onTap: () => MoreScreen._go(context, s, const TeamScreen()),
+              ),
+            ]),
+            _Group('Your data', [
+              _Item(
+                icon: Icons.cloud_download_rounded,
+                title: 'Backup all data',
+                subtitle: 'A safety copy of orders, customers, products',
+                onTap: () => backupAll(context, s),
+              ),
+              _Item(
+                icon: Icons.cleaning_services_rounded,
+                title: 'Free up space',
+                subtitle: 'Delete old receipts and delivery photos',
+                onTap: () => _freeUpSpace(context, s),
+              ),
+            ]),
+            _Group('Problems', [
+              _Item(
+                icon: Icons.bug_report_rounded,
+                title: 'App errors',
+                subtitle: 'Crashes reported by the apps',
+                badge: s.errorLog.length,
+                onTap: () => MoreScreen._go(context, s, const ErrorLogScreen()),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> exportOrders(BuildContext context, AdminSession s) async {
+  try {
+    await shareBytes(
+      Uint8List.fromList(utf8.encode(ordersCsv(s.orders))),
+      name:
+          'alpha-lpg-orders-${DateFormat('yyyyMMdd').format(DateTime.now())}.csv',
+      mime: 'text/csv',
+    );
+  } catch (_) {
+    if (context.mounted) {
+      showMessage(context, 'Could not export', error: true);
+    }
+  }
+}
+
+Future<void> backupAll(BuildContext context, AdminSession s) async {
+  try {
+    final text = backupJson(
+      orders: s.orders,
+      customers: s.customers,
+      riders: s.riders,
+      products: s.products,
+      settings: s.settings,
+      ledger: s.ledger,
+      handovers: s.handovers,
+    );
+    await shareBytes(
+      Uint8List.fromList(utf8.encode(text)),
+      name:
+          'alpha-lpg-backup-${DateFormat('yyyyMMdd').format(DateTime.now())}.json',
+      mime: 'application/json',
+    );
+  } catch (_) {
+    if (context.mounted) {
+      showMessage(context, 'Could not make the backup', error: true);
+    }
+  }
+}
+
 class QuotesScreen extends StatelessWidget {
-  const QuotesScreen({super.key});
+  const QuotesScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AdminSession>();
     final fmt = DateFormat('d MMM');
     return Scaffold(
-      appBar: AppBar(title: const Text('Business quotes')),
+      appBar: embedded ? null : AppBar(title: const Text('Business quotes')),
       body: Constrained(
         child: s.quotes.isEmpty
             ? const EmptyState(

@@ -190,12 +190,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Business quotes'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.text('Business quotes'));
+    await tester.tap(find.text('Inbox'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Quotes'));
     await tester.pumpAndSettle();
     expect(find.text('WhatsApp'), findsOneWidget);
     await tester.tap(find.text('Send details'));
@@ -364,7 +361,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Cash handover'));
+    await tester.tap(find.text('Money'));
     await tester.pumpAndSettle();
     expect(find.text('Rs 6,592'), findsWidgets);
     await tester.tap(find.text('Receive cash'));
@@ -492,7 +489,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sales & cash report'));
+    await tester.tap(find.text('Money'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sales report'));
     await tester.pumpAndSettle();
     expect(find.text('Rs 6,592'), findsWidgets);
     expect(find.text('Orders delivered'), findsOneWidget);
@@ -671,14 +670,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: tab);
       }
-      for (final item in [
-        'Reports and problems',
-        'Customers',
-        'Cash handover',
-        'Sales & cash report',
-        'Team and activity log',
-        'App errors',
-      ]) {
+      for (final item in ['Inbox', 'Money', 'Customers', 'Owner tools']) {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, 4000));
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
@@ -690,6 +682,30 @@ void main() {
         await tester.tap(find.text(item));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: item);
+        if (item == 'Inbox') {
+          await tester.tap(find.textContaining('Quotes'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull, reason: 'quotes tab');
+        }
+        if (item == 'Money') {
+          await tester.tap(find.text('Sales report'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull, reason: 'sales tab');
+        }
+        if (item == 'Owner tools') {
+          for (final sub in ['Team and activity log', 'App errors']) {
+            await tester.scrollUntilVisible(
+              find.text(sub),
+              200,
+              scrollable: find.byType(Scrollable).first,
+            );
+            await tester.tap(find.text(sub));
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull, reason: sub);
+            await tester.pageBack();
+            await tester.pumpAndSettle();
+          }
+        }
         if (item == 'Customers') {
           await tester.tap(find.text('Ali Raza').first);
           await tester.pumpAndSettle();
@@ -697,8 +713,10 @@ void main() {
           await tester.pageBack();
           await tester.pumpAndSettle();
         }
-        await tester.pageBack();
-        await tester.pumpAndSettle();
+        if (item != 'Owner tools') {
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+        }
       }
     });
   }
@@ -902,6 +920,35 @@ void main() {
       await tester.tap(find.text('اردو'));
       await tester.pumpAndSettle();
       expect(find.text('1۔ دکان کھولیں'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Owner tools: opening a tool and going back returns to the tools list',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final b = _backend(MemoryStore());
+      await tester.pumpWidget(AdminApp(backend: b));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Owner tools'));
+      await tester.pumpAndSettle();
+      expect(find.text('Team and activity log'), findsOneWidget);
+      await tester.tap(find.text('App errors'));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Team and activity log'),
+        findsOneWidget,
+        reason: 'still on Owner tools',
+      );
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text('Owner tools'), findsOneWidget, reason: 'back on More');
     },
   );
 }

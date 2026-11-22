@@ -11,7 +11,10 @@ import 'order_detail_screen.dart';
 
 /// Complaints customers send about an order or a rider.
 class ReportsInboxScreen extends StatefulWidget {
-  const ReportsInboxScreen({super.key, this.orderId});
+  const ReportsInboxScreen({super.key, this.orderId, this.embedded = false});
+
+  /// Inside the Inbox tabs: no title bar of its own.
+  final bool embedded;
 
   /// Only this order's reports (null = all).
   final String? orderId;
@@ -35,7 +38,9 @@ class _ReportsInboxScreenState extends State<ReportsInboxScreen> {
           r,
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('Reports and problems')),
+      appBar: widget.embedded
+          ? null
+          : AppBar(title: const Text('Reports and problems')),
       body: Constrained(
         child: Column(
           children: [

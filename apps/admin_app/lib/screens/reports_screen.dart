@@ -11,7 +11,8 @@ enum _Period { today, week, month, all }
 
 /// Sales, cash and cylinders for a period: what the owner checks every night.
 class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({super.key});
+  const ReportsScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
@@ -119,7 +120,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
         );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Sales & cash report')),
+      appBar: widget.embedded
+          ? null
+          : AppBar(title: const Text('Sales & cash report')),
       body: Constrained(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),

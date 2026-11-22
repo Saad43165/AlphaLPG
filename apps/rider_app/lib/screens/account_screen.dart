@@ -77,73 +77,69 @@ class AccountScreen extends StatelessWidget {
             decoration: panel(context),
             child: Material(
               type: MaterialType.transparency,
-              child: ListTile(
-                leading: const Icon(
-                  Icons.bar_chart_rounded,
-                  color: Brand.blueDark,
-                ),
-                title: const Text(
-                  'My earnings and cash',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                subtitle: const Text('Deliveries, cash to hand in, ratings'),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => ChangeNotifierProvider.value(
-                      value: s,
-                      child: const EarningsScreen(),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(
+                      Icons.bar_chart_rounded,
+                      color: Brand.blueDark,
+                    ),
+                    title: const Text(
+                      'My earnings and cash',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: const Text(
+                      'Deliveries, cash to hand in, ratings',
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: s,
+                          child: const EarningsScreen(),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            decoration: panel(context),
-            child: Material(
-              type: MaterialType.transparency,
-              child: ListTile(
-                leading: const Icon(
-                  Icons.menu_book_rounded,
-                  color: Brand.blueDark,
-                ),
-                title: const Text(
-                  'How the app works',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                subtitle: const Text('Guide in English and اردو'),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => GuideScreen(shopPhone: shop.phone),
+                  Divider(height: 1, indent: 66, color: pal.line),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.menu_book_rounded,
+                      color: Brand.blueDark,
+                    ),
+                    title: const Text(
+                      'How the app works',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: const Text('Guide in English and اردو'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => GuideScreen(shopPhone: shop.phone),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            decoration: panel(context),
-            child: Material(
-              type: MaterialType.transparency,
-              child: ListTile(
-                leading: const Icon(
-                  Icons.battery_charging_full_rounded,
-                  color: Brand.blueDark,
-                ),
-                title: const Text(
-                  'Keep the app running',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                subtitle: const Text('Do this once so you never miss a job'),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const BatteryGuideScreen(),
+                  Divider(height: 1, indent: 66, color: pal.line),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.battery_charging_full_rounded,
+                      color: Brand.blueDark,
+                    ),
+                    title: const Text(
+                      'Keep the app running',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: const Text(
+                      'Do this once so you never miss a job',
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const BatteryGuideScreen(),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
