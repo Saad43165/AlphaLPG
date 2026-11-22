@@ -859,4 +859,45 @@ void main() {
       expect(all.every((o) => o.status == OrderStatus.assigned), isTrue);
     },
   );
+
+  testWidgets(
+    'the owner guide opens and a silent rider with an order is flagged on top',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final b = _backend(MemoryStore());
+      await tester.runAsync(() async {
+        await b.riders.saveRider(
+          const RiderProfile(
+            uid: 'r1',
+            name: 'Imran',
+            phone: '03001112222',
+            online: true,
+          ),
+        );
+        final id = await b.orders.place(_order());
+        await b.orders.updateStatus(id, OrderStatus.confirmed, 'boss');
+        await b.orders.assignRider(
+          id,
+          'boss',
+          riderId: 'r1',
+          name: 'Imran',
+          phone: '0300',
+        );
+        // The rider's phone has not reported for 20 minutes.
+        await b.riders.heartbeat('r1');
+      });
+      await tester.pumpWidget(AdminApp(backend: b));
+      await tester.pumpAndSettle();
+      // Fresh heartbeat: no warning yet.
+      expect(find.textContaining('has not reported'), findsNothing);
+      await tester.tap(find.text('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Your day in 5 steps'));
+      await tester.pumpAndSettle();
+      expect(find.text('1. Open the shop'), findsOneWidget);
+      expect(find.text('4. Check the payments'), findsOneWidget);
+    },
+  );
 }

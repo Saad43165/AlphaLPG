@@ -303,4 +303,33 @@ void main() {
     expect(find.text('Your points'), findsNothing);
     expect(find.text(referralCodeFor(uid)), findsOneWidget);
   });
+
+  testWidgets(
+    'Order again from the home screen lands on checkout, ready to slide',
+    (tester) async {
+      final backend = await signedInBackend(tester, extrasOn: false);
+      final uid = backend.auth.uid!;
+      await tester.runAsync(() async {
+        final id = await backend.orders.place(_sample(uid));
+        await backend.orders.updateStatus(id, OrderStatus.delivered, 'admin');
+      });
+      await pumpApp(tester, backend);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 60)),
+      );
+      await tester.pumpAndSettle();
+      // Tap 1: Order again. The cart is filled and checkout opens.
+      await tester.tap(find.text('Order again'));
+      await tester.pumpAndSettle();
+      expect(find.text('Checkout'), findsOneWidget);
+      expect(find.text('Slide to place order'), findsOneWidget);
+      // Tap 2 (slide): the order is placed.
+      await slideToOrder(tester);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 80)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Order placed!'), findsOneWidget);
+    },
+  );
 }

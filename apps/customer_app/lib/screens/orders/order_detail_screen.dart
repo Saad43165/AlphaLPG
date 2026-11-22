@@ -7,13 +7,14 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart' hide Text;
 
+import '../../utils/reorder.dart';
+
 import '../../l10n/text.dart';
 
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
 import '../../state/app_state.dart';
-import '../../state/cart.dart';
 import '../../theme/brand.dart';
 import '../../utils/format.dart';
 import '../../utils/launch.dart';
@@ -261,8 +262,7 @@ class _TrackingView extends StatelessWidget {
                                     minimumSize: const Size.fromHeight(50),
                                   ),
                                   onPressed: () {
-                                    context.read<Cart>().reorder(o);
-                                    context.push('/cart');
+                                    reorderNow(context, o);
                                   },
                                   icon: const Icon(Icons.replay_rounded),
                                   label: const Text('Order again'),
@@ -1331,8 +1331,7 @@ class _DeliveredActions extends StatelessWidget {
         FilledButton.icon(
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
           onPressed: () {
-            context.read<Cart>().reorder(o);
-            context.push('/cart');
+            reorderNow(context, o);
           },
           icon: const Icon(Icons.replay_rounded),
           label: const Text('Order the same again'),
@@ -1834,8 +1833,7 @@ class _ClosedView extends StatelessWidget {
                       minimumSize: const Size.fromHeight(54),
                     ),
                     onPressed: () {
-                      context.read<Cart>().reorder(o);
-                      context.push('/cart');
+                      reorderNow(context, o);
                     },
                     icon: const Icon(Icons.replay_rounded),
                     label: const Text('Order again'),

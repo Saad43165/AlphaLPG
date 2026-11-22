@@ -225,4 +225,38 @@ void main() {
       reason: 'no discount fields when none was used',
     );
   });
+
+  for (final name in ['firestore', 'memory']) {
+    test(
+      'archiving removes old receipt and delivery photos only ($name)',
+      () async {
+        late OrderRepository orders;
+        if (name == 'firestore') {
+          orders = OrderRepository.firestore(FakeFirebaseFirestore());
+        } else {
+          orders = OrderRepository.memory(MemoryStore());
+        }
+        final id = await orders.place(order('u1'));
+        await orders.addReceipt(id, uid: 'u1', data: 'x' * 200);
+        await orders.updateStatus(id, OrderStatus.delivered, 'admin');
+        // Nothing is removed from a fresh order, or before the cut-off.
+        expect(
+          await orders.archiveOldPhotos(
+            DateTime.now().subtract(const Duration(days: 90)),
+          ),
+          0,
+        );
+        expect((await orders.watchReceipts(id).first), hasLength(1));
+        // Once the order is older than the cut-off, the picture goes; the order stays.
+        expect(
+          await orders.archiveOldPhotos(
+            DateTime.now().add(const Duration(days: 1)),
+          ),
+          1,
+        );
+        expect((await orders.watchReceipts(id).first), isEmpty);
+        expect((await orders.watchOrder(id).first)!.total, 6592);
+      },
+    );
+  }
 }

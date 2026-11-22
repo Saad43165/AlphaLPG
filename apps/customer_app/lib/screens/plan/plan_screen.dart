@@ -102,7 +102,7 @@ class _PlanScreenState extends State<PlanScreen> {
         (l['quantity'] as num?)?.toInt() ?? 1,
       );
     }
-    context.push('/cart');
+    context.push(state.selectedAddress != null ? '/checkout' : '/cart');
   }
 
   String _linesText(RefillPlan p, AppState state) => [

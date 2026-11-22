@@ -143,6 +143,27 @@ class AdminSession extends ChangeNotifier {
         .catchError((_) {});
   }
 
+  /// Removes receipt and delivery pictures of finished orders older than
+  /// [days]. Returns how many were removed, or an error message.
+  Future<(int, String?)> archiveOldPhotos(int days) async {
+    var total = 0;
+    try {
+      final before = DateTime.now().subtract(Duration(days: days));
+      for (var i = 0; i < 25; i++) {
+        final n = await backend.orders.archiveOldPhotos(before);
+        total += n;
+        if (n == 0) break;
+      }
+      _audit(
+        'Cleared old photos',
+        detail: '$total removed (older than $days days)',
+      );
+      return (total, null);
+    } catch (e) {
+      return (total, _friendly(e));
+    }
+  }
+
   Future<String?> saveCoupon(Coupon c) => _run(() async {
     await backend.promo.saveCoupon(c);
     _audit('Saved coupon', target: c.code);
@@ -556,6 +577,35 @@ class AdminSession extends ChangeNotifier {
       ),
     ),
   );
+
+  /// Riders carrying an order whose phone has not reported for a while.
+  List<RiderProfile> get silentRiders {
+    final cutoff = DateTime.now().subtract(const Duration(minutes: 5));
+    return [
+      for (final r in riders)
+        if (r.active &&
+            jobsOf(r.uid).isNotEmpty &&
+            (r.lastSeen == null || r.lastSeen!.isBefore(cutoff)))
+          r,
+    ];
+  }
+
+  /// Online orders where the customer got the account details more than an
+  /// hour ago and has still sent nothing.
+  List<LpgOrder> get unpaidAfterDetails {
+    final cutoff = DateTime.now().subtract(const Duration(hours: 1));
+    return [
+      for (final o in orders)
+        if (o.paymentMethod.isPrepaid &&
+            o.paymentStatus == PaymentStatus.pending &&
+            o.status != OrderStatus.cancelled &&
+            o.status != OrderStatus.delivered &&
+            o.receiptAt == null &&
+            o.paymentRequest?.sentAt != null &&
+            o.paymentRequest!.sentAt!.isBefore(cutoff))
+          o,
+    ];
+  }
 
   /// Jobs a rider is holding right now.
   List<LpgOrder> jobsOf(String riderUid) => [

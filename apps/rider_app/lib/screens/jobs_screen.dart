@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../state/session.dart';
+import '../utils/launch.dart';
 import '../widgets/common.dart';
 import '../widgets/job_card.dart';
 import 'job_actions.dart';
@@ -54,20 +55,37 @@ class JobsScreen extends StatelessWidget {
                 builder: (_) => JobDetailScreen(orderId: o.id),
               ),
             ),
-            action: o.status == OrderStatus.assigned
-                ? FilledButton.icon(
-                    onPressed: () => startDeliveryFlow(context, s, o),
-                    icon: const Icon(Icons.two_wheeler_rounded),
-                    label: const Text('Start delivery'),
-                  )
-                : FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E9E5A),
-                    ),
-                    onPressed: () => completeDeliveryFlow(context, s, o),
-                    icon: const Icon(Icons.check_circle_rounded),
-                    label: const Text('Mark delivered'),
+            action: Row(
+              children: [
+                Expanded(
+                  child: o.status == OrderStatus.assigned
+                      ? FilledButton.icon(
+                          onPressed: () => startDeliveryFlow(context, s, o),
+                          icon: const Icon(Icons.two_wheeler_rounded),
+                          label: const Text('Start delivery'),
+                        )
+                      : FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E9E5A),
+                          ),
+                          onPressed: () => completeDeliveryFlow(context, s, o),
+                          icon: const Icon(Icons.check_circle_rounded),
+                          label: const Text('Mark delivered'),
+                        ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.outlined(
+                  tooltip: 'Navigate to the customer',
+                  style: IconButton.styleFrom(minimumSize: const Size(52, 52)),
+                  onPressed: () => Launch.navigate(
+                    lat: o.address.lat,
+                    lng: o.address.lng,
+                    address: o.address.oneLine,
                   ),
+                  icon: const Icon(Icons.navigation_rounded),
+                ),
+              ],
+            ),
           );
         },
       ),

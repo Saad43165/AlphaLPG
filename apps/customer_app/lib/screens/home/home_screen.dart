@@ -6,6 +6,8 @@ import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart' hide Text;
 
+import '../../utils/reorder.dart';
+
 import '../../l10n/text.dart';
 
 import 'package:provider/provider.dart';
@@ -786,8 +788,7 @@ class _ReorderRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(Brand.radius),
         onTap: () {
           Haptics.medium();
-          context.read<Cart>().reorder(o);
-          context.push('/cart');
+          reorderNow(context, o);
         },
         child: Padding(
           padding: const EdgeInsets.all(14),

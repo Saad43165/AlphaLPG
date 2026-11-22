@@ -13,6 +13,7 @@ import '../widgets/common.dart';
 import '../widgets/setup_check.dart';
 import '../utils/export.dart';
 import 'cash_screen.dart';
+import 'guide_screen.dart';
 import 'customers_screen.dart';
 import 'reports_inbox_screen.dart';
 import 'reports_screen.dart';
@@ -68,6 +69,15 @@ class MoreScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.menu_book_rounded),
+              title: const Text('Your day in 5 steps'),
+              subtitle: const Text('How the shop works, for you and new staff'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const GuideScreen()),
+              ),
+            ),
             ListTile(
               leading: const Icon(Icons.local_offer_rounded),
               title: const Text('Coupons and rewards'),
@@ -196,6 +206,16 @@ class MoreScreen extends StatelessWidget {
                 leading: Icon(Icons.groups_rounded),
                 title: Text('Team and activity log'),
                 subtitle: Text('Owner only'),
+              ),
+            if (s.isOwner)
+              ListTile(
+                leading: const Icon(Icons.cleaning_services_rounded),
+                title: const Text('Free up space'),
+                subtitle: const Text(
+                  'Delete old payment receipts and delivery photos',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => _freeUpSpace(context, s),
               ),
             if (s.isOwner)
               ListTile(
@@ -591,4 +611,39 @@ class _QuoteReplySheetState extends State<_QuoteReplySheet> {
       ),
     );
   }
+}
+
+/// Old receipt and delivery pictures take most of the free database space.
+/// This deletes them for orders older than 90 days; the orders themselves,
+/// amounts and customers stay.
+Future<void> _freeUpSpace(BuildContext context, AdminSession s) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (d) => AlertDialog(
+      title: const Text('Free up space?'),
+      content: const Text(
+        'This deletes the payment receipt pictures and delivery photos of orders older than 90 days. '
+        'The orders, amounts and customers stay. It cannot be undone, so export a backup first if you may need the pictures.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(d, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(d, true),
+          child: const Text('Delete old pictures'),
+        ),
+      ],
+    ),
+  );
+  if (ok != true || !context.mounted) return;
+  showMessage(context, 'Working…');
+  final (n, err) = await s.archiveOldPhotos(90);
+  if (!context.mounted) return;
+  showMessage(
+    context,
+    err ?? (n == 0 ? 'Nothing old to delete.' : 'Deleted $n old pictures.'),
+    error: err != null,
+  );
 }

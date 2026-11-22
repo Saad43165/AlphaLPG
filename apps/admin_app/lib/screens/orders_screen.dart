@@ -237,6 +237,30 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     : '${s.waitingForRider.length} orders have waited ${AdminSession.waitingMinutes}+ min for a rider',
                 onTap: () => setState(() => _f = _Filter.fresh),
               ),
+            if (!_searching && s.silentRiders.isNotEmpty)
+              _PayBanner(
+                icon: Icons.signal_wifi_off_rounded,
+                text: s.silentRiders.length == 1
+                    ? '${s.silentRiders.first.name} has an order but the phone has not reported for 5+ min'
+                    : '${s.silentRiders.length} riders with orders have not reported for 5+ min',
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  showDragHandle: true,
+                  isScrollControlled: true,
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: s,
+                    child: _RiderJobsSheet(s.silentRiders.first),
+                  ),
+                ),
+              ),
+            if (!_searching && s.unpaidAfterDetails.isNotEmpty)
+              _PayBanner(
+                icon: Icons.hourglass_bottom_rounded,
+                text: s.unpaidAfterDetails.length == 1
+                    ? '1 customer has not paid 1+ hour after getting the account details'
+                    : '${s.unpaidAfterDetails.length} customers have not paid 1+ hour after getting the account details',
+                onTap: () => setState(() => _f = _Filter.verify),
+              ),
             if (!_searching && s.scheduledSoonCount > 0)
               _PayBanner(
                 icon: Icons.event_rounded,

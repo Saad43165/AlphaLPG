@@ -36,6 +36,12 @@ abstract interface class OrderRepository {
     String note = '',
   });
 
+  /// Admin: removes the payment receipt pictures and delivery photos of
+  /// finished orders last touched before [before] (the orders and their
+  /// amounts stay). Works through [limit] orders per call; returns how many
+  /// pictures were removed. Call again until it returns 0.
+  Future<int> archiveOldPhotos(DateTime before, {int limit = 40});
+
   /// Customer: complaint about the order or the rider, straight to the shop.
   Future<void> addReport(OrderReport r);
 
@@ -302,6 +308,33 @@ class _FirestoreOrders implements OrderRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     });
     await batch.commit();
+  }
+
+  @override
+  Future<int> archiveOldPhotos(DateTime before, {int limit = 40}) async {
+    final snap = await _orders
+        .where('updatedAt', isLessThan: Timestamp.fromDate(before))
+        .orderBy('updatedAt')
+        .limit(limit)
+        .get();
+    var removed = 0;
+    for (final d in snap.docs) {
+      final status = OrderStatus.parse(d.data()['status'] as String?);
+      if (status != OrderStatus.delivered && status != OrderStatus.cancelled) {
+        continue;
+      }
+      for (final sub in [
+        FirestorePaths.receipts(d.id),
+        FirestorePaths.proofs(d.id),
+      ]) {
+        final photos = await _db.collection(sub).get();
+        for (final p in photos.docs) {
+          await p.reference.delete();
+          removed++;
+        }
+      }
+    }
+    return removed;
   }
 
   @override
@@ -820,6 +853,31 @@ class _MemoryOrders implements OrderRepository {
         'updatedAt': DateTime.now(),
       },
     );
+  }
+
+  @override
+  Future<int> archiveOldPhotos(DateTime before, {int limit = 40}) async {
+    var removed = 0;
+    for (final e in _s.collection(_path).entries.toList().take(limit)) {
+      final status = OrderStatus.parse(e.value['status'] as String?);
+      final at = readDate(e.value['updatedAt']);
+      if ((status != OrderStatus.delivered &&
+              status != OrderStatus.cancelled) ||
+          at == null ||
+          !at.isBefore(before)) {
+        continue;
+      }
+      for (final sub in [
+        FirestorePaths.receipts(e.key),
+        FirestorePaths.proofs(e.key),
+      ]) {
+        for (final id in _s.collection(sub).keys.toList()) {
+          _s.delete(sub, id);
+          removed++;
+        }
+      }
+    }
+    return removed;
   }
 
   @override

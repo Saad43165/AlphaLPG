@@ -114,15 +114,13 @@ class _Header extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 8, 14, 16),
+          padding: const EdgeInsets.fromLTRB(18, 2, 14, 10),
           child: Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const BrandLogo(height: 30, white: true),
-                    const SizedBox(height: 10),
                     Text(
                       name.isEmpty ? 'Rider' : 'Salam $name',
                       style: const TextStyle(

@@ -2,6 +2,8 @@ import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart' hide Text;
 
+import '../../utils/reorder.dart';
+
 import '../../l10n/lang.dart';
 
 import '../../l10n/text.dart';
@@ -10,7 +12,6 @@ import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
 import '../../state/app_state.dart';
-import '../../state/cart.dart';
 import '../../theme/brand.dart';
 import '../../utils/format.dart';
 import '../../widgets/common.dart';
@@ -586,8 +587,7 @@ class OrderTile extends StatelessWidget {
                             minimumSize: const Size(0, 44),
                           ),
                           onPressed: () {
-                            context.read<Cart>().reorder(o);
-                            context.push('/cart');
+                            reorderNow(context, o);
                           },
                           icon: const Icon(Icons.replay_rounded, size: 18),
                           label: const FittedBox(
