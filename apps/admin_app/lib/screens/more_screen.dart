@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:alpha_core/alpha_core.dart' show QuoteRequest;
 import 'package:alpha_ui/alpha_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
@@ -348,14 +349,55 @@ class QuotesScreen extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 8),
+                        if (q.hasReply)
+                          Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Brand.success.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'You replied in the app:\n${q.reply}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () => Launch.call(q.phone),
+                              icon: const Icon(Icons.call_rounded, size: 18),
+                              label: const Text('Call'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: whatsappNumber(q.phone) == null
+                                  ? null
+                                  : () => Launch.whatsapp(
+                                      whatsappNumber(q.phone)!,
+                                      quoteMessage(q),
+                                    ),
+                              icon: const WhatsAppIcon(size: 18),
+                              label: const Text('WhatsApp'),
+                            ),
+                            FilledButton.icon(
+                              onPressed: () => showQuoteReply(context, q),
+                              icon: const Icon(Icons.send_rounded, size: 18),
+                              label: Text(
+                                q.hasReply ? 'Send again' : 'Send details',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
-                            IconButton.filledTonal(
-                              onPressed: () => Launch.call(q.phone),
-                              icon: const Icon(Icons.call_rounded),
-                            ),
-                            const SizedBox(width: 8),
-                            const Spacer(),
                             DropdownButton<String>(
                               value:
                                   const [
@@ -399,6 +441,138 @@ class QuotesScreen extends StatelessWidget {
                   );
                 },
               ),
+      ),
+    );
+  }
+}
+
+/// The first line of every WhatsApp message to a bulk customer.
+String quoteMessage(QuoteRequest q) {
+  final b = StringBuffer(
+    'Assalam-o-Alaikum ${q.contactName}, this is Alpha LPG about your bulk '
+    'request for ${q.businessName} (${q.preferredSize}, about ${q.monthlyKg} kg a month).',
+  );
+  if (q.hasReply) b.write('\n\n${q.reply}');
+  return b.toString();
+}
+
+/// Write the rate and details once, then send them in the app, on WhatsApp,
+/// or both. The customer sees an in-app reply on their bulk order screen.
+Future<void> showQuoteReply(BuildContext context, QuoteRequest q) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => ChangeNotifierProvider.value(
+        value: context.read<AdminSession>(),
+        child: _QuoteReplySheet(q),
+      ),
+    );
+
+class _QuoteReplySheet extends StatefulWidget {
+  const _QuoteReplySheet(this.q);
+  final QuoteRequest q;
+
+  @override
+  State<_QuoteReplySheet> createState() => _QuoteReplySheetState();
+}
+
+class _QuoteReplySheetState extends State<_QuoteReplySheet> {
+  late final _text = TextEditingController(
+    text: widget.q.hasReply
+        ? widget.q.reply
+        : 'Rate: Rs ___ per cylinder (${widget.q.preferredSize})\n'
+              'Delivery: ___\n'
+              'Payment: ___\n'
+              'Call us on the shop number to confirm.',
+  );
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendInApp({bool alsoWhatsApp = false}) async {
+    final t = _text.text.trim();
+    if (t.isEmpty) return;
+    setState(() => _busy = true);
+    final s = context.read<AdminSession>();
+    final err = await s.sendQuoteReply(widget.q, t);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (err != null) {
+      showMessage(context, err, error: true);
+      return;
+    }
+    final wa = whatsappNumber(widget.q.phone);
+    final nav = Navigator.of(context);
+    final messenger = context;
+    if (alsoWhatsApp && wa != null) {
+      await Launch.whatsapp(
+        wa,
+        'Assalam-o-Alaikum ${widget.q.contactName}, Alpha LPG here.\n\n$t',
+      );
+    }
+    nav.pop();
+    if (messenger.mounted) {
+      showMessage(messenger, 'Sent. The customer sees it in the app.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        0,
+        16,
+        MediaQuery.viewInsetsOf(context).bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Send details to ${widget.q.businessName}',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Write the rate and plan once. The customer sees it on their '
+              'bulk order screen in the app. You can also send it on WhatsApp.',
+              style: TextStyle(color: pal.muted, height: 1.35, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _text,
+              minLines: 5,
+              maxLines: 9,
+              maxLength: 900,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                hintText: 'Rate, delivery days, payment terms…',
+              ),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: _busy ? null : () => _sendInApp(),
+              icon: const Icon(Icons.send_rounded),
+              label: const Text('Send in the app'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _busy || whatsappNumber(widget.q.phone) == null
+                  ? null
+                  : () => _sendInApp(alsoWhatsApp: true),
+              icon: const WhatsAppIcon(size: 20),
+              label: const Text('Send in the app and WhatsApp'),
+            ),
+          ],
+        ),
       ),
     );
   }

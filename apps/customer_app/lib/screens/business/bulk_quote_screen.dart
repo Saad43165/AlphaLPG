@@ -1,3 +1,4 @@
+import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 import 'package:alpha_core/alpha_core.dart';
 
 import '../../l10n/lang.dart';
@@ -85,7 +86,7 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
     return kg;
   }
 
-  Future<void> _submit(List<Product> products) async {
+  Future<void> _submit(List<Product> products, {bool whatsApp = false}) async {
     if (!_form.currentState!.validate()) return;
     final state = context.read<AppState>();
     final lines = [
@@ -123,6 +124,21 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
     try {
       await context.read<Backend>().quotes.submit(q);
       if (mounted) setState(() => _sentRequest = q);
+      if (whatsApp) {
+        final wa = state.settings.whatsapp;
+        final text = [
+          'Assalam-o-Alaikum, I would like a bulk quote.',
+          '',
+          '${q.businessName} (${q.businessType})',
+          q.notes,
+          if (q.area.isNotEmpty) 'Area: ${q.area}',
+          'Name: ${q.contactName}',
+          'Phone: ${q.phone}',
+        ].join('\n');
+        await (wa.isEmpty
+            ? Launch.whatsappShare(text)
+            : Launch.whatsapp(wa, text));
+      }
     } catch (_) {
       if (mounted) {
         showMessage(
@@ -198,25 +214,38 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             child: Constrained(
               maxWidth: 560,
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(54),
-                ),
-                onPressed: _sending || _cylinders == 0
-                    ? null
-                    : () => _submit(products),
-                icon: _sending
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send_rounded),
-                label: Text(
-                  _cylinders == 0
-                      ? 'Choose how many cylinders'
-                      : 'Send request · $_cylinders cylinder${_cylinders == 1 ? '' : 's'}',
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(54),
+                    ),
+                    onPressed: _sending || _cylinders == 0
+                        ? null
+                        : () => _submit(products),
+                    icon: _sending
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.send_rounded),
+                    label: Text(
+                      _cylinders == 0
+                          ? 'Choose how many cylinders'
+                          : 'Send request · $_cylinders cylinder${_cylinders == 1 ? '' : 's'}',
+                    ),
+                  ),
+                  if (_cylinders > 0)
+                    TextButton.icon(
+                      onPressed: _sending
+                          ? null
+                          : () => _submit(products, whatsApp: true),
+                      icon: const WhatsAppIcon(size: 18),
+                      label: const Text('Send in the app and on WhatsApp'),
+                    ),
+                ],
               ),
             ),
           ),
@@ -248,7 +277,7 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '1. Tell us what you need.   2. We call you within one working day with the rate.   3. We deliver on your schedule.',
+                      '1. Tell us what you need.   2. We send the rate in the app, or call or WhatsApp you, within one working day.   3. We deliver on your schedule.',
                       style: TextStyle(color: pal.muted, height: 1.45),
                     ),
                   ],
@@ -426,7 +455,7 @@ class _MyRequests extends StatelessWidget {
           );
         if (list.isEmpty) return const SizedBox.shrink();
         String label(String s) => switch (s) {
-          'contacted' => 'We called you',
+          'contacted' => 'Alpha LPG replied',
           'won' => 'Accepted',
           'lost' => 'Closed',
           _ => 'Received: we will call you',
@@ -452,39 +481,70 @@ class _MyRequests extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: _panel(context),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            q.preferredSize.isEmpty
-                                ? 'Bulk request'
-                                : q.preferredSize,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                q.preferredSize.isEmpty
+                                    ? 'Bulk request'
+                                    : q.preferredSize,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                q.createdAt == null
+                                    ? ''
+                                    : DateFormat('d MMM, h:mm a')
+                                          .format(q.createdAt!.toLocal()),
+                                style: TextStyle(
+                                  color: pal.muted,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            q.createdAt == null
-                                ? ''
-                                : DateFormat('d MMM, h:mm a')
-                                      .format(q.createdAt!.toLocal()),
-                            style: TextStyle(color: pal.muted, fontSize: 12.5),
+                        ),
+                        Flexible(
+                          child: Text(
+                            label(q.status),
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              color: color(q.status),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    Flexible(
-                      child: Text(
-                        label(q.status),
-                        textAlign: TextAlign.end,
-                        style: TextStyle(
-                          color: color(q.status),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                    if (q.hasReply) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Brand.success.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Alpha LPG replied',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(q.reply, style: const TextStyle(height: 1.4)),
+                          ],
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -532,7 +592,7 @@ class _Sent extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Alpha LPG will call ${request.contactName} on ${prettyPkMobile(request.phone)} within one working day with your rate.',
+            'Alpha LPG will send your rate in the app. We may also WhatsApp or call ${request.contactName} on ${prettyPkMobile(request.phone)} within one working day.',
             textAlign: TextAlign.center,
             style: TextStyle(color: context.pal.muted, height: 1.45),
           ),
@@ -551,6 +611,14 @@ class _Sent extends StatelessWidget {
             child: const Text('Back to home'),
           ),
           const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () {
+              final wa = context.read<AppState>().settings.whatsapp;
+              wa.isEmpty ? Launch.whatsappShare('') : Launch.whatsapp(wa);
+            },
+            icon: const WhatsAppIcon(size: 18),
+            label: const Text('WhatsApp Alpha LPG'),
+          ),
           TextButton.icon(
             onPressed: () => Launch.call(phone),
             icon: const Icon(Icons.call_rounded, size: 18),

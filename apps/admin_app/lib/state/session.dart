@@ -389,6 +389,14 @@ class AdminSession extends ChangeNotifier {
   Future<String?> setQuoteStatus(QuoteRequest q, String status) =>
       _run(() => backend.quotes.setStatus(q.id, status));
 
+  /// Sends the rate / details to the customer inside the app.
+  Future<String?> sendQuoteReply(QuoteRequest q, String text) {
+    return _run(() async {
+      await backend.quotes.sendReply(q.id, text);
+      _audit('Replied to bulk quote', target: q.businessName);
+    });
+  }
+
   // ---- Shop and rider control ------------------------------------------------
 
   /// Riders whose app is really running and on shift.

@@ -36,6 +36,20 @@ void main() {
     expect(find.text('Send request · 15 cylinders'), findsOneWidget);
     expect(find.textContaining('Total: 15 cylinders'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Area in Lahore'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.enterText(
+      find.ancestor(
+        of: find.text('Area in Lahore'),
+        matching: find.byType(TextFormField),
+      ),
+      'Gulberg',
+    );
+    await tester.ensureVisible(find.text('Every week'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Every week'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Send request · 15 cylinders'));
@@ -52,5 +66,28 @@ void main() {
     expect(all.single.notes, contains('12× 11.8kg Gas Cylinder'));
     expect(all.single.notes, contains('Every week'));
     expect(all.single.monthlyKg, greaterThan(0));
+
+    // The shop answers inside the app: the customer sees it, with the status.
+    await tester.runAsync(
+      () => backend.quotes.sendReply(
+        all.single.id,
+        'Rate: Rs 9,800 per cylinder',
+      ),
+    );
+    GoRouter.of(ctx).go('/');
+    await tester.pumpAndSettle();
+    GoRouter.of(ctx).go('/bulk-quote');
+    await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 80)),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.textContaining('Rs 9,800'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Alpha LPG replied'), findsWidgets);
+    expect(find.textContaining('Rs 9,800'), findsOneWidget);
   });
 }

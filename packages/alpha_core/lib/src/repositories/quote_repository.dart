@@ -16,6 +16,9 @@ abstract interface class QuoteRepository {
 
   /// Admin: new → contacted → won / lost.
   Future<void> setStatus(String id, String status);
+
+  /// Admin: send the rate / details to the customer inside the app.
+  Future<void> sendReply(String id, String text);
 }
 
 class _FirestoreQuotes implements QuoteRepository {
@@ -45,6 +48,14 @@ class _FirestoreQuotes implements QuoteRepository {
       .collection(FirestorePaths.quoteRequests)
       .doc(id)
       .update({'status': status});
+
+  @override
+  Future<void> sendReply(String id, String text) =>
+      _db.collection(FirestorePaths.quoteRequests).doc(id).update({
+        'reply': text.trim(),
+        'repliedAt': FieldValue.serverTimestamp(),
+        'status': 'contacted',
+      });
 
   @override
   Stream<List<QuoteRequest>> watchForCustomer(String uid) => _db
@@ -80,6 +91,18 @@ class _MemoryQuotes implements QuoteRepository {
     FirestorePaths.quoteRequests,
     id,
     (d) => {...d, 'status': status},
+  );
+
+  @override
+  Future<void> sendReply(String id, String text) async => _s.update(
+    FirestorePaths.quoteRequests,
+    id,
+    (d) => {
+      ...d,
+      'reply': text.trim(),
+      'repliedAt': DateTime.now(),
+      'status': 'contacted',
+    },
   );
 
   @override

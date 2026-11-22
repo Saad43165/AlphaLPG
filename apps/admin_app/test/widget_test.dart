@@ -166,6 +166,51 @@ void main() {
     expect(find.text('Receipt problem'), findsOneWidget);
   });
 
+  testWidgets('owner answers a bulk quote inside the app', (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    await tester.runAsync(
+      () => b.quotes.submit(
+        const QuoteRequest(
+          customerId: 'c1',
+          businessName: 'Salt n Pepper',
+          contactName: 'Bilal',
+          phone: '+923001234567',
+          businessType: 'Restaurant / Café',
+          monthlyKg: 300,
+          preferredSize: '5 cylinders',
+        ),
+      ),
+    );
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Business quotes'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Business quotes'));
+    await tester.pumpAndSettle();
+    expect(find.text('WhatsApp'), findsOneWidget);
+    await tester.tap(find.text('Send details'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextField).last,
+      'Rate: Rs 9,800 per cylinder',
+    );
+    await tester.tap(find.text('Send in the app'));
+    await tester.pumpAndSettle();
+    final q = (await tester.runAsync(() => b.quotes.watchAll().first))!.single;
+    expect(q.reply, 'Rate: Rs 9,800 per cylinder');
+    expect(q.status, 'contacted');
+    expect(find.text('Send again'), findsOneWidget);
+  });
+
   testWidgets('owner opens a customer, records a deposit and blocks them', (
     tester,
   ) async {

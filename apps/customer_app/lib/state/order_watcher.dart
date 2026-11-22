@@ -26,6 +26,9 @@ class OrderWatcher {
 
   String? _uid;
   StreamSubscription<List<LpgOrder>>? _orders;
+  StreamSubscription<List<QuoteRequest>>? _quotes;
+  final _quoteReplies = <String, DateTime?>{};
+  bool _quotesFirst = true;
   final _messageSubs = <String, StreamSubscription<List<OrderMessage>>>{};
   final _last = <String, _Seen>{};
   final _messagesSeen = <String, int>{};
@@ -46,6 +49,25 @@ class OrderWatcher {
     _orders = _backend.orders
         .watchCustomerOrders(uid)
         .listen(_onOrders, onError: (_) {});
+    _quotesFirst = true;
+    _quotes = _backend.quotes.watchForCustomer(uid).listen((list) {
+      for (final q in list) {
+        final before = _quoteReplies[q.id];
+        if (!_quotesFirst &&
+            q.hasReply &&
+            q.repliedAt != null &&
+            (before == null || q.repliedAt!.isAfter(before))) {
+          Alerts.show(
+            id: _id(q.id, 7),
+            title: tr('Alpha LPG replied to your bulk request'),
+            body: tr('Tap to see the rate and details.'),
+            payload: '/bulk-quote',
+          );
+        }
+        _quoteReplies[q.id] = q.repliedAt;
+      }
+      _quotesFirst = false;
+    }, onError: (_) {});
   }
 
   void _onOrders(List<LpgOrder> list) {
@@ -185,6 +207,9 @@ class OrderWatcher {
   void _stop() {
     _orders?.cancel();
     _orders = null;
+    _quotes?.cancel();
+    _quotes = null;
+    _quoteReplies.clear();
     for (final s in _messageSubs.values) {
       s.cancel();
     }

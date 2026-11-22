@@ -15,6 +15,8 @@ class QuoteRequest {
     this.notes = '',
     this.status = 'new',
     this.createdAt,
+    this.reply = '',
+    this.repliedAt,
   });
 
   final String id;
@@ -29,6 +31,12 @@ class QuoteRequest {
   final String notes;
   final String status; // new, contacted, won, lost
   final DateTime? createdAt;
+
+  /// The shop's answer (rate, delivery plan), shown to the customer in the app.
+  final String reply;
+  final DateTime? repliedAt;
+
+  bool get hasReply => reply.trim().isNotEmpty;
 
   static const businessTypes = [
     'Restaurant / Café',
@@ -53,6 +61,8 @@ class QuoteRequest {
         notes: m['notes'] as String? ?? '',
         status: m['status'] as String? ?? 'new',
         createdAt: readDate(m['createdAt']),
+        reply: m['reply'] as String? ?? '',
+        repliedAt: readDate(m['repliedAt']),
       );
 
   Map<String, dynamic> toMap() => {
