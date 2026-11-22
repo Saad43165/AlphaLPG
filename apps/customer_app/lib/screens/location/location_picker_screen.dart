@@ -819,7 +819,7 @@ class _MyLocationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-    message: 'Use my current location',
+    message: tr('Use my current location'),
     child: Material(
       color: Brand.blueDark,
       shape: const CircleBorder(),

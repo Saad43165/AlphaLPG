@@ -9,4 +9,4 @@ abstract final class Env {
 }
 
 /// Shown in Settings and the drawer. Keep in sync with pubspec.yaml.
-const kAppVersion = '1.9.1';
+const kAppVersion = '1.9.2';

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'ur.dart';
 
@@ -16,6 +17,27 @@ class Lang {
     if (urdu.value == value) return;
     _cache.clear();
     urdu.value = value;
+    _rebuildEverything();
+  }
+
+  /// Texts are looked up while a screen is drawn, so every screen has to be
+  /// drawn again after the language changes, including ones Flutter would
+  /// otherwise skip because their widgets did not change.
+  static void _rebuildEverything() {
+    try {
+      final binding = WidgetsBinding.instance;
+      binding.addPostFrameCallback((_) {
+        void mark(Element e) {
+          e.markNeedsBuild();
+          e.visitChildren(mark);
+        }
+
+        binding.rootElement?.visitChildren(mark);
+      });
+      binding.ensureVisualUpdate();
+    } catch (_) {
+      // No widgets running (plain unit tests).
+    }
   }
 
   /// Debug only: English texts shown in Urdu mode that have no translation.

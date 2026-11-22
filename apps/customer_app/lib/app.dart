@@ -74,7 +74,7 @@ class _AlphaAppState extends State<AlphaApp> {
           closeIconColor: Colors.white,
           content: Text('$title\n$body'),
           action: SnackBarAction(
-            label: 'VIEW',
+            label: tr('VIEW'),
             textColor: Colors.white,
             onPressed: () => _router.push(route),
           ),
@@ -119,23 +119,20 @@ class _AlphaAppState extends State<AlphaApp> {
           valueListenable: Lang.urdu,
           builder: (context, urdu, _) => Directionality(
             textDirection: urdu ? TextDirection.rtl : TextDirection.ltr,
-            child: KeyedSubtree(
-              key: ValueKey(urdu),
-              child: ListenableBuilder(
-                listenable: _state,
-                builder: (context, _) => UpdateGate(
-                  minBuild: _state.settings.minBuildCustomer,
-                  phone: _state.settings.phone,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      child ?? const SizedBox.shrink(),
-                      if (_splash)
-                        SplashScreen(
-                          onFinished: () => setState(() => _splash = false),
-                        ),
-                    ],
-                  ),
+            child: ListenableBuilder(
+              listenable: _state,
+              builder: (context, _) => UpdateGate(
+                minBuild: _state.settings.minBuildCustomer,
+                phone: _state.settings.phone,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    child ?? const SizedBox.shrink(),
+                    if (_splash)
+                      SplashScreen(
+                        onFinished: () => setState(() => _splash = false),
+                      ),
+                  ],
                 ),
               ),
             ),

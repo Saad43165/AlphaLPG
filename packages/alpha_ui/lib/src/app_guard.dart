@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'brand.dart';
+import 'chat.dart' show UiText;
 
 /// This app's version and build number (the +N in pubspec `version`).
 class AppInfo {
@@ -66,15 +67,16 @@ class UpdateGate extends StatelessWidget {
                   color: Brand.blueDark,
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Please update the app',
+                Text(
+                  UiText.tr('Please update the app'),
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'This version is too old to work properly. Ask Alpha LPG for the new version'
-                  '${phone.isEmpty ? '.' : ' (call $phone).'}',
+                  UiText.tr(
+                    'This version is too old to work properly. Ask Alpha LPG for the new version{}',
+                  ).replaceFirst('{}', phone.isEmpty ? '.' : ' (call $phone).'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: pal.muted,

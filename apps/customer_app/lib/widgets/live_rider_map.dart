@@ -4,6 +4,9 @@ import 'package:alpha_core/alpha_core.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../l10n/lang.dart';
+
 import 'package:material_ui/material_ui.dart' as mu show Text;
 
 import '../l10n/text.dart';
@@ -354,8 +357,8 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                                   setState(() => _userMoved = false);
                                   _fit(loc, force: true);
                                 },
-                                child: const Tooltip(
-                                  message: 'Show rider and my door',
+                                child: Tooltip(
+                                  message: tr('Show rider and my door'),
                                   child: SizedBox.square(
                                     dimension: 42,
                                     child: Icon(
