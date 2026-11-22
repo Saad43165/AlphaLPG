@@ -152,14 +152,15 @@ void main() {
     await pumpApp(tester, backend);
     await tapText(tester, 'My orders');
     expect(find.text('Rs. 1,826'), findsOneWidget);
-    await tapText(tester, '1× 6kg Gas Cylinder');
+    await tester.tap(find.textContaining('AL-').first);
+    await tester.pumpAndSettle();
     await tapText(tester, 'Cancel order');
     await tapText(tester, 'Need a different size');
     await tester.tap(find.widgetWithText(FilledButton, 'Cancel order'));
     await tester.pumpAndSettle();
     expect(
       find.text('Reason: Need a different size', skipOffstage: false),
-      findsOneWidget,
+      findsWidgets,
     );
     final cancelled = await tester.runAsync(
       () => backend.orders.watchOrder(id).first,

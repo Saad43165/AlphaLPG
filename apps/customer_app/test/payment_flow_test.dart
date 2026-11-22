@@ -46,7 +46,8 @@ void main() {
       });
       await pumpApp(tester, backend);
       await tapText(tester, 'My orders');
-      await tapText(tester, '1× 6kg Gas Cylinder');
+      await tester.tap(find.textContaining('AL-').first);
+      await tester.pumpAndSettle();
 
       // Before the shop sends anything: told what happens next.
       expect(
@@ -159,7 +160,8 @@ void main() {
     });
     await pumpApp(tester, backend);
     await tapText(tester, 'My orders');
-    await tapText(tester, '1× 6kg Gas Cylinder');
+    await tester.tap(find.textContaining('AL-').first);
+    await tester.pumpAndSettle();
     await tapText(tester, 'Something wrong with this order?');
     await tapText(tester, 'Cylinder leaking or damaged');
     await tapText(tester, 'Send to Alpha LPG');

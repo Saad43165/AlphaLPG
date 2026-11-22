@@ -104,6 +104,7 @@ void main() {
           );
           for (final route in [
             '/orders',
+            '/order-placed/$id',
             '/orders/$id',
             '/orders/$id/payment',
             '/orders/$id/chat',

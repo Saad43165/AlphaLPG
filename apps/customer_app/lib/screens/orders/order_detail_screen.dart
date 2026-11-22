@@ -14,6 +14,7 @@ import '../../utils/launch.dart';
 import '../../widgets/common.dart';
 import '../../widgets/live.dart';
 import '../../widgets/live_rider_map.dart';
+import '../../widgets/cancel_order.dart';
 import '../../widgets/payment.dart';
 import 'invoice_screen.dart' show shareInvoiceImage;
 import '../../widgets/report_sheet.dart';
@@ -116,26 +117,6 @@ extension _Tracking on LpgOrder {
 class _TrackingView extends StatelessWidget {
   const _TrackingView(this.o);
   final LpgOrder o;
-
-  Future<void> _cancel(BuildContext context) async {
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (_) => const _CancelDialog(),
-    );
-    if (reason == null || !context.mounted) return;
-    try {
-      await context.read<Backend>().orders.cancelByCustomer(o, reason);
-      if (context.mounted) showMessage(context, 'Order cancelled');
-    } catch (e) {
-      if (context.mounted) {
-        showMessage(
-          context,
-          'Could not cancel: it may already be confirmed. Please call us.',
-          error: true,
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -288,7 +269,7 @@ class _TrackingView extends StatelessWidget {
                           style: TextButton.styleFrom(
                             foregroundColor: Brand.danger,
                           ),
-                          onPressed: () => _cancel(context),
+                          onPressed: () => cancelOrderFlow(context, o),
                           icon: const Icon(Icons.close_rounded),
                           label: const Text('Cancel order'),
                         ),
@@ -1008,59 +989,6 @@ class _DeliveryCard extends StatelessWidget {
         ],
       ),
     ),
-  );
-}
-
-class _CancelDialog extends StatefulWidget {
-  const _CancelDialog();
-
-  @override
-  State<_CancelDialog> createState() => _CancelDialogState();
-}
-
-class _CancelDialogState extends State<_CancelDialog> {
-  static const _reasons = [
-    'Ordered by mistake',
-    'Need a different size',
-    'Found gas elsewhere',
-    'Delivery time too late',
-    'Other',
-  ];
-  String _reason = _reasons.first;
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Cancel this order?'),
-    content: RadioGroup<String>(
-      groupValue: _reason,
-      onChanged: (v) => setState(() => _reason = v!),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final r in _reasons)
-            RadioListTile<String>(
-              value: r,
-              title: Text(r),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-            ),
-        ],
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => context.pop(),
-        child: const Text('Keep order'),
-      ),
-      FilledButton(
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFFB3261E),
-          minimumSize: const Size(0, 44),
-        ),
-        onPressed: () => context.pop(_reason),
-        child: const Text('Cancel order'),
-      ),
-    ],
   );
 }
 

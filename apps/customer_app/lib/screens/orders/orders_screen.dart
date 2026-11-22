@@ -58,40 +58,145 @@ class OrdersScreen extends StatelessWidget {
                     ),
                   );
                 }
-                final active = [
-                  for (final o in orders)
-                    if (o.status.isActive) o,
-                ];
-                final past = [
-                  for (final o in orders)
-                    if (!o.status.isActive) o,
-                ];
-                return Constrained(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-                    children: [
-                      _Summary(orders: orders, active: active.length),
-                      if (active.isNotEmpty) ...[
-                        const _SectionLabel('In progress'),
-                        for (final o in active)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: ActiveOrderCard(o),
-                          ),
-                      ],
-                      if (past.isNotEmpty) ...[
-                        const _SectionLabel('Past orders'),
-                        for (final o in past)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: OrderTile(o),
-                          ),
-                      ],
-                    ],
-                  ),
-                );
+                return Constrained(child: _OrdersList(orders: orders));
               },
             ),
+    );
+  }
+}
+
+enum _Show { all, active, delivered, cancelled }
+
+class _OrdersList extends StatefulWidget {
+  const _OrdersList({required this.orders});
+  final List<LpgOrder> orders;
+
+  @override
+  State<_OrdersList> createState() => _OrdersListState();
+}
+
+class _OrdersListState extends State<_OrdersList> {
+  _Show _show = _Show.all;
+
+  static const _months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final orders = widget.orders;
+    final pal = context.pal;
+    final active = [
+      for (final o in orders)
+        if (o.status.isActive) o,
+    ];
+    final delivered = [
+      for (final o in orders)
+        if (o.status == OrderStatus.delivered) o,
+    ];
+    final cancelled = [
+      for (final o in orders)
+        if (o.status == OrderStatus.cancelled) o,
+    ];
+    final spent = delivered.fold(0, (n, o) => n + o.total);
+
+    final showActive = _show == _Show.all || _show == _Show.active;
+    final past = switch (_show) {
+      _Show.all => [
+        for (final o in orders)
+          if (!o.status.isActive) o,
+      ],
+      _Show.delivered => delivered,
+      _Show.cancelled => cancelled,
+      _Show.active => const <LpgOrder>[],
+    };
+
+    // Past orders grouped by month, newest first.
+    final children = <Widget>[];
+    if (showActive && active.isNotEmpty) {
+      children.add(const _SectionLabel('In progress'));
+      for (final o in active) {
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: ActiveOrderCard(o),
+          ),
+        );
+      }
+    }
+    String? lastMonth;
+    for (final o in past) {
+      final t = o.createdAt ?? DateTime.now();
+      final label = '${_months[t.month - 1]} ${t.year}';
+      if (label != lastMonth) {
+        lastMonth = label;
+        children.add(_SectionLabel(label));
+      }
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: OrderTile(o),
+        ),
+      );
+    }
+    if (children.isEmpty) {
+      children.add(
+        const Padding(
+          padding: EdgeInsets.only(top: 60),
+          child: EmptyState(
+            icon: Icons.inbox_rounded,
+            title: 'Nothing here',
+            message: 'No orders match this filter.',
+          ),
+        ),
+      );
+    }
+
+    Widget chip(_Show v, String label, int n) => ChoiceChip(
+      label: Text(n > 0 && v != _Show.all ? '$label · $n' : label),
+      selected: _show == v,
+      onSelected: (_) => setState(() => _show = v),
+    );
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+      children: [
+        SizedBox(
+          height: 48,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              chip(_Show.all, 'All', orders.length),
+              const SizedBox(width: 8),
+              chip(_Show.active, 'In progress', active.length),
+              const SizedBox(width: 8),
+              chip(_Show.delivered, 'Delivered', delivered.length),
+              const SizedBox(width: 8),
+              chip(_Show.cancelled, 'Cancelled', cancelled.length),
+            ],
+          ),
+        ),
+        if (delivered.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 2, 4, 0),
+            child: Text(
+              '${delivered.length} delivered · ${formatRupees(spent)} spent in total',
+              style: TextStyle(color: pal.muted, fontSize: 13),
+            ),
+          ),
+        ...children,
+      ],
     );
   }
 }
@@ -109,57 +214,6 @@ class _SectionLabel extends StatelessWidget {
           ?.copyWith(fontWeight: FontWeight.w800),
     ),
   );
-}
-
-/// Orders at a glance: how many, how many cylinders delivered, total spent.
-class _Summary extends StatelessWidget {
-  const _Summary({required this.orders, required this.active});
-  final List<LpgOrder> orders;
-  final int active;
-
-  @override
-  Widget build(BuildContext context) {
-    final delivered = orders.where((o) => o.status == OrderStatus.delivered);
-    final cylinders = delivered.fold(0, (n, o) => n + o.cylinderCount);
-    final spent = delivered.fold(0, (n, o) => n + o.total);
-    Widget cell(String value, String label) => Expanded(
-      child: Column(
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 12),
-          ),
-        ],
-      ),
-    );
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      decoration: BoxDecoration(
-        gradient: Brand.headerGradient,
-        borderRadius: BorderRadius.circular(Brand.radius),
-      ),
-      child: Row(
-        children: [
-          cell('${orders.length}', 'Orders'),
-          cell('$cylinders', 'Cylinders'),
-          cell(formatRupees(spent), 'Spent'),
-        ],
-      ),
-    );
-  }
 }
 
 /// An order that is still moving: progress bar, what happens next, and a
@@ -237,6 +291,51 @@ class ActiveOrderCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: pal.muted, height: 1.35),
                 ),
+                if (o.paymentMethod.isPrepaid &&
+                    o.paymentStatus != PaymentStatus.paid) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+                    decoration: BoxDecoration(
+                      color: Brand.flame.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          size: 18,
+                          color: Brand.flame,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            o.paymentIssue.isNotEmpty
+                                ? 'Payment problem: tap to fix'
+                                : o.receiptAt != null
+                                ? 'Payment sent: being checked'
+                                : o.paymentRequest != null
+                                ? 'Payment details are ready'
+                                : 'Waiting for payment details',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              context.push('/orders/${o.id}/payment'),
+                          child: Text(
+                            o.paymentRequest != null && o.receiptAt == null
+                                ? 'Pay now'
+                                : 'Open',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -288,6 +387,8 @@ class OrderTile extends StatelessWidget {
     final o = order;
     final pal = context.pal;
     final delivered = o.status == OrderStatus.delivered;
+    final color = StatusPill.colorOf(o.status);
+    final needsRating = delivered && o.rating == null;
     return Container(
       decoration: BoxDecoration(
         color: pal.card,
@@ -305,26 +406,27 @@ class OrderTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Number, date and status.
                 Row(
                   children: [
                     CircleAvatar(
-                      radius: 20,
-                      backgroundColor: StatusPill.colorOf(o.status)
-                          .withValues(alpha: 0.14),
+                      radius: 18,
+                      backgroundColor: color.withValues(alpha: 0.14),
                       child: Icon(
-                        delivered
-                            ? Icons.check_circle_rounded
-                            : Icons.cancel_rounded,
-                        color: StatusPill.colorOf(o.status),
+                        delivered ? Icons.check_rounded : Icons.close_rounded,
+                        color: color,
+                        size: 20,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             o.displayNumber,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w800),
                           ),
                           Text(
@@ -336,65 +438,123 @@ class OrderTile extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          formatRupees(o.total),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        StatusPill(o.status),
-                      ],
-                    ),
+                    StatusPill(o.status),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  o.items.map((i) => '${i.quantity}× ${i.name}').join(', '),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: pal.muted, height: 1.35),
-                ),
-                const SizedBox(height: 6),
-                if (delivered)
+                const SizedBox(height: 12),
+                // What was in it.
+                for (final i in o.items.take(3))
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: o.rating != null
-                        ? Row(
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                size: 18,
-                                color: Brand.flame,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                'You rated ${o.rating}/5',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            'Tap to rate your delivery',
-                            style: TextStyle(color: pal.muted, fontSize: 12.5),
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${i.quantity}×',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${i.name} (${i.type.label.toLowerCase()})',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
+                      ],
+                    ),
                   ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Wrap(
-                    spacing: 4,
-                    children: [
-                      if (delivered)
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(0, 40),
+                if (o.items.length > 3)
+                  Text(
+                    '+ ${o.items.length - 3} more',
+                    style: TextStyle(color: pal.muted, fontSize: 12.5),
+                  ),
+                if (!delivered && o.cancelReason.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Reason: ${o.cancelReason}',
+                    style: TextStyle(color: pal.muted, fontSize: 12.5),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                // Money and rating.
+                Row(
+                  children: [
+                    Text(
+                      formatRupees(o.total),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 17,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (delivered)
+                      Flexible(
+                        child: Text(
+                          o.paymentStatus == PaymentStatus.paid
+                              ? 'Paid · ${o.paymentMethod.label}'
+                              : o.paymentMethod.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: pal.muted, fontSize: 12.5),
+                        ),
+                      ),
+                    const Spacer(),
+                    if (delivered && o.rating != null)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var n = 1; n <= 5; n++)
+                            Icon(
+                              n <= o.rating!
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              size: 17,
+                              color: const Color(0xFFF5A623),
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
+                if (needsRating) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5A623).withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.star_border_rounded,
+                          color: Color(0xFFF5A623),
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'How was your delivery? Tap to rate.',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                // Two equal actions.
+                Row(
+                  children: [
+                    if (delivered) ...[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 44),
                           ),
                           onPressed: () => context.push('/invoice', extra: o),
                           icon: const Icon(
@@ -403,9 +563,13 @@ class OrderTile extends StatelessWidget {
                           ),
                           label: const Text('Invoice'),
                         ),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(0, 40),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 44),
                         ),
                         onPressed: () {
                           context.read<Cart>().reorder(o);
@@ -414,8 +578,8 @@ class OrderTile extends StatelessWidget {
                         icon: const Icon(Icons.replay_rounded, size: 18),
                         label: const Text('Order again'),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),

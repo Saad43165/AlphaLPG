@@ -107,7 +107,8 @@ void main() {
     expect(find.text('Order again'), findsOneWidget);
 
     await tapText(tester, 'My orders');
-    await tapText(tester, '1× 11.8kg Gas Cylinder');
+    await tester.tap(find.textContaining('AL-').first);
+    await tester.pumpAndSettle();
     expect(find.text('How was your delivery?'), findsOneWidget);
     await tester.tap(find.byTooltip('5 stars'));
     await tester.pumpAndSettle();
