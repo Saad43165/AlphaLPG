@@ -1801,6 +1801,20 @@ class _ClosedView extends StatelessWidget {
                     icon: const Icon(Icons.replay_rounded),
                     label: const Text('Order again'),
                   ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    done
+                        ? 'Chat is closed for finished orders. If something was wrong, tap Report and Alpha LPG will reply here.'
+                        : 'This order is closed. You can order the same again any time.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: pal.muted,
+                      fontSize: 12.5,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
                 const _Heading('Order details'),
                 _ItemsCard(o),
                 const _Heading('Payment'),

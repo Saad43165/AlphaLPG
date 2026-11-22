@@ -1,11 +1,7 @@
-import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:provider/provider.dart';
 
-import '../../state/app_state.dart';
 import '../../theme/brand.dart';
-import '../../utils/launch.dart';
 import '../../widgets/common.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -36,7 +32,6 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.watch<AppState>().settings;
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -178,36 +173,6 @@ class AboutScreen extends StatelessWidget {
                           'assets/brand/photo_truck.jpg',
                           fit: BoxFit.cover,
                         ),
-                      ),
-                    ),
-                    const SectionTitle('Visit or contact us'),
-                    Card(
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.storefront_rounded),
-                            title: Text(s.shopAddress),
-                            subtitle: Text(s.openingHours),
-                            trailing: const Icon(Icons.directions_rounded),
-                            onTap: () => Launch.maps(
-                              query: 'Alpha LPG ${s.shopAddress}',
-                            ),
-                          ),
-                          const Divider(indent: 16, endIndent: 16),
-                          ListTile(
-                            leading: const WhatsAppIcon(size: 26),
-                            title: const Text('WhatsApp'),
-                            subtitle: Text(s.phone),
-                            onTap: () => Launch.whatsapp(s.whatsapp),
-                          ),
-                          ListTile(
-                            leading: const Icon(Icons.mail_outline_rounded),
-                            title: const Text('Email'),
-                            subtitle: Text(s.email),
-                            onTap: () =>
-                                Launch.email(s.email, subject: 'Alpha LPG'),
-                          ),
-                        ],
                       ),
                     ),
                     const SizedBox(height: 18),

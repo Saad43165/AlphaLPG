@@ -284,7 +284,7 @@ class _CompleteSheetState extends State<_CompleteSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tick each empty cylinder you took from the customer. Leave it unticked if they did not give it.',
+                  'Tick each empty cylinder you took from the customer, leave it unticked if they did not give it. The shop uses this to track empties still owed. A photo of the delivered cylinders protects you if the customer disputes it.',
                   style: TextStyle(
                     color: pal.muted,
                     fontSize: 12.5,

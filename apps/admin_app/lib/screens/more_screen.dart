@@ -124,7 +124,7 @@ class MoreScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.table_view_rounded),
               title: const Text('Export orders (Excel / CSV)'),
-              subtitle: const Text('All orders loaded in the app'),
+              subtitle: const Text('A spreadsheet of orders, to read or print'),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () async {
                 try {
@@ -142,7 +142,7 @@ class MoreScreen extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.cloud_download_rounded),
-              title: const Text('Backup all data'),
+              title: const Text('Backup all data (safety copy)'),
               subtitle: const Text(
                 'Orders, customers, riders, products, settings',
               ),
@@ -174,6 +174,13 @@ class MoreScreen extends StatelessWidget {
                 }
               },
             ),
+            if (!s.isOwner)
+              const ListTile(
+                enabled: false,
+                leading: Icon(Icons.groups_rounded),
+                title: Text('Team and activity log'),
+                subtitle: Text('Owner only'),
+              ),
             if (s.isOwner)
               ListTile(
                 leading: const Icon(Icons.groups_rounded),

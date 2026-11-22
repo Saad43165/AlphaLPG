@@ -1262,6 +1262,20 @@ class _ActionsState extends State<_Actions> {
     }
     // Staff cannot cancel an order that has already been paid.
     if (o.status.isActive &&
+        !s.isOwner &&
+        o.paymentStatus == PaymentStatus.paid) {
+      buttons.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            'This order is paid, so only the owner can cancel it.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.pal.muted, fontSize: 12.5),
+          ),
+        ),
+      );
+    }
+    if (o.status.isActive &&
         (s.isOwner || o.paymentStatus != PaymentStatus.paid)) {
       buttons.add(
         TextButton(

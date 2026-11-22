@@ -22,6 +22,7 @@ class ReportsInboxScreen extends StatefulWidget {
 
 class _ReportsInboxScreenState extends State<ReportsInboxScreen> {
   bool _openOnly = true;
+  int _from = 0; // 0 everyone, 1 customers, 2 riders
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +30,8 @@ class _ReportsInboxScreenState extends State<ReportsInboxScreen> {
     final list = [
       for (final r in s.reports)
         if ((widget.orderId == null || r.orderId == widget.orderId) &&
-            (!_openOnly || r.isOpen))
+            (!_openOnly || r.isOpen) &&
+            (_from == 0 || (_from == 2) == r.fromRider))
           r,
     ];
     return Scaffold(
@@ -39,18 +41,36 @@ class _ReportsInboxScreenState extends State<ReportsInboxScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   ChoiceChip(
                     label: Text('Open · ${s.openReportCount}'),
                     selected: _openOnly,
                     onSelected: (_) => setState(() => _openOnly = true),
                   ),
-                  const SizedBox(width: 8),
                   ChoiceChip(
                     label: const Text('All'),
                     selected: !_openOnly,
                     onSelected: (_) => setState(() => _openOnly = false),
+                  ),
+                  PopupMenuButton<int>(
+                    tooltip: 'Show reports from',
+                    initialValue: _from,
+                    onSelected: (v) => setState(() => _from = v),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 0, child: Text('Everyone')),
+                      PopupMenuItem(value: 1, child: Text('Customers only')),
+                      PopupMenuItem(value: 2, child: Text('Riders only')),
+                    ],
+                    child: Chip(
+                      avatar: const Icon(Icons.filter_list_rounded, size: 18),
+                      label: Text(
+                        const ['Everyone', 'Customers', 'Riders'][_from],
+                      ),
+                    ),
                   ),
                 ],
               ),

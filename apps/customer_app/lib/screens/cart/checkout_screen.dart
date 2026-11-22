@@ -395,6 +395,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 onChanged: (m) => setState(() => _payment = m),
               ),
             ),
+            if (_payment.isPrepaid)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                child: Text(
+                  'How it works: 1. You place the order. 2. Alpha LPG sends you '
+                  'the account to pay. 3. You pay and send the receipt here. '
+                  '4. The rider is sent once the payment is confirmed.',
+                  style: TextStyle(
+                    color: context.pal.muted,
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+              ),
             _Section(
               number: 4,
               title: 'Notes for the rider',

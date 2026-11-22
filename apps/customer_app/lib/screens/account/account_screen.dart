@@ -99,7 +99,7 @@ class AccountScreen extends StatelessWidget {
                     _tile(
                       context,
                       Icons.factory_outlined,
-                      'Bulk / business quote',
+                      'Bulk / business quote (we reply with a price)',
                       '/bulk-quote',
                     ),
                   ],
