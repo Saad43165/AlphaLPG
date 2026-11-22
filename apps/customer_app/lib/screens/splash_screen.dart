@@ -20,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _run = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 3200),
+    duration: const Duration(milliseconds: 1600),
   );
   late final AnimationController _out = AnimationController(
     vsync: this,

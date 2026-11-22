@@ -5,7 +5,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'brand.dart';
-import 'offline_banner.dart';
 
 /// This app's version and build number (the +N in pubspec `version`).
 class AppInfo {
@@ -50,7 +49,7 @@ class UpdateGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mine = currentBuild ?? AppInfo.current.build;
-    if (minBuild <= 0 || mine >= minBuild) return OfflineBanner(child: child);
+    if (minBuild <= 0 || mine >= minBuild) return child;
     final pal = context.pal;
     return Scaffold(
       backgroundColor: pal.card,

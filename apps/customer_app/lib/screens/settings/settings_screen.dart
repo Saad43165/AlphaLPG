@@ -1,4 +1,3 @@
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -60,52 +59,9 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const _Heading('Delivery'),
+            const _Heading('App'),
             _Card(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.place_rounded),
-                  title: const Text('Saved locations'),
-                  subtitle: Text(
-                    state.addresses.isEmpty
-                        ? 'None yet'
-                        : '${state.addresses.length} saved',
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => context.push(
-                    state.signedIn
-                        ? '/account/addresses'
-                        : '/login?from=/settings',
-                  ),
-                ),
-                if (state.signedIn) ...[
-                  const Divider(indent: 16, endIndent: 16),
-                  ListTile(
-                    leading: const Icon(Icons.person_rounded),
-                    title: const Text('Edit profile'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => context.push('/account/edit'),
-                  ),
-                ],
-              ],
-            ),
-            const _Heading('About'),
-            _Card(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.health_and_safety_rounded),
-                  title: const Text('Safety guide'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => context.push('/safety'),
-                ),
-                const Divider(indent: 16, endIndent: 16),
-                ListTile(
-                  leading: const Icon(Icons.info_rounded),
-                  title: const Text('About Alpha LPG'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => context.push('/about'),
-                ),
-                const Divider(indent: 16, endIndent: 16),
                 ListTile(
                   leading: const Icon(Icons.verified_rounded),
                   title: const Text('Version'),
