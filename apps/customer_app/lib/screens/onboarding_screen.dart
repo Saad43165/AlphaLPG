@@ -1,4 +1,10 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../l10n/lang.dart';
+import '../l10n/text.dart';
+
+import 'package:material_ui/material_ui.dart' as mu show Text;
+
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
@@ -79,6 +85,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: [
                       const BrandLogo(height: 38),
                       const Spacer(),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 36),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                        ),
+                        onPressed: () =>
+                            context.read<AppState>().setUrdu(!Lang.isUrdu),
+                        child: mu.Text(
+                          Lang.isUrdu ? 'English' : 'اردو',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       AnimatedOpacity(
                         opacity: _last ? 0 : 1,
                         duration: const Duration(milliseconds: 200),

@@ -1,8 +1,14 @@
 import 'package:alpha_core/alpha_core.dart';
+
+import '../../l10n/lang.dart';
+
 import 'package:alpha_ui/alpha_ui.dart' as ui;
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
@@ -156,19 +162,19 @@ class _TrackingView extends StatelessWidget {
                     backgroundColor: Brand.cylinderRed,
                     offset: const Offset(-4, 4),
                     child: IconButton(
-                      tooltip: 'Messages',
+                      tooltip: tr('Messages'),
                       onPressed: () => context.push('/orders/${o.id}/chat'),
                       icon: const Icon(Icons.forum_rounded),
                     ),
                   ),
                 if (o.status != OrderStatus.cancelled)
                   IconButton(
-                    tooltip: 'Invoice',
+                    tooltip: tr('Invoice'),
                     onPressed: () => context.push('/invoice', extra: o),
                     icon: const Icon(Icons.receipt_long_rounded),
                   ),
                 IconButton(
-                  tooltip: 'Copy order number',
+                  tooltip: tr('Copy order number'),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: o.displayNumber));
                     showMessage(context, 'Order number copied');
@@ -356,13 +362,15 @@ class _PayFirstBanner extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(0, 40),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+              Flexible(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                  ),
+                  onPressed: () => context.push('/orders/${o.id}/payment'),
+                  child: Text(sent ? 'Pay now' : 'Open'),
                 ),
-                onPressed: () => context.push('/orders/${o.id}/payment'),
-                child: Text(sent ? 'Pay now' : 'Open'),
               ),
             ],
           ),
@@ -771,7 +779,7 @@ class _RiderCard extends StatelessWidget {
             label: Text('${context.watch<ChatInbox>().unread(o.id)}'),
             backgroundColor: Brand.cylinderRed,
             child: _RoundAction(
-              tooltip: 'Message rider',
+              tooltip: tr('Message rider'),
               icon: Icons.chat_rounded,
               color: Brand.blueDark,
               onTap: () => context.push('/orders/${o.id}/chat'),
@@ -780,14 +788,14 @@ class _RiderCard extends StatelessWidget {
           if (o.riderPhone != null) ...[
             const SizedBox(width: 8),
             _RoundAction(
-              tooltip: 'Call rider',
+              tooltip: tr('Call rider'),
               icon: Icons.call_rounded,
               color: Brand.success,
               onTap: () => Launch.call(o.riderPhone!),
             ),
           ],
           PopupMenuButton<String>(
-            tooltip: 'More',
+            tooltip: tr('More'),
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (_) => openReport(context, o, aboutRider: true),
             itemBuilder: (_) => const [
@@ -955,7 +963,7 @@ class _DeliveryCard extends StatelessWidget {
             subtitle: Text(o.address.oneLine),
             trailing: o.address.hasLocation
                 ? IconButton(
-                    tooltip: 'Open in maps',
+                    tooltip: tr('Open in maps'),
                     icon: const Icon(Icons.map_rounded),
                     onPressed: () =>
                         Launch.maps(lat: o.address.lat, lng: o.address.lng),
@@ -1059,7 +1067,7 @@ class _RateCardState extends State<_RateCard> {
           children: [
             for (var i = 1; i <= 5; i++)
               IconButton(
-                tooltip: '$i star${i == 1 ? '' : 's'}',
+                tooltip: tr('$i star${i == 1 ? '' : 's'}'),
                 visualDensity: VisualDensity.compact,
                 onPressed: () {
                   Haptics.select();
@@ -1088,8 +1096,8 @@ class _RateCardState extends State<_RateCard> {
             controller: _comment,
             maxLines: 2,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              hintText: 'Anything we should know? (optional)',
+            decoration: InputDecoration(
+              hintText: tr('Anything we should know? (optional)'),
             ),
           ),
           const SizedBox(height: 12),
@@ -1685,12 +1693,12 @@ class _ClosedView extends StatelessWidget {
         actions: [
           if (done)
             IconButton(
-              tooltip: 'Invoice',
+              tooltip: tr('Invoice'),
               onPressed: () => context.push('/invoice', extra: o),
               icon: const Icon(Icons.receipt_long_rounded),
             ),
           IconButton(
-            tooltip: 'Copy order number',
+            tooltip: tr('Copy order number'),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: o.displayNumber));
               showMessage(context, 'Order number copied');
@@ -1751,16 +1759,21 @@ class _ClosedView extends StatelessWidget {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Text(
-                            done ? 'Total paid' : 'Order total',
-                            style: TextStyle(color: pal.muted),
+                          Flexible(
+                            child: Text(
+                              done ? 'Total paid' : 'Order total',
+                              style: TextStyle(color: pal.muted),
+                            ),
                           ),
-                          const Spacer(),
-                          Text(
-                            formatRupees(o.total),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              formatRupees(o.total),
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 18,
+                              ),
                             ),
                           ),
                         ],
@@ -1768,11 +1781,21 @@ class _ClosedView extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Text('Paid by', style: TextStyle(color: pal.muted)),
-                          const Spacer(),
-                          Text(
-                            o.paymentMethod.label,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          Flexible(
+                            child: Text(
+                              'Paid by',
+                              style: TextStyle(color: pal.muted),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              o.paymentMethod.label,
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ],
                       ),

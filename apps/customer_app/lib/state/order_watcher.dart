@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:alpha_core/alpha_core.dart';
+
+import '../l10n/lang.dart';
+
 import 'package:alpha_ui/alpha_ui.dart';
 
 import '../services/backend.dart';
@@ -79,8 +82,11 @@ class OrderWatcher {
             Alerts.show(
               id: _id(o.id, 2),
               title: m.role == MessageRole.rider
-                  ? '${m.name.isEmpty ? 'Your rider' : m.name} (rider)'
-                  : 'Alpha LPG',
+                  ? tr('{} (rider)').replaceFirst(
+                      '{}',
+                      m.name.isEmpty ? tr('Your rider') : m.name,
+                    )
+                  : tr('Alpha LPG'),
               body: m.text,
               payload: '/orders/${o.id}/chat',
             );
@@ -160,6 +166,8 @@ class OrderWatcher {
       body = 'Thank you! Order ${o.displayNumber} is paid.';
     }
     if (title != null && body != null) {
+      title = tr(title);
+      body = tr(body);
       Alerts.show(
         id: _id(o.id, 1),
         title: title,

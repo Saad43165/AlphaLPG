@@ -1,4 +1,6 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../l10n/text.dart';
 
 import '../theme/brand.dart';
 import '../utils/haptics.dart';
@@ -95,7 +97,11 @@ class _SlideToConfirmState extends State<SlideToConfirm>
   }
 
   @override
-  Widget build(BuildContext context) {
+  // The slider always drags left to right, in both languages.
+  Widget build(BuildContext context) =>
+      Directionality(textDirection: TextDirection.ltr, child: _slider(context));
+
+  Widget _slider(BuildContext context) {
     final enabled = widget.enabled;
     final pal = context.pal;
     final base = enabled ? widget.color : pal.line;

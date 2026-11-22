@@ -3,7 +3,11 @@ import 'dart:async';
 import 'package:alpha_core/alpha_core.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+import 'package:material_ui/material_ui.dart' as mu show Text;
+
+import '../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../services/backend.dart';
@@ -330,7 +334,7 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                                 ],
                               ),
                               SimpleAttributionWidget(
-                                source: Text(svc.attribution),
+                                source: mu.Text(svc.attribution),
                                 backgroundColor: const Color(0xB3FFFFFF),
                                 alignment: Alignment.bottomLeft,
                               ),
@@ -533,7 +537,7 @@ class _WaitingMap extends StatelessWidget {
                     ],
                   ),
                   SimpleAttributionWidget(
-                    source: Text(svc.attribution),
+                    source: mu.Text(svc.attribution),
                     backgroundColor: const Color(0xB3FFFFFF),
                     alignment: Alignment.bottomLeft,
                   ),

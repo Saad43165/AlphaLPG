@@ -1,6 +1,9 @@
 import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import 'l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import 'screens/account/account_screen.dart';
@@ -241,7 +244,9 @@ class _FloatingNav extends StatelessWidget {
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 280),
                       curve: Curves.easeOutCubic,
-                      left: w * index,
+                      left: Directionality.of(context) == TextDirection.rtl
+                          ? w * (items.length - 1 - index)
+                          : w * index,
                       top: 0,
                       bottom: 0,
                       width: w,

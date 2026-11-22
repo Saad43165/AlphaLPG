@@ -1,9 +1,13 @@
 import 'package:go_router/go_router.dart';
 import 'package:alpha_ui/alpha_ui.dart' show UpdateGate;
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import 'l10n/text.dart';
+
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'l10n/lang.dart';
 import 'router.dart';
 import 'screens/splash_screen.dart';
 import 'services/backend.dart';
@@ -111,20 +115,29 @@ class _AlphaAppState extends State<AlphaApp> {
         darkTheme: _dark,
         themeMode: mode,
         routerConfig: _router,
-        builder: (context, child) => ListenableBuilder(
-          listenable: _state,
-          builder: (context, _) => UpdateGate(
-            minBuild: _state.settings.minBuildCustomer,
-            phone: _state.settings.phone,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                child ?? const SizedBox.shrink(),
-                if (_splash)
-                  SplashScreen(
-                    onFinished: () => setState(() => _splash = false),
+        builder: (context, child) => ValueListenableBuilder<bool>(
+          valueListenable: Lang.urdu,
+          builder: (context, urdu, _) => Directionality(
+            textDirection: urdu ? TextDirection.rtl : TextDirection.ltr,
+            child: KeyedSubtree(
+              key: ValueKey(urdu),
+              child: ListenableBuilder(
+                listenable: _state,
+                builder: (context, _) => UpdateGate(
+                  minBuild: _state.settings.minBuildCustomer,
+                  phone: _state.settings.phone,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      child ?? const SizedBox.shrink(),
+                      if (_splash)
+                        SplashScreen(
+                          onFinished: () => setState(() => _splash = false),
+                        ),
+                    ],
                   ),
-              ],
+                ),
+              ),
             ),
           ),
         ),

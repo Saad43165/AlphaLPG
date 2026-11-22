@@ -1,6 +1,12 @@
 import 'package:alpha_core/alpha_core.dart';
+
+import '../../l10n/lang.dart';
+
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
@@ -177,11 +183,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            _prettyPhone(phone),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
+                          Flexible(
+                            child: Text(
+                              _prettyPhone(phone),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -219,21 +229,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     controller: _name,
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Your name',
+                    decoration: InputDecoration(
+                      labelText: tr('Your name'),
                       prefixIcon: Icon(Icons.person_outline),
                     ),
                     validator: (v) => (v ?? '').trim().length < 2
-                        ? 'Please enter your name'
+                        ? tr('Please enter your name')
                         : null,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email (optional)',
-                      helperText: 'Used to send you invoices',
+                    decoration: InputDecoration(
+                      labelText: tr('Email (optional)'),
+                      helperText: tr('Used to send you invoices'),
                       prefixIcon: Icon(Icons.mail_outline),
                     ),
                     validator: (v) {
@@ -251,7 +261,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 title: 'I am ordering for',
                 children: [
                   SizedBox(
-                    height: 108,
+                    height:
+                        (Lang.isUrdu ? 132 : 108) *
+                        (MediaQuery.textScalerOf(context).scale(1) > 1.2
+                            ? 1.8
+                            : 1),
                     child: Row(
                       children: [
                         Expanded(
@@ -291,14 +305,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                 TextFormField(
                                   controller: _business,
                                   textCapitalization: TextCapitalization.words,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Business name',
+                                  decoration: InputDecoration(
+                                    labelText: tr('Business name'),
                                     prefixIcon: Icon(Icons.business_outlined),
                                   ),
                                   validator: (v) =>
                                       _type == CustomerSegment.business &&
                                           (v ?? '').trim().isEmpty
-                                      ? 'Please enter the business name'
+                                      ? tr('Please enter the business name')
                                       : null,
                                 ),
                                 const SizedBox(height: 14),
@@ -310,8 +324,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                       ? _businessType
                                       : null,
                                   isExpanded: true,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Type of business',
+                                  decoration: InputDecoration(
+                                    labelText: tr('Type of business'),
                                     prefixIcon: Icon(Icons.category_outlined),
                                   ),
                                   items: [

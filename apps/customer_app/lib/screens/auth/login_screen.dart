@@ -1,6 +1,12 @@
 import 'package:flutter/services.dart';
+
+import '../../l10n/lang.dart';
+
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/auth_service.dart';
@@ -153,9 +159,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9 +]')),
                 ],
-                decoration: const InputDecoration(
-                  labelText: 'Mobile number',
-                  hintText: '0308 5745740',
+                decoration: InputDecoration(
+                  labelText: tr('Mobile number'),
+                  hintText: tr('0308 5745740'),
                   prefixIcon: Icon(Icons.phone_iphone),
                 ),
                 onSubmitted: (_) => quick ? _quick() : _sendCode(),
@@ -170,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: const TextStyle(fontSize: 24, letterSpacing: 10),
                 textAlign: TextAlign.center,
-                decoration: const InputDecoration(counterText: ''),
+                decoration: InputDecoration(counterText: tr('')),
                 onSubmitted: (_) => _verify(),
               ),
             if (_error != null) ...[

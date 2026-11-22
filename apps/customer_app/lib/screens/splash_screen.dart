@@ -1,4 +1,6 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../l10n/text.dart';
 
 import '../theme/brand.dart';
 import '../widgets/gas_cylinder.dart';

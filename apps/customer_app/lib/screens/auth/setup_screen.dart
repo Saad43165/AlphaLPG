@@ -1,6 +1,12 @@
 import 'package:alpha_core/alpha_core.dart';
+
+import '../../l10n/lang.dart';
+
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
@@ -234,21 +240,21 @@ class _SetupScreenState extends State<SetupScreen> {
                         autofocus: true,
                         textCapitalization: TextCapitalization.words,
                         textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'Full name',
+                        decoration: InputDecoration(
+                          labelText: tr('Full name'),
                           prefixIcon: Icon(Icons.person_outline_rounded),
                         ),
                         validator: (v) => (v ?? '').trim().length < 2
-                            ? 'Please enter your name'
+                            ? tr('Please enter your name')
                             : null,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _email,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Email (optional)',
-                          helperText: 'For invoices and receipts',
+                        decoration: InputDecoration(
+                          labelText: tr('Email (optional)'),
+                          helperText: tr('For invoices and receipts'),
                           prefixIcon: Icon(Icons.mail_outline_rounded),
                         ),
                         validator: (v) {
@@ -291,8 +297,8 @@ class _SetupScreenState extends State<SetupScreen> {
                                       controller: _business,
                                       textCapitalization:
                                           TextCapitalization.words,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Business name',
+                                      decoration: InputDecoration(
+                                        labelText: tr('Business name'),
                                         prefixIcon: Icon(
                                           Icons.business_rounded,
                                         ),
@@ -300,15 +306,15 @@ class _SetupScreenState extends State<SetupScreen> {
                                       validator: (v) =>
                                           _type == CustomerSegment.business &&
                                               (v ?? '').trim().isEmpty
-                                          ? 'Please enter the business name'
+                                          ? tr('Please enter the business name')
                                           : null,
                                     ),
                                     const SizedBox(height: 14),
                                     DropdownButtonFormField<String>(
                                       isExpanded: true,
                                       initialValue: _businessType,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Type of business',
+                                      decoration: InputDecoration(
+                                        labelText: tr('Type of business'),
                                         prefixIcon: Icon(
                                           Icons.category_outlined,
                                         ),

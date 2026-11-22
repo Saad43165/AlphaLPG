@@ -1,7 +1,13 @@
 import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
+
+import '../../l10n/lang.dart';
+
 import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
@@ -169,7 +175,7 @@ class _Header extends StatelessWidget {
                       children: [
                         Builder(
                           builder: (context) => IconButton(
-                            tooltip: 'Menu',
+                            tooltip: tr('Menu'),
                             onPressed: () => PushDrawerState.of(context).open(),
                             icon: const Icon(
                               Icons.menu_rounded,
@@ -475,7 +481,7 @@ class _ProductCard extends StatelessWidget {
                       if (qty == 0)
                         _RoundAdd(
                           enabled: product.inStock,
-                          tooltip: 'Add ${product.name}',
+                          tooltip: tr('Add ${product.name}'),
                           onTap: () {
                             Haptics.light();
                             cart.add(product.id, PurchaseType.refill);

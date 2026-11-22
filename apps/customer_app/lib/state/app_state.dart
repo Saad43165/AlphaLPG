@@ -1,3 +1,4 @@
+import 'dart:ui' show PlatformDispatcher;
 import 'dart:async';
 
 import 'package:alpha_core/alpha_core.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/backend.dart';
+import '../l10n/lang.dart';
 import '../utils/haptics.dart';
 
 /// Live data shared by every screen: catalogue, settings, and (when signed
@@ -20,6 +22,12 @@ class AppState extends ChangeNotifier {
         _ => ThemeMode.system,
       };
       haptics = p.getBool('haptics') ?? true;
+      final saved = p.getString('lang');
+      Lang.set(
+        saved == null
+            ? PlatformDispatcher.instance.locale.languageCode == 'ur'
+            : saved == 'ur',
+      );
     }
     Haptics.enabled = haptics;
     _subs.add(
@@ -76,6 +84,13 @@ class AppState extends ChangeNotifier {
   void setThemeMode(ThemeMode m) {
     themeMode.value = m;
     prefs?.setString('theme', m.name);
+  }
+
+  /// Switches the whole app between English and Urdu.
+  void setUrdu(bool v) {
+    Lang.set(v);
+    prefs?.setString('lang', v ? 'ur' : 'en');
+    notifyListeners();
   }
 
   void setHaptics(bool v) {

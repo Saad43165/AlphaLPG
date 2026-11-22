@@ -1,6 +1,12 @@
 import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
+
+import '../../l10n/lang.dart';
+
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../state/app_state.dart';
@@ -682,7 +688,7 @@ class _OrderSafelyCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             IconButton.outlined(
-              tooltip: 'Order on WhatsApp',
+              tooltip: tr('Order on WhatsApp'),
               style: IconButton.styleFrom(minimumSize: const Size(46, 46)),
               onPressed: () => Launch.whatsapp(
                 whatsapp,

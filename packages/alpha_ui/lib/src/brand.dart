@@ -57,6 +57,9 @@ abstract final class Brand {
       useMaterial3: true,
       colorScheme: scheme,
       fontFamily: 'Inter',
+      // Urdu / Arabic letters: Inter has none, so the apps that bundle
+      // this font use it (others ignore the name).
+      fontFamilyFallback: const ['NotoNaskh'],
       brightness: brightness,
     );
     final text = base.textTheme

@@ -1,8 +1,14 @@
 import 'package:alpha_core/alpha_core.dart';
+
+import '../l10n/lang.dart';
+
 import 'package:alpha_ui/alpha_ui.dart' as ui;
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../services/backend.dart';
@@ -49,7 +55,7 @@ class PaymentRequestCard extends StatelessWidget {
           ),
           if (copy)
             IconButton.filledTonal(
-              tooltip: 'Copy $label',
+              tooltip: tr('Copy $label'),
               onPressed: () => _copy(context, value, label),
               icon: const Icon(Icons.copy_rounded, size: 18),
             ),
@@ -424,8 +430,8 @@ class _PaySheetState extends State<_PaySheet> {
               controller: _ref,
               textCapitalization: TextCapitalization.characters,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: 'Transaction ID (required)',
+              decoration: InputDecoration(
+                labelText: tr('Transaction ID (required)'),
                 prefixIcon: Icon(Icons.tag_rounded),
               ),
             ),
@@ -435,9 +441,9 @@ class _PaySheetState extends State<_PaySheet> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: 'Amount you sent (required)',
-                prefixText: 'Rs ',
+              decoration: InputDecoration(
+                labelText: tr('Amount you sent (required)'),
+                prefixText: tr('Rs '),
                 prefixIcon: Icon(Icons.payments_rounded),
               ),
             ),

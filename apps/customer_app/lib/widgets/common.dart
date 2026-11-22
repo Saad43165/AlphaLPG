@@ -1,11 +1,16 @@
 import 'package:alpha_ui/alpha_ui.dart' show showAppMessage;
 
+import '../l10n/lang.dart';
+
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
@@ -22,7 +27,7 @@ class BrandLogo extends StatelessWidget {
   Widget build(BuildContext context) => Image.asset(
     white ? 'assets/brand/logo_white.png' : 'assets/brand/logo.png',
     height: height,
-    semanticLabel: 'Alpha LPG',
+    semanticLabel: tr('Alpha LPG'),
   );
 }
 
@@ -138,7 +143,7 @@ class CartButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final count = context.watch<Cart>().count;
     return IconButton(
-      tooltip: 'Cart',
+      tooltip: tr('Cart'),
       onPressed: () => context.push('/cart'),
       icon: Badge(
         isLabelVisible: count > 0,
@@ -292,7 +297,7 @@ class QuantityStepper extends StatelessWidget {
         children: [
           IconButton(
             visualDensity: VisualDensity.compact,
-            tooltip: 'Decrease',
+            tooltip: tr('Decrease'),
             color: ink,
             disabledColor: off,
             onPressed: value > min ? () => onChanged(value - 1) : null,
@@ -314,7 +319,7 @@ class QuantityStepper extends StatelessWidget {
           ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            tooltip: 'Increase',
+            tooltip: tr('Increase'),
             color: ink,
             disabledColor: off,
             onPressed: value < max ? () => onChanged(value + 1) : null,
@@ -440,7 +445,7 @@ class Constrained extends StatelessWidget {
 }
 
 void showMessage(BuildContext context, String message, {bool error = false}) =>
-    showAppMessage(context, message, error: error);
+    showAppMessage(context, tr(message), error: error);
 
 /// Back button that always works: goes back, or Home when this screen is the
 /// only one in the stack (e.g. after sign-in or a deep link).

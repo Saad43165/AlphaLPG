@@ -2,6 +2,13 @@ import 'package:material_ui/material_ui.dart';
 
 import 'brand.dart';
 
+/// Lets an app translate the few words the shared chat screen shows itself.
+/// The default leaves text as it is.
+class UiText {
+  UiText._();
+  static String Function(String) tr = (s) => s;
+}
+
 /// One message as the chat screen draws it.
 class ChatMsg {
   const ChatMsg({
@@ -91,8 +98,10 @@ class _ChatPageState extends State<ChatPage> {
       if (mounted) {
         setState(
           () => _error = '$e'.contains('permission-denied')
-              ? 'This chat is closed or not switched on yet. If the order is still open, ask Alpha LPG to publish the latest database rules.'
-              : 'Could not send. Check your internet.',
+              ? UiText.tr(
+                  'This chat is closed or not switched on yet. If the order is still open, ask Alpha LPG to publish the latest database rules.',
+                )
+              : UiText.tr('Could not send. Check your internet.'),
         );
       }
     } finally {
@@ -172,7 +181,7 @@ class _ChatPageState extends State<ChatPage> {
                             const SizedBox(height: 12),
                             OutlinedButton(
                               onPressed: widget.onRetry,
-                              child: const Text('Try again'),
+                              child: Text(UiText.tr('Try again')),
                             ),
                           ],
                         ],
@@ -185,7 +194,9 @@ class _ChatPageState extends State<ChatPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(32),
                       child: Text(
-                        'No messages yet. Say hello, or tap a quick reply below.',
+                        UiText.tr(
+                          'No messages yet. Say hello, or tap a quick reply below.',
+                        ),
                         textAlign: TextAlign.center,
                         style: TextStyle(color: pal.muted, height: 1.4),
                       ),
@@ -251,7 +262,7 @@ class _ChatPageState extends State<ChatPage> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        m.badge,
+                                        UiText.tr(m.badge),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 9.5,
@@ -328,7 +339,7 @@ class _ChatPageState extends State<ChatPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: ActionChip(
-                        label: Text(q),
+                        label: Text(UiText.tr(q)),
                         onPressed: _sending ? null : () => _send(q),
                       ),
                     ),
@@ -375,8 +386,8 @@ class _ChatPageState extends State<ChatPage> {
                         maxLines: 4,
                         maxLength: 500,
                         textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(
-                          hintText: 'Type a message',
+                        decoration: InputDecoration(
+                          hintText: UiText.tr('Type a message'),
                           counterText: '',
                         ),
                         onSubmitted: (_) => _send(),
@@ -386,7 +397,7 @@ class _ChatPageState extends State<ChatPage> {
                     IconButton.filled(
                       onPressed: _sending ? null : _send,
                       icon: const Icon(Icons.send_rounded),
-                      tooltip: 'Send',
+                      tooltip: UiText.tr('Send'),
                     ),
                   ],
                 ),

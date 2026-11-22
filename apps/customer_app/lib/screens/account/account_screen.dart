@@ -1,6 +1,12 @@
 import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
+
+import '../../l10n/lang.dart';
+
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/auth_service.dart';
@@ -72,7 +78,7 @@ class AccountScreen extends StatelessWidget {
                     ].join(' · '),
                   ),
                   trailing: IconButton(
-                    tooltip: 'Edit profile',
+                    tooltip: tr('Edit profile'),
                     icon: const Icon(Icons.edit_outlined),
                     onPressed: () => context.push('/account/edit'),
                   ),
@@ -307,7 +313,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
           autofocus: true,
           textCapitalization: TextCapitalization.characters,
           onChanged: (_) => setState(() {}),
-          decoration: const InputDecoration(hintText: 'DELETE'),
+          decoration: InputDecoration(hintText: tr('DELETE')),
         ),
       ],
     ),

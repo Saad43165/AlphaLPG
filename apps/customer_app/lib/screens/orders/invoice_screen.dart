@@ -1,7 +1,12 @@
 import 'dart:typed_data';
 
+import '../../l10n/lang.dart';
+
 import 'package:alpha_core/alpha_core.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -64,12 +69,12 @@ class InvoiceScreen extends StatelessWidget {
       title: Text('Invoice ${order.displayNumber}'),
       actions: [
         IconButton(
-          tooltip: 'Share as picture',
+          tooltip: tr('Share as picture'),
           icon: const Icon(Icons.image_rounded),
           onPressed: () => shareInvoiceImage(context, order),
         ),
         IconButton(
-          tooltip: 'Share PDF',
+          tooltip: tr('Share PDF'),
           icon: const Icon(Icons.share_rounded),
           onPressed: () => _share(context),
         ),

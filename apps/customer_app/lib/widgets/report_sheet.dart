@@ -1,5 +1,11 @@
 import 'package:alpha_core/alpha_core.dart';
-import 'package:material_ui/material_ui.dart';
+
+import '../l10n/lang.dart';
+
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../services/backend.dart';
@@ -163,8 +169,8 @@ class _ReportSheetState extends State<_ReportSheet> {
               maxLines: 3,
               maxLength: 500,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Tell us more (optional)',
+              decoration: InputDecoration(
+                labelText: tr('Tell us more (optional)'),
                 alignLabelWithHint: true,
               ),
             ),

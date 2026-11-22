@@ -1,7 +1,14 @@
 import 'package:alpha_ui/alpha_ui.dart' show showAppMessage;
 import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/lang.dart';
+
+import 'package:material_ui/material_ui.dart' as mu show Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../state/app_state.dart';
@@ -326,22 +333,26 @@ class FreeDeliveryMeter extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text.rich(
+                child: mu.Text.rich(
                   done
-                      ? const TextSpan(
-                          text: 'You get FREE delivery on this order',
+                      ? TextSpan(
+                          text: tr('You get FREE delivery on this order'),
                         )
                       : TextSpan(
-                          children: [
-                            const TextSpan(text: 'Add '),
-                            TextSpan(
-                              text: formatRupees(threshold - subtotal),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
+                          children: () {
+                            final parts = tr('Add {} more for free delivery')
+                                .split('{}');
+                            return [
+                              TextSpan(text: parts.first),
+                              TextSpan(
+                                text: formatRupees(threshold - subtotal),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
-                            ),
-                            const TextSpan(text: ' more for free delivery'),
-                          ],
+                              TextSpan(text: parts.length > 1 ? parts[1] : ''),
+                            ];
+                          }(),
                         ),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),

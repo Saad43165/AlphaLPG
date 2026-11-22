@@ -1,5 +1,8 @@
 import 'package:alpha_core/alpha_core.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../state/cart.dart';

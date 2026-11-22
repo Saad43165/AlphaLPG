@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'l10n/lang.dart';
 import 'screens/not_configured_screen.dart';
 import 'services/backend.dart';
 
@@ -26,6 +27,7 @@ Future<void> main() async {
     // Cart simply won't persist between launches.
   }
   await AppInfo.load();
+  UiText.tr = Lang.translate;
   if (Firebase.apps.isNotEmpty) {
     // Crashes go to the shop's error log (Admin app > More > App errors).
     ErrorReporter.install((message, stack, version) async {

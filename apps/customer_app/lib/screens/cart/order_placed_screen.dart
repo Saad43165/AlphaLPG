@@ -1,6 +1,11 @@
 import 'package:alpha_core/alpha_core.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/lang.dart';
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
@@ -283,7 +288,7 @@ class _Content extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          '${i.name} (${i.type.label.toLowerCase()})',
+                          '${i.name} (${tr(i.type.label.toLowerCase())})',
                         ),
                       ),
                       Text(

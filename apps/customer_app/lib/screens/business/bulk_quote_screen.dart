@@ -1,8 +1,14 @@
 import 'package:alpha_core/alpha_core.dart';
+
+import '../../l10n/lang.dart';
+
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
@@ -329,7 +335,7 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 initialValue: _type,
-                decoration: const InputDecoration(labelText: 'Type'),
+                decoration: InputDecoration(labelText: tr('Type')),
                 items: [
                   for (final t in QuoteRequest.businessTypes)
                     DropdownMenuItem(value: t, child: Text(t)),
@@ -345,7 +351,7 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
                 keyboard: TextInputType.phone,
                 caps: TextCapitalization.none,
                 validator: (v) => normalizePkMobile(v ?? '') == null
-                    ? 'Enter a valid mobile number'
+                    ? tr('Enter a valid mobile number')
                     : null,
               ),
               _field(_area, 'Area in Lahore', Icons.map_outlined),
@@ -354,9 +360,9 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
                 maxLines: 3,
                 maxLength: 400,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Anything else? (optional)',
-                  hintText: 'Preferred day or time, gate instructions…',
+                decoration: InputDecoration(
+                  labelText: tr('Anything else? (optional)'),
+                  hintText: tr('Preferred day or time, gate instructions…'),
                   alignLabelWithHint: true,
                 ),
               ),

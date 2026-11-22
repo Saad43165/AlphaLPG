@@ -1,10 +1,16 @@
 import 'dart:async';
 
+import '../../l10n/lang.dart';
+
 import 'package:alpha_core/alpha_core.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+import 'package:material_ui/material_ui.dart' as mu show Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
@@ -316,7 +322,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           retinaMode: MediaQuery.devicePixelRatioOf(context) > 1.5,
         ),
         SimpleAttributionWidget(
-          source: Text(svc.attribution),
+          source: mu.Text(svc.attribution),
           backgroundColor: const Color(0xB3FFFFFF),
           alignment: Alignment.bottomLeft,
         ),
@@ -329,7 +335,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       children: [
         _RoundButton(
           icon: _searchOpen ? Icons.close_rounded : Icons.arrow_back_rounded,
-          tooltip: _searchOpen ? 'Close search' : 'Back',
+          tooltip: _searchOpen ? tr('Close search') : tr('Back'),
           onTap: _searchOpen ? _closeSearch : () => context.pop(),
         ),
         const SizedBox(width: 10),
@@ -354,7 +360,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     onChanged: _onSearchChanged,
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Search area, street or landmark',
+                      hintText: tr('Search area, street or landmark'),
                       prefixIcon: const Icon(Icons.search_rounded),
                       suffixIcon: _searching
                           ? const Padding(
@@ -635,9 +641,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       controller: _manualArea,
                       onChanged: (_) => setState(() {}),
                       textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Area / society',
-                        hintText: 'e.g. Gulberg III, DHA Phase 5',
+                      decoration: InputDecoration(
+                        labelText: tr('Area / society'),
+                        hintText: tr('e.g. Gulberg III, DHA Phase 5'),
                         prefixIcon: Icon(Icons.map_outlined),
                       ),
                     ),
@@ -646,8 +652,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   TextField(
                     controller: _note,
                     textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      hintText: 'Flat, floor or landmark (optional)',
+                    decoration: InputDecoration(
+                      hintText: tr('Flat, floor or landmark (optional)'),
                       prefixIcon: Icon(Icons.edit_location_alt_outlined),
                     ),
                   ),

@@ -1,6 +1,12 @@
 import 'package:alpha_core/alpha_core.dart';
+
+import '../../l10n/lang.dart';
+
 import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/text.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../services/backend.dart';
@@ -416,8 +422,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 controller: _notes,
                 maxLines: 2,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  hintText: 'e.g. Call on arrival, 2nd floor, gate code…',
+                decoration: InputDecoration(
+                  hintText: tr('e.g. Call on arrival, 2nd floor, gate code…'),
                 ),
               ),
             ),

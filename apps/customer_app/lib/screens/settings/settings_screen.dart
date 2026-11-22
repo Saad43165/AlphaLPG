@@ -1,4 +1,10 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide Text;
+
+import '../../l10n/lang.dart';
+import '../../l10n/text.dart';
+
+import 'package:material_ui/material_ui.dart' as mu show Text;
+
 import 'package:provider/provider.dart';
 
 import '../../config/env.dart';
@@ -44,6 +50,35 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ],
               ),
+            ),
+            const _Heading('Language · زبان'),
+            Row(
+              children: [
+                for (final (label, isUrdu) in const [
+                  ('English', false),
+                  ('اردو', true),
+                ]) ...[
+                  Expanded(
+                    child: ChoiceChip(
+                      showCheckmark: false,
+                      label: SizedBox(
+                        width: double.infinity,
+                        child: mu.Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      selected: Lang.isUrdu == isUrdu,
+                      onSelected: (_) => state.setUrdu(isUrdu),
+                    ),
+                  ),
+                  if (!isUrdu) const SizedBox(width: 10),
+                ],
+              ],
             ),
             const _Heading('Preferences'),
             _Card(
@@ -97,7 +132,7 @@ class _Heading extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(4, 22, 4, 10),
     child: Text(
-      text.toUpperCase(),
+      tr(text).toUpperCase(),
       style: TextStyle(
         fontSize: 12,
         letterSpacing: 1.6,
@@ -202,11 +237,15 @@ class _ThemeTile extends StatelessWidget {
                   color: selected ? Brand.blueDark : pal.muted,
                 ),
                 const SizedBox(width: 5),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: selected ? Brand.blueDark : pal.ink,
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: selected ? Brand.blueDark : pal.ink,
+                    ),
                   ),
                 ),
               ],

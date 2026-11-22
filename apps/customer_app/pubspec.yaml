@@ -87,6 +87,9 @@ flutter:
     - assets/safety/
     - assets/payments/
   fonts:
+    - family: NotoNaskh
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic.ttf
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-400.ttf
