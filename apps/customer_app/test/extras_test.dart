@@ -332,4 +332,22 @@ void main() {
       expect(find.text('Order placed!'), findsOneWidget);
     },
   );
+
+  testWidgets('the guide opens from Account, in English and in Urdu', (
+    tester,
+  ) async {
+    final backend = await signedInBackend(tester, extrasOn: false);
+    await pumpApp(tester, backend);
+    GoRouter.of(tester.element(find.byType(Navigator).first)).go('/account');
+    await tester.pumpAndSettle();
+    await scrollTo(tester, find.text('How to use the app'));
+    await tester.tap(find.text('How to use the app'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gas at your door, in a few taps'), findsOneWidget);
+    expect(find.text('Place an order'), findsOneWidget);
+    await tester.tap(find.text('اردو'));
+    await tester.pumpAndSettle();
+    expect(find.text('گیس آپ کے دروازے تک، چند ٹیپ میں'), findsOneWidget);
+    expect(find.text('آرڈر دینا'), findsOneWidget);
+  });
 }

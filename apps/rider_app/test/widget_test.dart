@@ -632,7 +632,16 @@ void main() {
         expect(tester.takeException(), isNull, reason: tab);
       }
       await tapText(tester, 'Me');
-      for (final item in ['My earnings and cash', 'Keep the app running']) {
+      for (final item in [
+        'My earnings and cash',
+        'How the app works',
+        'Keep the app running',
+      ]) {
+        await tester.scrollUntilVisible(
+          find.text(item),
+          150,
+          scrollable: find.byType(Scrollable).hitTestable().first,
+        );
         await tapText(tester, item);
         expect(tester.takeException(), isNull, reason: item);
         await tester.pageBack();
@@ -884,4 +893,20 @@ void main() {
       await tester.pump(const Duration(seconds: 4));
     },
   );
+
+  testWidgets('the rider guide opens from Me and switches to Urdu', (
+    tester,
+  ) async {
+    final rig = Rig();
+    await addRider(tester, rig);
+    await pumpRider(tester, rig);
+    await signIn(tester);
+    await tapText(tester, 'Me');
+    await tapText(tester, 'How the app works');
+    expect(find.text('Take orders, deliver, hand in the cash'), findsOneWidget);
+    expect(find.text('Start your shift'), findsOneWidget);
+    await tester.tap(find.text('اردو'));
+    await tester.pumpAndSettle();
+    expect(find.text('ڈیوٹی شروع کریں'), findsOneWidget);
+  });
 }

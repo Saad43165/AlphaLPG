@@ -71,11 +71,15 @@ class MoreScreen extends StatelessWidget {
             const SizedBox(height: 12),
             ListTile(
               leading: const Icon(Icons.menu_book_rounded),
-              title: const Text('Your day in 5 steps'),
-              subtitle: const Text('How the shop works, for you and new staff'),
+              title: const Text('How the app works'),
+              subtitle: const Text(
+                'Guide in English and اردو, for you and new staff',
+              ),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const GuideScreen()),
+                MaterialPageRoute<void>(
+                  builder: (_) => GuideScreen(shopPhone: s.settings.phone),
+                ),
               ),
             ),
             ListTile(

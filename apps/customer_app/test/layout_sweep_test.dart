@@ -111,6 +111,7 @@ void main() {
             '/account',
             '/cart',
             '/rewards',
+            '/guide',
             '/support',
           ]) {
             router.go(route);

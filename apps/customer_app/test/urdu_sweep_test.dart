@@ -123,6 +123,7 @@ void main() {
             '/account',
             '/cart',
             '/rewards',
+            '/guide',
             '/support',
             '/checkout',
             '/settings',

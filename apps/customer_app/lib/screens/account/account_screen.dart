@@ -166,6 +166,12 @@ class AccountScreen extends StatelessWidget {
                   ),
                   _tile(
                     context,
+                    Icons.menu_book_rounded,
+                    'How to use the app',
+                    '/guide',
+                  ),
+                  _tile(
+                    context,
                     Icons.health_and_safety_outlined,
                     'LPG safety guide',
                     '/safety',

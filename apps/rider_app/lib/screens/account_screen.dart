@@ -7,6 +7,7 @@ import '../utils/launch.dart';
 import '../utils/version.dart';
 import '../widgets/common.dart';
 import 'battery_guide_screen.dart';
+import 'guide_screen.dart';
 import 'earnings_screen.dart';
 
 class AccountScreen extends StatelessWidget {
@@ -93,6 +94,30 @@ class AccountScreen extends StatelessWidget {
                       value: s,
                       child: const EarningsScreen(),
                     ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: panel(context),
+            child: Material(
+              type: MaterialType.transparency,
+              child: ListTile(
+                leading: const Icon(
+                  Icons.menu_book_rounded,
+                  color: Brand.blueDark,
+                ),
+                title: const Text(
+                  'How the app works',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text('Guide in English and اردو'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => GuideScreen(shopPhone: shop.phone),
                   ),
                 ),
               ),

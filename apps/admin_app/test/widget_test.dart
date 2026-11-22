@@ -894,10 +894,14 @@ void main() {
       expect(find.textContaining('has not reported'), findsNothing);
       await tester.tap(find.text('More'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Your day in 5 steps'));
+      await tester.tap(find.text('How the app works'));
       await tester.pumpAndSettle();
       expect(find.text('1. Open the shop'), findsOneWidget);
-      expect(find.text('4. Check the payments'), findsOneWidget);
+      expect(find.text('5. Check the payments'), findsOneWidget);
+      // The same guide in Urdu.
+      await tester.tap(find.text('اردو'));
+      await tester.pumpAndSettle();
+      expect(find.text('1۔ دکان کھولیں'), findsOneWidget);
     },
   );
 }
