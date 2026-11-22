@@ -59,12 +59,16 @@ export const onOrderCreated = onDocumentCreated("orders/{orderId}", async (event
     return next;
   });
 
-  const priceChanged = priced.total !== order.total;
+  // Coupons and points were already checked by the security rules; keep them.
+  const discount = typeof order.discount === "number" ? order.discount : 0;
+  const total = Math.max(0, priced.total - discount);
+  const priceChanged = total !== order.total;
   if (priceChanged) {
-    logger.info("Order re-priced", { orderId: snap.id, client: order.total, server: priced.total });
+    logger.info("Order re-priced", { orderId: snap.id, client: order.total, server: total });
   }
   await snap.ref.update({
     ...priced,
+    total,
     orderNumber: formatOrderNumber(number),
     pricingVerified: true,
     priceChanged,

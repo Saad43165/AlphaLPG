@@ -129,7 +129,41 @@ class OrderWatcher {
     } else {
       KeepAlive.stop();
     }
+    _planReminder(list, active.isNotEmpty);
     _first = false;
+  }
+
+  static const _reminderId = 880001;
+
+  /// "Time for a refill?" a few weeks after the last delivery (or on the day a
+  /// refill plan falls due). Scheduled with the phone, so it needs no server.
+  void _planReminder(List<LpgOrder> list, bool hasOpenOrder) {
+    if (hasOpenOrder) {
+      Alerts.cancel(_reminderId);
+      return;
+    }
+    DateTime? last;
+    for (final o in list) {
+      if (o.status != OrderStatus.delivered) continue;
+      final at = o.timeOf(OrderStatus.delivered) ?? o.updatedAt;
+      if (at != null && (last == null || at.isAfter(last))) last = at;
+    }
+    if (last == null) return;
+    var due = last.add(Duration(days: _state.settings.reminderDays));
+    final plan = _state.planDue;
+    if (plan != null && plan.isAfter(last)) due = plan;
+    // Morning, not the middle of the night.
+    due = DateTime(due.year, due.month, due.day, 10);
+    final now = DateTime.now();
+    if (due.isAfter(now)) {
+      Alerts.schedule(
+        id: _reminderId,
+        at: due,
+        title: tr('Time for a refill?'),
+        body: tr('Order your gas again in one tap.'),
+        payload: '/',
+      );
+    }
   }
 
   void _announce(LpgOrder o, _Seen before, _Seen now) {

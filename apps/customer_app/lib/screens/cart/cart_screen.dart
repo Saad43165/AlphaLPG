@@ -602,6 +602,24 @@ class PriceSummary extends StatelessWidget {
               ? formatRupees(settings.deliveryFee)
               : null,
         ),
+        if (price.couponDiscount > 0) ...[
+          const SizedBox(height: 8),
+          _row(
+            context,
+            'Discount code',
+            '- ${formatRupees(price.couponDiscount)}',
+            valueColor: Brand.success,
+          ),
+        ],
+        if (price.pointsDiscount > 0) ...[
+          const SizedBox(height: 8),
+          _row(
+            context,
+            'Points used (${price.pointsUsed})',
+            '- ${formatRupees(price.pointsDiscount)}',
+            valueColor: Brand.success,
+          ),
+        ],
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 12),
           child: Divider(),

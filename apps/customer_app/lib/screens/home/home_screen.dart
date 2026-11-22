@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import '../../services/backend.dart';
 import '../../state/app_state.dart';
 import '../../state/cart.dart';
+import '../../state/promo_state.dart';
 import '../../theme/brand.dart';
 import '../../utils/launch.dart';
 import '../../widgets/address_picker.dart';
@@ -227,13 +228,27 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Wrap(
+                    Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _TrustChip(Icons.bolt_rounded, 'Same-day delivery'),
-                        _TrustChip(Icons.verified_rounded, 'Safety-checked'),
-                        _TrustChip(Icons.payments_outlined, 'Cash on delivery'),
+                        if (context.watch<PromoState>().stats.showable)
+                          _TrustChip(
+                            Icons.star_rounded,
+                            _ratingLabel(context.watch<PromoState>().stats),
+                          ),
+                        const _TrustChip(
+                          Icons.bolt_rounded,
+                          'Same-day delivery',
+                        ),
+                        const _TrustChip(
+                          Icons.verified_rounded,
+                          'Safety-checked',
+                        ),
+                        const _TrustChip(
+                          Icons.payments_outlined,
+                          'Cash on delivery',
+                        ),
                       ],
                     ),
                   ],
@@ -489,6 +504,7 @@ class _ProductCard extends StatelessWidget {
                         )
                       else
                         _MiniStepper(
+                          name: product.name,
                           qty: qty,
                           onChanged: (q) {
                             Haptics.select();
@@ -540,13 +556,18 @@ class _RoundAdd extends StatelessWidget {
 }
 
 class _MiniStepper extends StatelessWidget {
-  const _MiniStepper({required this.qty, required this.onChanged});
+  const _MiniStepper({
+    required this.qty,
+    required this.onChanged,
+    this.name = '',
+  });
+  final String name;
   final int qty;
   final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 40,
+    height: 44,
     decoration: BoxDecoration(
       color: Brand.navy,
       borderRadius: BorderRadius.circular(20),
@@ -554,16 +575,28 @@ class _MiniStepper extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _stepButton(Icons.remove_rounded, 'Decrease', () => onChanged(qty - 1)),
-        Text(
-          '$qty',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 15,
+        _stepButton(
+          Icons.remove_rounded,
+          '${tr('Decrease')} $name'.trim(),
+          () => onChanged(qty - 1),
+        ),
+        Semantics(
+          label: '$name $qty'.trim(),
+          excludeSemantics: true,
+          child: Text(
+            '$qty',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+            ),
           ),
         ),
-        _stepButton(Icons.add_rounded, 'Increase', () => onChanged(qty + 1)),
+        _stepButton(
+          Icons.add_rounded,
+          '${tr('Increase')} $name'.trim(),
+          () => onChanged(qty + 1),
+        ),
       ],
     ),
   );
@@ -574,7 +607,7 @@ class _MiniStepper extends StatelessWidget {
       customBorder: const CircleBorder(),
       onTap: onTap,
       child: SizedBox.square(
-        dimension: 34,
+        dimension: 40,
         child: Icon(icon, color: Colors.white, size: 18),
       ),
     ),
@@ -689,6 +722,7 @@ class _OrderStrip extends StatelessWidget {
       stream: () => backend.orders.watchCustomerOrders(uid, limit: 12),
       builder: (context, snap) {
         final orders = snap.data ?? const <LpgOrder>[];
+        final plan = context.watch<PromoState>().plan;
         if (orders.isEmpty) return const SizedBox.shrink();
         final active = orders.where((o) => o.status.isActive).toList();
         final lastDelivered = orders.where(
@@ -699,6 +733,10 @@ class _OrderStrip extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (plan != null && plan.isDue() && active.isEmpty) ...[
+                const _PlanDueCard(),
+                const SizedBox(height: 10),
+              ],
               if (active.isNotEmpty)
                 _TrackingCard(active.first)
               else if (lastDelivered.isNotEmpty)
@@ -707,6 +745,56 @@ class _OrderStrip extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+String _ratingLabel(PublicStats s) {
+  final avg = s.ratingAverage.toStringAsFixed(1);
+  return s.deliveredCount >= 50
+      ? '$avg · ${s.deliveredCount}+ deliveries'
+      : '$avg · ${s.ratingCount} reviews';
+}
+
+/// "Your monthly refill is due": the refill plan, one tap from the cart.
+class _PlanDueCard extends StatelessWidget {
+  const _PlanDueCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Material(
+      color: Brand.flame.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => context.push('/plan'),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              const Icon(Icons.event_repeat_rounded, color: Brand.flame),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Time for your refill',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    Text(
+                      'Your plan is due. Order in one tap.',
+                      style: TextStyle(color: pal.muted, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

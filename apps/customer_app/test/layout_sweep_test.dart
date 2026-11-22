@@ -110,6 +110,8 @@ void main() {
             '/orders/$id/chat',
             '/account',
             '/cart',
+            '/rewards',
+            '/support',
           ]) {
             router.go(route);
             await tester.pumpAndSettle();

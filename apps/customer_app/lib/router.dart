@@ -24,6 +24,9 @@ import 'screens/info/help_screen.dart';
 import 'screens/info/legal_screen.dart';
 import 'screens/info/safety_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/plan/plan_screen.dart';
+import 'screens/rewards/rewards_screen.dart';
+import 'screens/support/support_screen.dart';
 import 'screens/orders/chat_screen.dart';
 import 'screens/orders/invoice_screen.dart';
 import 'screens/orders/order_detail_screen.dart';
@@ -118,6 +121,9 @@ GoRouter buildRouter(AppState state) => GoRouter(
       builder: (_, s) => LocationPickerScreen(initial: s.extra as Address?),
     ),
     GoRoute(path: '/bulk-quote', builder: (_, _) => const BulkQuoteScreen()),
+    GoRoute(path: '/rewards', builder: (_, _) => const RewardsScreen()),
+    GoRoute(path: '/plan', builder: (_, _) => const PlanScreen()),
+    GoRoute(path: '/support', builder: (_, _) => const SupportScreen()),
     GoRoute(path: '/safety', builder: (_, _) => const SafetyScreen()),
     GoRoute(
       path: '/safety/poster',

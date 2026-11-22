@@ -86,6 +86,20 @@ class AppState extends ChangeNotifier {
     prefs?.setString('theme', m.name);
   }
 
+  /// When the customer's refill plan next falls due (set by the plan screen).
+  DateTime? planDue;
+
+  /// The payment method used last time, pre-selected at the next checkout.
+  PaymentMethod get lastPayment {
+    final name = prefs?.getString('payment');
+    return PaymentMethod.values.firstWhere(
+      (m) => m.name == name,
+      orElse: () => PaymentMethod.cashOnDelivery,
+    );
+  }
+
+  void setLastPayment(PaymentMethod m) => prefs?.setString('payment', m.name);
+
   /// Switches the whole app between English and Urdu.
   void setUrdu(bool v) {
     Lang.set(v);

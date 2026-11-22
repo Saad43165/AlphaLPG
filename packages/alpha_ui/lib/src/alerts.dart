@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 /// Phone notifications for the Alpha LPG apps (order updates, messages, new
 /// jobs). Works on Firebase's free plan: the app itself listens to the
@@ -65,6 +67,56 @@ abstract final class Alerts {
       }
     } catch (_) {}
     return null;
+  }
+
+  static bool _tzReady = false;
+
+  /// Shows a notification at [at] even if the app is closed. Inexact (Android
+  /// may move it by a few minutes), so it needs no special permission.
+  static Future<void> schedule({
+    required int id,
+    required DateTime at,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!_ready) await init();
+    if (!_ready) return;
+    try {
+      if (!_tzReady) {
+        tzdata.initializeTimeZones();
+        tz.setLocalLocation(tz.getLocation('Asia/Karachi'));
+        _tzReady = true;
+      }
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(at, tz.local),
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'orders',
+            'Orders and messages',
+            channelDescription: 'Order updates, messages and new jobs',
+            importance: Importance.high,
+            priority: Priority.high,
+            styleInformation: BigTextStyleInformation(body),
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: payload,
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> cancel(int id) async {
+    if (!_ready) await init();
+    if (!_ready) return;
+    try {
+      await _plugin.cancel(id);
+    } catch (_) {}
   }
 
   static Future<void> show({

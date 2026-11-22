@@ -122,6 +122,8 @@ void main() {
             '/orders/$id/chat',
             '/account',
             '/cart',
+            '/rewards',
+            '/support',
             '/checkout',
             '/settings',
             '/about',

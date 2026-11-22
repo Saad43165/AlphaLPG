@@ -56,6 +56,7 @@ class ProductImage extends StatelessWidget {
       try {
         return Image.memory(
           _bytes(product.imageData),
+          semanticLabel: product.name,
           height: height,
           fit: BoxFit.contain,
           gaplessPlayback: true,
@@ -68,6 +69,7 @@ class ProductImage extends StatelessWidget {
     if (product.imageUrl.isNotEmpty) {
       return Image.network(
         product.imageUrl,
+        semanticLabel: product.name,
         height: height,
         fit: BoxFit.contain,
         errorBuilder: (_, _, _) => fallback,
@@ -75,6 +77,7 @@ class ProductImage extends StatelessWidget {
     }
     return Image.asset(
       product.automaticImageAsset,
+      semanticLabel: product.name,
       height: height,
       fit: BoxFit.contain,
       errorBuilder: (_, _, _) => fallback,

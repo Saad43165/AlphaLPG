@@ -914,6 +914,22 @@ class _ItemsCard extends StatelessWidget {
             o.deliveryFee == 0 ? 'FREE' : formatRupees(o.deliveryFee),
             valueColor: o.deliveryFee == 0 ? Brand.success : null,
           ),
+          if (o.couponDiscount > 0) ...[
+            const SizedBox(height: 4),
+            _kv(
+              'Discount code ${o.couponCode}',
+              '- ${formatRupees(o.couponDiscount)}',
+              valueColor: Brand.success,
+            ),
+          ],
+          if (o.pointsDiscount > 0) ...[
+            const SizedBox(height: 4),
+            _kv(
+              'Points used (${o.pointsUsed})',
+              '- ${formatRupees(o.pointsDiscount)}',
+              valueColor: Brand.success,
+            ),
+          ],
           const SizedBox(height: 8),
           _kv('Total', formatRupees(o.total), bold: true),
         ],

@@ -16,6 +16,7 @@ import 'services/geoapify.dart';
 import 'services/location_service.dart';
 import 'state/app_state.dart';
 import 'state/cart.dart';
+import 'state/promo_state.dart';
 import 'state/order_watcher.dart';
 import 'theme/brand.dart';
 
@@ -48,6 +49,7 @@ class _AlphaAppState extends State<AlphaApp> {
     onboarded: !widget.showOnboarding,
   );
   late final Cart _cart = Cart(prefs: widget.prefs);
+  late final PromoState _promo = PromoState(widget.backend, _state);
   late final GoRouter _router = buildRouter(_state);
   final _messenger = GlobalKey<ScaffoldMessengerState>();
   late final OrderWatcher _watcher = OrderWatcher(widget.backend, _state);
@@ -104,6 +106,7 @@ class _AlphaAppState extends State<AlphaApp> {
       ChangeNotifierProvider.value(value: _state),
       ChangeNotifierProvider.value(value: _state.chat),
       ChangeNotifierProvider.value(value: _cart),
+      ChangeNotifierProvider.value(value: _promo),
     ],
     child: ValueListenableBuilder<ThemeMode>(
       valueListenable: _state.themeMode,

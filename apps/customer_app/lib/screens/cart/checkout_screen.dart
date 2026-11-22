@@ -12,6 +12,8 @@ import 'package:provider/provider.dart';
 import '../../services/backend.dart';
 import '../../state/app_state.dart';
 import '../../state/cart.dart';
+import '../../state/promo_state.dart';
+import '../../widgets/promo_panel.dart';
 import '../../theme/brand.dart';
 import '../../utils/format.dart';
 import '../../widgets/address_picker.dart';
@@ -50,6 +52,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _notes = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Start with the way the customer paid last time.
+    _payment = context.read<AppState>().lastPayment;
+  }
+
+  @override
   void dispose() {
     _notes.dispose();
     super.dispose();
@@ -81,10 +90,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return false;
     }
     final items = cart.toOrderItems(state.productById);
-    final price = PriceBreakdown.of(
-      items,
-      state.settings,
-      area: state.selectedAddress?.area ?? '',
+    final promo = context.read<PromoState>();
+    final price = promo.priced(
+      PriceBreakdown.of(
+        items,
+        state.settings,
+        area: state.selectedAddress?.area ?? '',
+      ),
     );
     final problem = price.problem(state.settings, status: state.ordering);
     if (problem != null) {
@@ -105,6 +117,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           subtotal: price.subtotal,
           deliveryFee: price.deliveryFee,
           total: price.total,
+          couponCode: price.couponDiscount > 0 ? promo.coupon!.code : '',
+          couponDiscount: price.couponDiscount,
+          pointsUsed: price.pointsUsed,
+          pointsDiscount: price.pointsDiscount,
           address: address,
           paymentMethod: _payment,
           scheduledFor: _asap
@@ -117,6 +133,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       );
       cart.clear();
+      promo.clear();
+      promo.afterOrder();
       if (mounted) context.go('/order-placed/$id');
       return true;
     } catch (e) {
@@ -139,11 +157,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final state = context.watch<AppState>();
     final cart = context.watch<Cart>();
     final items = cart.toOrderItems(state.productById);
-    final price = PriceBreakdown.of(
+    final promo = context.watch<PromoState>();
+    final base = PriceBreakdown.of(
       items,
       state.settings,
       area: state.selectedAddress?.area ?? '',
     );
+    final price = promo.priced(base);
     final address = state.selectedAddress;
     final today = DateTime.now();
     final days = [for (var i = 0; i < 4; i++) today.add(Duration(days: i))];
@@ -394,11 +414,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             _Section(
               number: 3,
               title: 'Payment',
-              child: PaymentMethodPicker(
-                value: _payment,
-                settings: state.settings,
-                total: price.total,
-                onChanged: (m) => setState(() => _payment = m),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PaymentMethodPicker(
+                    value: _payment,
+                    settings: state.settings,
+                    total: price.total,
+                    onChanged: (m) {
+                      state.setLastPayment(m);
+                      setState(() => _payment = m);
+                    },
+                  ),
+                  PromoPanel(subtotal: base.subtotal),
+                ],
               ),
             ),
             if (_payment.isPrepaid)

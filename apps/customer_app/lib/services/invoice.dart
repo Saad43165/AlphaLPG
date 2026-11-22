@@ -443,6 +443,16 @@ Future<Uint8List> buildInvoicePdf(
                                 ? 'Free'
                                 : formatRupees(o.deliveryFee),
                           ),
+                          if (o.couponDiscount > 0)
+                            totalRow(
+                              'Discount (${o.couponCode})',
+                              '- ${formatRupees(o.couponDiscount)}',
+                            ),
+                          if (o.pointsDiscount > 0)
+                            totalRow(
+                              'Points used (${o.pointsUsed})',
+                              '- ${formatRupees(o.pointsDiscount)}',
+                            ),
                           pw.Divider(color: _line),
                           pw.Container(
                             padding: const pw.EdgeInsets.symmetric(

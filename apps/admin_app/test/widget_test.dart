@@ -212,6 +212,60 @@ void main() {
     expect(find.text('Send again'), findsOneWidget);
   });
 
+  testWidgets(
+    'delivered orders earn points, spent points are taken off, ratings go public',
+    (tester) async {
+      final store = MemoryStore();
+      final b = _backend(store);
+      await tester.runAsync(() async {
+        final id = await b.orders.place(_order());
+        await b.orders.updateStatus(id, OrderStatus.delivered, 'r1');
+        await b.orders.rate(id, 5, 'Fast');
+      });
+      await tester.pumpWidget(AdminApp(backend: b));
+      await tester.pumpAndSettle();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+      // Rs. 6,592 at 2 points per Rs. 100.
+      final l = (await tester.runAsync(
+        () => b.promo.watchLoyalty('c1').first,
+      ))!;
+      expect(l.points, 130);
+      final stats = (await tester.runAsync(() => b.promo.watchStats().first))!;
+      expect(stats.ratingCount, 1);
+      expect(stats.ratingAverage, 5);
+      expect(stats.deliveredCount, 1);
+    },
+  );
+
+  testWidgets('owner makes a coupon and a customer-ready code is saved', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Coupons and rewards'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New coupon'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), 'welcome200');
+    await tester.enterText(find.byType(TextField).at(1), '200');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final c = (await tester.runAsync(() => b.promo.findCoupon('WELCOME200')))!;
+    expect(c.value, 200);
+    expect(c.percent, isFalse);
+    expect(find.text('WELCOME200'), findsOneWidget);
+  });
+
   testWidgets('owner opens a customer, records a deposit and blocks them', (
     tester,
   ) async {

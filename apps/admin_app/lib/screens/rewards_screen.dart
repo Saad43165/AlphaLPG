@@ -46,36 +46,39 @@ class RewardsScreen extends StatelessWidget {
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: panel(context),
-                child: ListTile(
-                  onTap: () => editCoupon(context, c),
-                  title: Text(
-                    c.code,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: ListTile(
+                    onTap: () => editCoupon(context, c),
+                    title: Text(
+                      c.code,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                  subtitle: Text(
-                    [
-                      c.summary,
-                      if (c.minOrder > 0) 'min order ${rs(c.minOrder)}',
-                      if (c.expiresAt != null)
-                        'until ${DateFormat('d MMM').format(c.expiresAt!)}',
-                      if (!c.active) 'switched off',
-                    ].join(' · '),
-                  ),
-                  trailing: Switch(
-                    value: c.active,
-                    onChanged: (v) => s.saveCoupon(
-                      Coupon(
-                        code: c.code,
-                        title: c.title,
-                        percent: c.percent,
-                        value: c.value,
-                        maxDiscount: c.maxDiscount,
-                        minOrder: c.minOrder,
-                        active: v,
-                        expiresAt: c.expiresAt,
+                    subtitle: Text(
+                      [
+                        c.summary,
+                        if (c.minOrder > 0) 'min order ${rs(c.minOrder)}',
+                        if (c.expiresAt != null)
+                          'until ${DateFormat('d MMM').format(c.expiresAt!)}',
+                        if (!c.active) 'switched off',
+                      ].join(' · '),
+                    ),
+                    trailing: Switch(
+                      value: c.active,
+                      onChanged: (v) => s.saveCoupon(
+                        Coupon(
+                          code: c.code,
+                          title: c.title,
+                          percent: c.percent,
+                          value: c.value,
+                          maxDiscount: c.maxDiscount,
+                          minOrder: c.minOrder,
+                          active: v,
+                          expiresAt: c.expiresAt,
+                        ),
                       ),
                     ),
                   ),

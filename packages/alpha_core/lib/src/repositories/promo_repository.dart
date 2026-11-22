@@ -149,13 +149,14 @@ class _FirestorePromo implements PromoRepository {
     String orderId,
     Transaction tx,
     int currentPoints,
-    int currentLifetime,
-  ) async {
+    int currentLifetime, {
+    bool earned = true,
+  }) async {
     final ref = _db.doc(FirestorePaths.loyalty(uid));
     final next = currentPoints + delta;
     tx.set(ref, {
       'points': next < 0 ? 0 : next,
-      'lifetime': currentLifetime + (delta > 0 ? delta : 0),
+      'lifetime': currentLifetime + (earned && delta > 0 ? delta : 0),
       'updatedAt': FieldValue.serverTimestamp(),
     });
     tx.set(_db.collection(FirestorePaths.loyaltyEntries(uid)).doc(), {
@@ -243,6 +244,7 @@ class _FirestorePromo implements PromoRepository {
       tx,
       (mine.data()?['points'] as num?)?.toInt() ?? 0,
       (mine.data()?['lifetime'] as num?)?.toInt() ?? 0,
+      earned: false,
     );
   });
 
@@ -335,14 +337,20 @@ class _MemoryPromo implements PromoRepository {
       ),
   );
 
-  void _move(String uid, int delta, String reason, String orderId) {
+  void _move(
+    String uid,
+    int delta,
+    String reason,
+    String orderId, {
+    bool earned = true,
+  }) {
     final cur = _s.get('loyalty', uid) ?? const {};
     final p = (cur['points'] as num?)?.toInt() ?? 0;
     final life = (cur['lifetime'] as num?)?.toInt() ?? 0;
     final next = p + delta;
     _s.set('loyalty', uid, {
       'points': next < 0 ? 0 : next,
-      'lifetime': life + (delta > 0 ? delta : 0),
+      'lifetime': life + (earned && delta > 0 ? delta : 0),
     });
     _s.set(FirestorePaths.loyaltyEntries(uid), _s.newId(), {
       'delta': delta,
@@ -407,6 +415,7 @@ class _MemoryPromo implements PromoRepository {
       o.pointsUsed,
       'Order ${o.displayNumber} was cancelled: points returned',
       o.id,
+      earned: false,
     );
   }
 

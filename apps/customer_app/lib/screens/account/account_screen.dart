@@ -104,6 +104,24 @@ class AccountScreen extends StatelessWidget {
                     ),
                     _tile(
                       context,
+                      Icons.card_giftcard_rounded,
+                      'Rewards and invite friends',
+                      '/rewards',
+                    ),
+                    _tile(
+                      context,
+                      Icons.event_repeat_rounded,
+                      'Refill plan',
+                      '/plan',
+                    ),
+                    _tile(
+                      context,
+                      Icons.support_agent_rounded,
+                      'Help center',
+                      '/support',
+                    ),
+                    _tile(
+                      context,
                       Icons.factory_outlined,
                       'Bulk / business quote (we reply with a price)',
                       '/bulk-quote',

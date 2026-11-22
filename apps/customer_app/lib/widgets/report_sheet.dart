@@ -19,6 +19,7 @@ const _orderReasons = [
   ('Cylinder not delivered', Icons.report_gmailerrorred_rounded),
   ('Cylinder leaking or damaged', Icons.warning_amber_rounded),
   ('Payment or price problem', Icons.payments_rounded),
+  ('Refund request', Icons.currency_exchange_rounded),
   ('Something else', Icons.more_horiz_rounded),
 ];
 
@@ -244,6 +245,20 @@ class MyReports extends StatelessWidget {
                               : 'Resolved by Alpha LPG.'),
                     style: const TextStyle(height: 1.35),
                   ),
+                  if (r.refund != 'none') ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      r.refund == 'refunded'
+                          ? 'Refund: done'
+                          : 'Refund: not approved',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: r.refund == 'refunded'
+                            ? Brand.success
+                            : Brand.danger,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
