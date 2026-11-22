@@ -137,7 +137,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
             if (!_searching)
               SizedBox(
-                height: 92,
+                height:
+                    92 + (MediaQuery.textScalerOf(context).scale(14) - 14) * 4,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),

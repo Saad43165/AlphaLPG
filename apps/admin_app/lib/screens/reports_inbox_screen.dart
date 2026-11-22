@@ -133,20 +133,21 @@ class ReportCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Pill(
                 r.aboutRider ? Icons.two_wheeler_rounded : Icons.flag_rounded,
                 r.aboutRider ? 'About rider' : 'About order',
                 color: color,
               ),
-              const SizedBox(width: 8),
               Pill(
                 r.isOpen ? Icons.error_outline_rounded : Icons.check_rounded,
                 r.isOpen ? 'Open' : 'Resolved',
                 color: color,
               ),
-              const Spacer(),
               Text(
                 r.createdAt == null ? '' : fmt.format(r.createdAt!.toLocal()),
                 style: TextStyle(color: context.pal.muted, fontSize: 12),

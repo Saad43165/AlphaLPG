@@ -121,9 +121,6 @@ class AppState extends ChangeNotifier {
   /// Shows an important order update inside the app (set by the app shell).
   void Function(String title, String body, String route)? inAppNotice;
 
-  /// Orders in progress right now (kept up to date by the order watcher).
-  int openOrders = 0;
-
   /// Set when the shop has blocked this customer from ordering.
   BlockedCustomer? blocked;
 

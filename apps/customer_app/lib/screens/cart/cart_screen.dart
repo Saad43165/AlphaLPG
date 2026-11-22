@@ -95,7 +95,10 @@ class CartScreen extends StatelessWidget {
                   if (others.isNotEmpty) ...[
                     const SectionTitle('Add more'),
                     SizedBox(
-                      height: 112,
+                      height:
+                          112 +
+                          (MediaQuery.textScalerOf(context).scale(14) - 14) *
+                              12,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         clipBehavior: Clip.none,
@@ -429,14 +432,16 @@ class _CartLineTile extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 4),
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 2,
                     children: [
                       Tag(
                         line.type.label,
                         color: context.pal.tint,
                         dark: !context.pal.isDark,
                       ),
-                      const SizedBox(width: 6),
                       Text(
                         '${formatRupees(unit)} each',
                         style: TextStyle(
@@ -455,15 +460,17 @@ class _CartLineTile extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(height: 8),
-                  Row(
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    runSpacing: 6,
+                    spacing: 8,
                     children: [
-                      Expanded(
-                        child: Text(
-                          formatRupees(unit * line.quantity),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                          ),
+                      Text(
+                        formatRupees(unit * line.quantity),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
                         ),
                       ),
                       QuantityStepper(

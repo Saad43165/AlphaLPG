@@ -11,6 +11,7 @@ import 'dart:convert';
 
 import 'package:alpha_admin/utils/photo.dart';
 import 'package:image/image.dart' as img;
+import 'package:flutter/widgets.dart' show Brightness;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart'
     show Switch, Size, Scrollable, TextField;
@@ -494,4 +495,101 @@ void main() {
       expect(reads!.containsKey(MessageRole.admin), isTrue);
     },
   );
+
+  for (final dark in [false, true]) {
+    testWidgets('admin screens at large text, ${dark ? 'dark' : 'light'}', (
+      tester,
+    ) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+      tester.platformDispatcher.platformBrightnessTestValue = dark
+          ? Brightness.dark
+          : Brightness.light;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.6;
+      addTearDown(tester.view.reset);
+      final store = MemoryStore();
+      final b = _backend(store);
+      await tester.runAsync(() async {
+        await b.riders.saveRider(
+          const RiderProfile(
+            uid: 'r1',
+            name: 'Imran Khan',
+            phone: '03001112222',
+            online: true,
+          ),
+        );
+        await b.profiles.saveProfile(
+          const CustomerProfile(
+            uid: 'c1',
+            name: 'Ali Raza',
+            phone: '+923001234567',
+          ),
+          isNew: true,
+        );
+        final id = await b.orders.place(_order());
+        await b.orders.sendPaymentRequest(
+          id,
+          const PaymentRequest(
+            method: PaymentMethod.jazzCash,
+            account: '03001234567',
+            accountTitle: 'Alpha LPG',
+            amount: 6592,
+          ),
+        );
+        await b.orders.submitPayment(
+          id,
+          uid: 'c1',
+          reference: 'TX99',
+          amount: 5000,
+        );
+        await b.orders.addReport(
+          const OrderReport(
+            orderId: 'x',
+            orderNumber: 'AL-1',
+            customerId: 'c1',
+            customerName: 'Ali Raza',
+            customerPhone: '+923001234567',
+            reason: 'Rider behaviour',
+            details: 'Rude',
+          ),
+        );
+      });
+      await tester.pumpWidget(AdminApp(backend: b));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'orders');
+      await tester.tap(find.text('Ali Raza').first);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'order detail');
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      for (final tab in ['Riders', 'Shop', 'More']) {
+        await tester.tap(find.text(tab).last);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: tab);
+      }
+      for (final item in [
+        'Customer reports',
+        'Customers',
+        'Cash handover',
+        'Sales & cash report',
+        'Team and activity log',
+        'App errors',
+      ]) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, 4000));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.text(item),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(item));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: item);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+      }
+    });
+  }
 }

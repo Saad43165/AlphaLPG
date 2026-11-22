@@ -97,7 +97,7 @@ void main() {
     expect(find.text('We have received your order'), findsOneWidget);
     expect(find.text('Rs. 6,592'), findsWidgets);
     expect(find.text('FREE'), findsOneWidget);
-    await scrollTo(tester, find.text('AWAITING PAYMENT'));
+    await scrollTo(tester, find.text('UNPAID'));
     expect(find.textContaining('Payment needed'), findsOneWidget);
     await scrollTo(tester, find.text('Cancel order'));
     expect(find.text('Cancel order'), findsOneWidget);

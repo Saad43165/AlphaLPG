@@ -54,14 +54,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-              child: Row(
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   FilterChip(
-                    label: const Text('Owes empties or has a deposit'),
+                    label: const Text('Owes empties / has deposit'),
                     selected: _onlyOwing,
                     onSelected: (v) => setState(() => _onlyOwing = v),
                   ),
-                  const Spacer(),
                   Text(
                     '${rows.length} customers',
                     style: TextStyle(color: context.pal.muted),

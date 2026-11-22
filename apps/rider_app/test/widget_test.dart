@@ -5,6 +5,7 @@ import 'package:alpha_rider/services/location_tracker.dart';
 import 'package:alpha_rider/services/rider_auth.dart';
 import 'package:alpha_rider/state/session.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/widgets.dart' show Brightness;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -576,4 +577,43 @@ void main() {
       expect(find.textContaining('taken back'), findsNothing);
     },
   );
+
+  for (final dark in [false, true]) {
+    testWidgets('rider screens at large text, ${dark ? 'dark' : 'light'}', (
+      tester,
+    ) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+      tester.platformDispatcher.platformBrightnessTestValue = dark
+          ? Brightness.dark
+          : Brightness.light;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final rig = Rig();
+      await addRider(tester, rig);
+      final id = await placeOrder(tester, rig, method: PaymentMethod.easyPaisa);
+      await placeOrder(tester, rig);
+      await tester.runAsync(() async {
+        await rig.backend.riders.setOnline('r1', true);
+        await rig.backend.orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran Khan',
+          phone: '0300',
+        );
+      });
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      expect(tester.takeException(), isNull, reason: 'jobs');
+      for (final tab in ['New', 'History', 'Me', 'My jobs']) {
+        await tapText(tester, tab);
+        expect(tester.takeException(), isNull, reason: tab);
+      }
+      await tapText(tester, 'Me');
+      for (final item in ['My earnings and cash', 'Keep the app running']) {
+        await tapText(tester, item);
+        expect(tester.takeException(), isNull, reason: item);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+      }
+    });
+  }
 }

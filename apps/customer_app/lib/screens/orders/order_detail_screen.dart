@@ -1244,8 +1244,8 @@ class _PaymentCard extends StatelessWidget {
                 paid
                     ? 'PAID'
                     : (o.paymentMethod.isPrepaid
-                          ? 'AWAITING PAYMENT'
-                          : 'PAY ON DELIVERY'),
+                          ? 'UNPAID'
+                          : 'CASH ON DELIVERY'),
                 color: paid ? Brand.success : Brand.flame,
                 dark: !paid,
               ),
@@ -1462,12 +1462,20 @@ class _StageBar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            labels[i],
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: done || now ? 1 : 0.75),
-              fontWeight: now ? FontWeight.w800 : FontWeight.w600,
-              fontSize: 12.5,
+          // Scales down (instead of overflowing) at very large phone fonts.
+          SizedBox(
+            width: 84,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                labels[i],
+                maxLines: 1,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: done || now ? 1 : 0.75),
+                  fontWeight: now ? FontWeight.w800 : FontWeight.w600,
+                  fontSize: 12.5,
+                ),
+              ),
             ),
           ),
         ],

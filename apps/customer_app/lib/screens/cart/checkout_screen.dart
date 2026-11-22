@@ -15,9 +15,6 @@ import '../../widgets/slide_to_confirm.dart';
 import 'cart_screen.dart';
 import '../../utils/haptics.dart';
 
-/// Orders one customer may have in progress at the same time.
-const maxOpenOrders = 3;
-
 enum DeliverySlot {
   morning('Morning', 9, 12),
   afternoon('Afternoon', 12, 16),
@@ -73,15 +70,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       showMessage(
         context,
         'Alpha LPG cannot take orders from this account right now. Please call ${state.settings.phone}.',
-        error: true,
-      );
-      return false;
-    }
-    // At most 3 orders in progress at once (stops accidental or spam orders).
-    if (state.openOrders >= maxOpenOrders) {
-      showMessage(
-        context,
-        'You already have ${state.openOrders} orders on the way. Please wait for one to be delivered, or call ${state.settings.phone}.',
         error: true,
       );
       return false;
@@ -173,11 +161,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ? (
             'No delivery slot left on this day. Choose another day.',
             'Choose a delivery time',
-          )
-        : state.openOrders >= maxOpenOrders
-        ? (
-            'You already have ${state.openOrders} orders on the way. Please wait for one to arrive.',
-            'Too many open orders',
           )
         : switch (price.problem(state.settings, status: state.ordering)) {
             final String p => (p, 'Cannot order yet'),

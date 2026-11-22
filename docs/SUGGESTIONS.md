@@ -13,7 +13,7 @@
   server; see "OTP options" below.
 - Until then: call every new customer once before the first delivery (the admin
   app now shows a "New customer: call to confirm" tag and a Call button), use
-  the 3-open-orders limit, the Block button, and the payment checks.
+  the Block button, and the payment checks.
 
 ## OTP options
 - Pakistani SMS company (cheapest, needs an account and an API key; some ask for a

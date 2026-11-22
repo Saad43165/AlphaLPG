@@ -46,22 +46,28 @@ class EarningsScreen extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  '${l.length} deliveries',
+                  style: TextStyle(color: context.pal.muted, fontSize: 12.5),
+                ),
+              ],
             ),
           ),
-          Text(
-            '${l.length} deliveries',
-            style: TextStyle(color: context.pal.muted),
-          ),
-          const SizedBox(width: 14),
-          SizedBox(
-            width: 92,
-            child: Text(
-              formatRupees(cash(l)),
-              textAlign: TextAlign.end,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+          const SizedBox(width: 10),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                formatRupees(cash(l)),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
             ),
           ),
         ],

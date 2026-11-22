@@ -44,15 +44,21 @@ class JobCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         o.displayNumber,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
                         ),
                       ),
                     ),
-                    Text(
-                      timeAgo(o.createdAt),
-                      style: TextStyle(color: pal.muted, fontSize: 12),
+                    Flexible(
+                      child: Text(
+                        timeAgo(o.createdAt),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: pal.muted, fontSize: 12),
+                      ),
                     ),
                     const SizedBox(width: 8),
                     StatusChip(o.status),
