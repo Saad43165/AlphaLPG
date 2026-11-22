@@ -228,12 +228,18 @@ class CatalogueScreen extends StatelessWidget {
         'acceptingOrders': acceptingOrders ?? s.acceptingOrders,
       });
 
+  /// A full page (with a back arrow), not a sheet: the long form used to
+  /// cover the whole screen with no way back.
   void _editProduct(BuildContext context, Product? p) =>
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (_) => _ProductEditor(product: p),
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => Scaffold(
+            appBar: AppBar(
+              title: Text(p == null ? 'New cylinder' : 'Edit ${p.name}'),
+            ),
+            body: SafeArea(child: _ProductEditor(product: p)),
+          ),
+        ),
       );
 }
 
@@ -425,7 +431,7 @@ class _ProductEditorState extends State<_ProductEditor> {
   Widget build(BuildContext context) => Padding(
     padding: EdgeInsets.fromLTRB(
       20,
-      0,
+      4,
       20,
       MediaQuery.viewInsetsOf(context).bottom + 20,
     ),
@@ -436,13 +442,7 @@ class _ProductEditorState extends State<_ProductEditor> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              widget.product == null
-                  ? 'New cylinder'
-                  : 'Edit ${widget.product!.name}',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             _PhotoPicker(
               product: widget.product,
               size: double.tryParse(_size.text.trim()),

@@ -24,11 +24,13 @@ class RidersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Riders')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showModalBottomSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          showDragHandle: true,
-          builder: (_) => const _AddRider(),
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: const Text('Add a rider')),
+              body: const SafeArea(child: _AddRider()),
+            ),
+          ),
         ),
         icon: const Icon(Icons.person_add_alt_1_rounded),
         label: const Text('Add rider'),
@@ -271,11 +273,13 @@ class _RiderCard extends StatelessWidget {
                     case 'call':
                       Launch.call(r.phone);
                     case 'edit':
-                      await showModalBottomSheet<void>(
-                        context: context,
-                        isScrollControlled: true,
-                        showDragHandle: true,
-                        builder: (_) => _EditRider(rider: r),
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => Scaffold(
+                            appBar: AppBar(title: Text('Edit ${r.name}')),
+                            body: SafeArea(child: _EditRider(rider: r)),
+                          ),
+                        ),
                       );
                     case 'off':
                       await run(
@@ -492,11 +496,7 @@ class _EditRiderState extends State<_EditRider> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Edit ${widget.rider.name}',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             TextFormField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
@@ -616,11 +616,7 @@ class _AddRiderState extends State<_AddRider> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Add a rider',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             TextFormField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
