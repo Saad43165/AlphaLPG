@@ -66,6 +66,87 @@ class AdminSession extends ChangeNotifier {
     return (l.fold(0, (n, o) => n + o.rating!) / l.length, l.length);
   }
 
+  // ---- Reward points, invite bonuses and the public rating numbers -----------
+
+  final _rewardBusy = <String>{};
+  List<Coupon> coupons = const [];
+  String _publicStatsKey = '';
+
+  /// Gives points for delivered orders, takes spent points off, gives them back
+  /// after a cancel. Each step is done once (the order records that it was).
+  void _processRewards(List<LpgOrder> list) {
+    if (isAdmin != true) return;
+    for (final o in list) {
+      if (_rewardBusy.contains(o.id)) continue;
+      Future<void>? job;
+      if (o.status == OrderStatus.delivered && o.rewardedAt == null) {
+        job = _award(o);
+      } else if (o.pointsUsed > 0 &&
+          o.pointsSettledAt == null &&
+          o.status != OrderStatus.cancelled) {
+        job = backend.promo.settleSpent(o);
+      } else if (o.status == OrderStatus.cancelled &&
+          o.pointsSettledAt != null &&
+          o.pointsRefundedAt == null) {
+        job = backend.promo.refundSpent(o);
+      }
+      if (job == null) continue;
+      _rewardBusy.add(o.id);
+      job.catchError((_) {}).whenComplete(() => _rewardBusy.remove(o.id));
+    }
+  }
+
+  Future<void> _award(LpgOrder o) async {
+    final points = o.total ~/ 100 * settings.pointsPerHundred;
+    String? referrer;
+    if (o.couponCode.startsWith('REF-')) {
+      referrer = await backend.promo.referralOwner(o.couponCode);
+    }
+    await backend.promo.awardDelivery(
+      o,
+      points: points,
+      referrerUid: referrer,
+      referrerPoints: referrer == null ? 0 : settings.referralBonusPoints,
+    );
+  }
+
+  /// "4.8 stars from 120 reviews": the home screen of the customer app.
+  void _publishPublicStats(List<LpgOrder> list) {
+    if (isAdmin != true) return;
+    final rated = [
+      for (final o in list)
+        if (o.status == OrderStatus.delivered && o.rating != null) o.rating!,
+    ];
+    final delivered = list
+        .where((o) => o.status == OrderStatus.delivered)
+        .length;
+    final avg = rated.isEmpty
+        ? 0.0
+        : rated.fold(0, (a, b) => a + b) / rated.length;
+    final key = '${avg.toStringAsFixed(2)}/${rated.length}/$delivered';
+    if (key == _publicStatsKey) return;
+    _publicStatsKey = key;
+    backend.promo
+        .publishStats(
+          PublicStats(
+            ratingAverage: avg,
+            ratingCount: rated.length,
+            deliveredCount: delivered,
+          ),
+        )
+        .catchError((_) {});
+  }
+
+  Future<String?> saveCoupon(Coupon c) => _run(() async {
+    await backend.promo.saveCoupon(c);
+    _audit('Saved coupon', target: c.code);
+  });
+
+  Future<String?> deleteCoupon(Coupon c) => _run(() async {
+    await backend.promo.deleteCoupon(c.code);
+    _audit('Deleted coupon', target: c.code);
+  });
+
   final _publishedStats = <String, String>{};
 
   /// Customers see each rider's stars; keep the public copy up to date.
@@ -352,8 +433,14 @@ class AdminSession extends ChangeNotifier {
     OrderReport r, {
     required String reply,
     bool resolved = true,
+    String refund = 'none',
   }) => _run(() async {
-    await backend.orders.resolveReport(r.id, reply: reply, resolved: resolved);
+    await backend.orders.resolveReport(
+      r.id,
+      reply: reply,
+      resolved: resolved,
+      refund: refund,
+    );
     _audit(
       resolved ? 'Resolved customer report' : 'Reopened customer report',
       target: r.orderNumber,
@@ -713,7 +800,12 @@ class AdminSession extends ChangeNotifier {
         ..addAll(v.map((o) => o.id));
       orders = v;
       _publishRiderStats();
+      _processRewards(v);
+      _publishPublicStats(v);
       ordersLoaded = true;
+    });
+    quiet(backend.promo.watchCoupons(), (v) {
+      coupons = v;
     });
     listen(backend.riders.watchAllRiders(), (v) {
       riders = v;

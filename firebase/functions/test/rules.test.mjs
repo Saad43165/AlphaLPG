@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { before, after, beforeEach, describe, it } from 'node:test';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore';
 
 const PHONE = '+923001234567';
 let env;
@@ -663,5 +663,112 @@ describe('profiles, catalogue and staff', () => {
     await assertFails(setDoc(doc(guest(), 'quoteRequests/q3'), { ...q, status: 'won' }));
     await assertFails(getDoc(doc(guest(), 'quoteRequests/q1')));
     await assertSucceeds(getDoc(doc(staff('boss'), 'quoteRequests/q1')));
+  });
+});
+
+describe('discount codes, friend codes and reward points', () => {
+  const stamp = () => ({ orderId: 'o1', at: serverTimestamp() });
+  // An order using a code, written together with the "code spent" record.
+  async function place(db, over, usePath, id = 'o1') {
+    const b = writeBatch(db);
+    b.set(doc(db, 'orders', id), order(over));
+    if (usePath) b.set(doc(db, usePath), { orderId: id, at: serverTimestamp() });
+    return b.commit();
+  }
+  const withCode = (extra = {}) => ({
+    couponCode: 'WELCOME', couponDiscount: 200, pointsUsed: 0, pointsDiscount: 0, discount: 200, total: 3246, ...extra,
+  });
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'coupons/WELCOME'), { type: 'amount', value: 200, active: true, minOrder: 0 });
+      await setDoc(doc(db, 'coupons/TEN'), { type: 'percent', value: 10, maxDiscount: 100, active: true, minOrder: 0 });
+      await setDoc(doc(db, 'coupons/OFF'), { type: 'amount', value: 200, active: false });
+      await setDoc(doc(db, 'coupons/OLD'), { type: 'amount', value: 200, active: true, expiresAt: new Date('2020-01-01') });
+      await setDoc(doc(db, 'coupons/BIG'), { type: 'amount', value: 200, active: true, minOrder: 50000 });
+      await setDoc(doc(db, 'referralCodes/REF-AAAAAA'), { uid: 'u2', at: new Date() });
+      await setDoc(doc(db, 'referralCodes/REF-BBBBBB'), { uid: 'u1', at: new Date() });
+      await setDoc(doc(db, 'loyalty/u1'), { points: 500, lifetime: 500 });
+    });
+  });
+
+  it('a shop code takes its amount off, once per customer', async () => {
+    await assertSucceeds(place(customer(), withCode(), 'coupons/WELCOME/uses/u1'));
+    await assertFails(place(customer(), withCode(), 'coupons/WELCOME/uses/u1', 'o2'));
+  });
+  it('the discount cannot be bigger than the code allows', async () => {
+    await assertFails(place(customer(), withCode({ couponDiscount: 500, discount: 500, total: 2946 }), 'coupons/WELCOME/uses/u1'));
+  });
+  it('a code must be spent together with the order', async () => {
+    await assertFails(setDoc(doc(customer(), 'orders/o1'), order(withCode())));
+  });
+  it('a total that ignores the discount, or invents one, is refused', async () => {
+    await assertFails(place(customer(), withCode({ total: 3446 }), 'coupons/WELCOME/uses/u1'));
+    await assertFails(setDoc(doc(customer(), 'orders/o1'), order({ discount: 200, couponDiscount: 200, total: 3246 })));
+  });
+  it('inactive, expired and too-small-order codes are refused', async () => {
+    await assertFails(place(customer(), withCode({ couponCode: 'OFF' }), 'coupons/OFF/uses/u1'));
+    await assertFails(place(customer(), withCode({ couponCode: 'OLD' }), 'coupons/OLD/uses/u1'));
+    await assertFails(place(customer(), withCode({ couponCode: 'BIG' }), 'coupons/BIG/uses/u1'));
+    await assertFails(place(customer(), withCode({ couponCode: 'NOPE' }), 'coupons/NOPE/uses/u1'));
+  });
+  it('a percentage code is capped', async () => {
+    await assertSucceeds(place(customer(), withCode({ couponCode: 'TEN', couponDiscount: 100, discount: 100, total: 3346 }), 'coupons/TEN/uses/u1'));
+    await assertFails(place(customer(), withCode({ couponCode: 'TEN', couponDiscount: 200, discount: 200, total: 3246 }), 'coupons/TEN/uses/u1', 'o2'));
+  });
+  it('a friend\'s code works once, and never your own', async () => {
+    const friend = { couponCode: 'REF-AAAAAA', couponDiscount: 200, pointsUsed: 0, pointsDiscount: 0, discount: 200, total: 3246 };
+    await assertSucceeds(place(customer(), friend, 'referralUses/u1'));
+    await assertFails(place(customer(), friend, 'referralUses/u1', 'o2'));
+    await assertFails(place(customer(), { ...friend, couponCode: 'REF-BBBBBB' }, 'referralUses/u1', 'o3'));
+    await assertFails(place(customer(), { ...friend, couponCode: 'REF-ZZZZZZ' }, 'referralUses/u1', 'o4'));
+    await assertFails(place(customer(), { ...friend, couponDiscount: 900, discount: 900, total: 2546 }, 'referralUses/u1', 'o5'));
+  });
+  it('points can pay up to the balance and the shop limit, no more', async () => {
+    const pts = (n) => ({ couponCode: '', couponDiscount: 0, pointsUsed: n, pointsDiscount: n, discount: n, total: 3446 - n });
+    await assertSucceeds(setDoc(doc(customer(), 'orders/o1'), order(pts(300))));
+    await assertFails(setDoc(doc(customer(), 'orders/o2'), order(pts(600))));
+    await assertFails(setDoc(doc(customer(), 'orders/o3'), order({ ...pts(300), pointsDiscount: 400, discount: 400, total: 3046 })));
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'loyalty/u1'), { points: 5000 }));
+    await assertFails(setDoc(doc(customer(), 'orders/o4'), order(pts(1500))));
+  });
+  it('customers cannot list codes, change points or read others\' points', async () => {
+    await assertSucceeds(getDoc(doc(customer(), 'coupons/WELCOME')));
+    await assertFails(getDocs(collection(customer(), 'coupons')));
+    await assertFails(setDoc(doc(customer(), 'coupons/FREE'), { type: 'amount', value: 9999, active: true }));
+    await assertSucceeds(setDoc(doc(staff('boss'), 'coupons/FREE'), { type: 'amount', value: 100, active: true }));
+    await assertSucceeds(getDoc(doc(customer(), 'loyalty/u1')));
+    await assertFails(getDoc(doc(customer('u2', '+923111111111'), 'loyalty/u1')));
+    await assertFails(setDoc(doc(customer(), 'loyalty/u1'), { points: 999999 }));
+    await assertFails(updateDoc(doc(customer(), 'loyalty/u1'), { points: 999999 }));
+    await assertSucceeds(updateDoc(doc(staff('boss'), 'loyalty/u1'), { points: 400 }));
+    await assertSucceeds(addDoc(collection(staff('boss'), 'loyalty/u1/entries'), { delta: -100, reason: 'Used', at: serverTimestamp() }));
+    await assertFails(addDoc(collection(customer(), 'loyalty/u1/entries'), { delta: 1000, reason: 'x', at: serverTimestamp() }));
+  });
+  it('invite codes: anyone signed in can register their own, not for someone else', async () => {
+    await assertSucceeds(setDoc(doc(customer(), 'referralCodes/REF-ABC234'), { uid: 'u1', at: serverTimestamp() }));
+    await assertFails(setDoc(doc(customer(), 'referralCodes/REF-ABC235'), { uid: 'u2', at: serverTimestamp() }));
+    await assertFails(setDoc(doc(customer(), 'referralCodes/HACK'), { uid: 'u1', at: serverTimestamp() }));
+    await assertFails(getDocs(collection(customer(), 'referralCodes')));
+  });
+  it('a cancelled order gives its code back, a delivered one does not', async () => {
+    await place(customer(), withCode(), 'coupons/WELCOME/uses/u1');
+    await assertFails(deleteDoc(doc(customer(), 'coupons/WELCOME/uses/u1')));
+    await seedOrder({ status: 'cancelled' }, 'o1');
+    await assertSucceeds(deleteDoc(doc(customer(), 'coupons/WELCOME/uses/u1')));
+  });
+  it('public stats are readable by anyone and written by the shop only', async () => {
+    await assertSucceeds(setDoc(doc(staff('boss'), 'stats/public'), { ratingAverage: 4.8, ratingCount: 20, deliveredCount: 300 }));
+    await assertSucceeds(getDoc(doc(guest(), 'stats/public')));
+    await assertFails(setDoc(doc(customer(), 'stats/public'), { ratingAverage: 5 }));
+  });
+  it('a refill plan belongs to its customer and has sane values', async () => {
+    const plan = { lines: [{ productId: 'cyl-11-8kg', type: 'refill', quantity: 1 }], everyDays: 30, paymentMethod: 'cashOnDelivery', nextDue: new Date(), active: true };
+    await assertSucceeds(setDoc(doc(customer(), 'plans/u1'), plan));
+    await assertFails(setDoc(doc(customer(), 'plans/u1'), { ...plan, everyDays: 1 }));
+    await assertFails(setDoc(doc(customer(), 'plans/u1'), { ...plan, extra: 1 }));
+    await assertFails(setDoc(doc(customer('u2', '+923111111111'), 'plans/u1'), plan));
+    await assertFails(getDoc(doc(customer('u2', '+923111111111'), 'plans/u1')));
+    await assertSucceeds(deleteDoc(doc(customer(), 'plans/u1')));
   });
 });

@@ -18,6 +18,7 @@ class OrderReport {
     this.details = '',
     this.status = 'open',
     this.reply = '',
+    this.refund = 'none',
     this.createdAt,
     this.resolvedAt,
   });
@@ -46,6 +47,10 @@ class OrderReport {
 
   /// The shop's answer, shown to the customer.
   final String reply;
+
+  /// For refund requests: 'none' (not decided or not about money),
+  /// 'refunded' or 'declined'. Set by the shop.
+  final String refund;
   final DateTime? createdAt;
   final DateTime? resolvedAt;
 
@@ -67,6 +72,7 @@ class OrderReport {
     details: m['details'] as String? ?? '',
     status: m['status'] == 'resolved' ? 'resolved' : 'open',
     reply: m['reply'] as String? ?? '',
+    refund: m['refund'] as String? ?? 'none',
     createdAt: readDate(m['createdAt']),
     resolvedAt: readDate(m['resolvedAt']),
   );

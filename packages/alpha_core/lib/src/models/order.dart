@@ -105,6 +105,13 @@ class LpgOrder {
     this.receiptAt,
     this.paidAmount,
     this.paymentIssue = '',
+    this.couponCode = '',
+    this.couponDiscount = 0,
+    this.pointsUsed = 0,
+    this.pointsDiscount = 0,
+    this.rewardedAt,
+    this.pointsSettledAt,
+    this.pointsRefundedAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -162,8 +169,24 @@ class LpgOrder {
   /// What is wrong with the payment or receipt, said by the shop
   /// ("The receipt is not clear"). Empty when fine.
   final String paymentIssue;
+
+  /// Discount code used (a friend's "REF-…" code counts too) and what it took off.
+  final String couponCode;
+  final int couponDiscount;
+
+  /// Reward points spent, and the rupees they took off.
+  final int pointsUsed;
+  final int pointsDiscount;
+
+  /// Filled in by the shop's app: points were given for this delivery, the
+  /// spent points were taken from the balance, or given back after a cancel.
+  final DateTime? rewardedAt;
+  final DateTime? pointsSettledAt;
+  final DateTime? pointsRefundedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  int get discount => couponDiscount + pointsDiscount;
 
   bool get canBeRated => status == OrderStatus.delivered && rating == null;
 
@@ -229,6 +252,13 @@ class LpgOrder {
     receiptAt: readDate(m['receiptAt']),
     paidAmount: (m['paidAmount'] as num?)?.round(),
     paymentIssue: m['paymentIssue'] as String? ?? '',
+    couponCode: m['couponCode'] as String? ?? '',
+    couponDiscount: (m['couponDiscount'] as num?)?.round() ?? 0,
+    pointsUsed: (m['pointsUsed'] as num?)?.toInt() ?? 0,
+    pointsDiscount: (m['pointsDiscount'] as num?)?.round() ?? 0,
+    rewardedAt: readDate(m['rewardedAt']),
+    pointsSettledAt: readDate(m['pointsSettledAt']),
+    pointsRefundedAt: readDate(m['pointsRefundedAt']),
     arrivedAt: readDate(m['arrivedAt']),
     emptiesCollected: (m['emptiesCollected'] as num?)?.toInt(),
     createdAt: readDate(m['createdAt']),
@@ -261,6 +291,14 @@ class LpgOrder {
     'rating': rating,
     'feedback': feedback,
     'cashCollected': cashCollected,
+    // Only present when a discount was used.
+    if (couponDiscount + pointsDiscount > 0) ...{
+      'couponCode': couponCode,
+      'couponDiscount': couponDiscount,
+      'pointsUsed': pointsUsed,
+      'pointsDiscount': pointsDiscount,
+      'discount': couponDiscount + pointsDiscount,
+    },
     // Only written later by the shop / customer, never when an order is created.
     if (paymentRequest != null) 'paymentRequest': paymentRequest!.toMap(),
     if (receiptAt != null) 'receiptAt': receiptAt,

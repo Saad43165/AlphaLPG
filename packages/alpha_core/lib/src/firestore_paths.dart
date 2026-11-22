@@ -10,6 +10,18 @@ abstract final class FirestorePaths {
   static const blocked = 'blocked';
   static const quoteRequests = 'quoteRequests';
   static const riders = 'riders';
+  static const coupons = 'coupons';
+  static const referralCodes = 'referralCodes';
+  static const referralUses = 'referralUses';
+  static String loyalty(String uid) => 'loyalty/$uid';
+  static String loyaltyEntries(String uid) => 'loyalty/$uid/entries';
+  static const statsDoc = 'stats/public';
+  static const plans = 'plans';
+
+  /// Where "this customer used this code" is kept (one use per customer).
+  /// A friend's "REF-…" code is one use per customer across all friends.
+  static String couponUse(String code, String uid) =>
+      code.startsWith('REF-') ? 'referralUses/$uid' : 'coupons/$code/uses/$uid';
 
   /// Public "is this rider on shift" records (no names or numbers).
   static const presence = 'presence';

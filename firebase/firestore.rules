@@ -159,7 +159,8 @@ service cloud.firestore {
             'items', 'subtotal', 'deliveryFee', 'total', 'address', 'paymentMethod', 'paymentStatus',
             'paymentReference', 'status', 'history', 'scheduledFor', 'notes', 'riderId', 'riderName',
             'riderPhone', 'cancelReason', 'rating', 'feedback', 'cashCollected', 'emptiesCollected',
-            'cylinderCount', 'emptiesToCollect', 'createdAt', 'updatedAt'])
+            'cylinderCount', 'emptiesToCollect', 'couponCode', 'couponDiscount', 'pointsUsed',
+            'pointsDiscount', 'discount', 'createdAt', 'updatedAt'])
         && d.customerId == request.auth.uid
         && !exists(/databases/$(database)/documents/blocked/$(request.auth.uid))
         && d.customerName.size() <= 80
@@ -187,9 +188,61 @@ service cloud.firestore {
         && d.subtotal == lineSum(items, 0) + lineSum(items, 1) + lineSum(items, 2)
                        + lineSum(items, 3) + lineSum(items, 4) + lineSum(items, 5)
         && d.deliveryFee == feeFor(d.subtotal, s, d.address.get('area', ''))
-        && d.total == d.subtotal + d.deliveryFee
+        && d.total == d.subtotal + d.deliveryFee - d.get('discount', 0)
+        && d.total >= 0
+        && (!d.keys().hasAny(['discount', 'couponCode', 'couponDiscount', 'pointsUsed', 'pointsDiscount'])
+            || discountOk(d, s))
         && s.get('acceptingOrders', true) == true
         && d.subtotal >= s.get('minOrderTotal', 0);
+    }
+
+    // ---- Discounts: a shop code, a friend's code, reward points -----------------
+
+    // Rupees a shop coupon takes off this subtotal.
+    function couponAmount(c, sub) {
+      let raw = c.get('type', 'amount') == 'percent' ? sub * c.value / 100 : c.value;
+      let capped = (c.get('maxDiscount', 0) > 0 && raw > c.maxDiscount) ? c.maxDiscount : raw;
+      return capped > sub ? sub : capped;
+    }
+
+    function shopCouponOk(d, code, cd) {
+      let c = get(/databases/$(database)/documents/coupons/$(code)).data;
+      return c.get('active', true) == true
+        && (c.get('expiresAt', null) == null || c.expiresAt > request.time)
+        && d.subtotal >= c.get('minOrder', 0)
+        && cd <= couponAmount(c, d.subtotal)
+        && existsAfter(/databases/$(database)/documents/coupons/$(code)/uses/$(request.auth.uid));
+    }
+
+    // A friend's invite code: it must be a real one, not the customer's own.
+    function friendCodeOk(d, s, code, cd) {
+      return exists(/databases/$(database)/documents/referralCodes/$(code))
+        && get(/databases/$(database)/documents/referralCodes/$(code)).data.uid != request.auth.uid
+        && cd <= s.get('referralDiscount', 200)
+        && cd <= d.subtotal
+        && existsAfter(/databases/$(database)/documents/referralUses/$(request.auth.uid));
+    }
+
+    function pointsOk(d, s, pu, pd, cd) {
+      return pu == 0
+        || (get(/databases/$(database)/documents/loyalty/$(request.auth.uid)).data.get('points', 0) >= pu
+            && pd <= d.subtotal * s.get('maxPointsPercent', 30) / 100
+            && pd + cd <= d.subtotal);
+    }
+
+    function discountOk(d, s) {
+      let cd = d.get('couponDiscount', 0);
+      let pu = d.get('pointsUsed', 0);
+      let pd = d.get('pointsDiscount', 0);
+      let code = d.get('couponCode', '');
+      return cd is int && pu is int && pd is int && cd >= 0 && pu >= 0 && pd >= 0
+        && d.get('discount', 0) == cd + pd
+        && pd == pu * s.get('pointValue', 1)
+        && (code == ''
+            ? cd == 0
+            : (code.size() <= 30
+               && (code.matches('REF-.*') ? friendCodeOk(d, s, code, cd) : shopCouponOk(d, code, cd))))
+        && pointsOk(d, s, pu, pd, cd);
     }
 
     // The history list may only grow by one entry per status change.
@@ -448,6 +501,80 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ---- Coupons, invite codes, reward points, plans ---------------------------
+
+    function cancelledOwnOrder(orderId) {
+      let o = get(/databases/$(database)/documents/orders/$(orderId)).data;
+      return o.customerId == request.auth.uid && o.status == 'cancelled';
+    }
+
+    // A code can be looked up by its exact name, never listed.
+    match /coupons/{code} {
+      allow get: if signedIn();
+      allow list, write: if isAdmin();
+
+      // One use per customer, spent together with the order.
+      match /uses/{uid} {
+        allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['orderId', 'at'])
+          && request.resource.data.at == request.time;
+        allow delete: if isAdmin()
+          || (signedIn() && request.auth.uid == uid && cancelledOwnOrder(resource.data.orderId));
+      }
+    }
+
+    match /referralCodes/{code} {
+      allow get: if signedIn();
+      allow list: if isAdmin();
+      allow create: if signedIn()
+        && code.matches('REF-[A-Z0-9]{6}')
+        && request.resource.data.keys().hasOnly(['uid', 'at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.at == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // "This customer already used a friend's code" (once only).
+    match /referralUses/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['orderId', 'at'])
+        && request.resource.data.at == request.time;
+      allow delete: if isAdmin()
+        || (signedIn() && request.auth.uid == uid && cancelledOwnOrder(resource.data.orderId));
+    }
+
+    // Reward points: only the shop's app changes them.
+    match /loyalty/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow write: if isAdmin();
+      match /entries/{id} {
+        allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+        allow write: if isAdmin();
+      }
+    }
+
+    // Public rating numbers for the home screen.
+    match /stats/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // A customer's repeat-order plan.
+    match /plans/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['lines', 'everyDays', 'paymentMethod', 'nextDue', 'active'])
+        && request.resource.data.lines is list
+        && request.resource.data.lines.size() >= 1 && request.resource.data.lines.size() <= 6
+        && request.resource.data.everyDays is int
+        && request.resource.data.everyDays >= 7 && request.resource.data.everyDays <= 90
+        && request.resource.data.paymentMethod in ['cashOnDelivery', 'jazzCash', 'easyPaisa', 'bankTransfer']
+        && request.resource.data.active is bool;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
     // ---- Riders --------------------------------------------------------------
 
     // Admin managed. A rider reads their own record and may only flip their
@@ -524,8 +651,9 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.riderId == request.auth.uid)
         );
       allow update: if isAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'resolvedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'resolvedAt', 'refund'])
         && request.resource.data.status in ['open', 'resolved']
+        && request.resource.data.get('refund', 'none') in ['none', 'refunded', 'declined']
         && isText(request.resource.data.reply, 600);
       allow delete: if isOwner();
     }

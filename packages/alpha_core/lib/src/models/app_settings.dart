@@ -28,6 +28,12 @@ class AppSettings {
     this.minBuildCustomer = 0,
     this.minBuildRider = 0,
     this.minBuildAdmin = 0,
+    this.pointsPerHundred = 2,
+    this.pointValue = 1,
+    this.maxPointsPercent = 30,
+    this.referralDiscount = 200,
+    this.referralBonusPoints = 200,
+    this.reminderDays = 25,
   });
 
   final bool acceptingOrders;
@@ -85,6 +91,24 @@ class AppSettings {
   final int minBuildRider;
   final int minBuildAdmin;
 
+  /// Reward points earned per Rs. 100 of a delivered order.
+  final int pointsPerHundred;
+
+  /// Rupees one point is worth when spent.
+  final int pointValue;
+
+  /// Most of an order's price points may pay for (percent).
+  final int maxPointsPercent;
+
+  /// Rupees off for a new customer who uses a friend's code.
+  final int referralDiscount;
+
+  /// Points the friend gets once that first order is delivered.
+  final int referralBonusPoints;
+
+  /// Days after a delivery before "time to refill?" is sent.
+  final int reminderDays;
+
   /// Delivery fee for [area] (before the free-delivery rule).
   int feeForArea(String area) =>
       areaFees[area.trim().toLowerCase()] ?? deliveryFee;
@@ -126,6 +150,16 @@ class AppSettings {
       minBuildCustomer: (m['minBuildCustomer'] as num?)?.toInt() ?? 0,
       minBuildRider: (m['minBuildRider'] as num?)?.toInt() ?? 0,
       minBuildAdmin: (m['minBuildAdmin'] as num?)?.toInt() ?? 0,
+      pointsPerHundred:
+          (m['pointsPerHundred'] as num?)?.toInt() ?? d.pointsPerHundred,
+      pointValue: (m['pointValue'] as num?)?.toInt() ?? d.pointValue,
+      maxPointsPercent:
+          (m['maxPointsPercent'] as num?)?.toInt() ?? d.maxPointsPercent,
+      referralDiscount:
+          (m['referralDiscount'] as num?)?.toInt() ?? d.referralDiscount,
+      referralBonusPoints:
+          (m['referralBonusPoints'] as num?)?.toInt() ?? d.referralBonusPoints,
+      reminderDays: (m['reminderDays'] as num?)?.toInt() ?? d.reminderDays,
     );
   }
 
@@ -156,5 +190,11 @@ class AppSettings {
     'minBuildCustomer': minBuildCustomer,
     'minBuildRider': minBuildRider,
     'minBuildAdmin': minBuildAdmin,
+    'pointsPerHundred': pointsPerHundred,
+    'pointValue': pointValue,
+    'maxPointsPercent': maxPointsPercent,
+    'referralDiscount': referralDiscount,
+    'referralBonusPoints': referralBonusPoints,
+    'reminderDays': reminderDays,
   };
 }

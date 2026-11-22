@@ -666,6 +666,7 @@ class _SettingsEditorState extends State<SettingsEditor> {
       _busy = true;
       _error = null;
     });
+    final cur = context.read<AdminSession>().settings;
     final next = AppSettings(
       acceptingOrders: _accepting,
       autoHours: _autoHours,
@@ -696,6 +697,13 @@ class _SettingsEditorState extends State<SettingsEditor> {
       minBuildCustomer: _n('minBuildCustomer'),
       minBuildRider: _n('minBuildRider'),
       minBuildAdmin: _n('minBuildAdmin'),
+      // Rewards are edited on their own screen: keep what is saved.
+      pointsPerHundred: cur.pointsPerHundred,
+      pointValue: cur.pointValue,
+      maxPointsPercent: cur.maxPointsPercent,
+      referralDiscount: cur.referralDiscount,
+      referralBonusPoints: cur.referralBonusPoints,
+      reminderDays: cur.reminderDays,
     );
     final err = await context.read<AdminSession>().saveSettings(next);
     if (!mounted) return;

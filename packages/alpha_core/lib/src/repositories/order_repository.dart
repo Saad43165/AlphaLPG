@@ -56,7 +56,11 @@ abstract interface class OrderRepository {
     String id, {
     required String reply,
     bool resolved = true,
+    String refund = 'none',
   });
+
+  /// Customer: every report they have sent, newest first (a help history).
+  Stream<List<OrderReport>> watchCustomerReports(String customerId);
 
   /// Public star rating of a rider (null if none yet).
   Stream<RiderStats?> watchRiderStats(String riderId);
@@ -233,11 +237,20 @@ class _FirestoreOrders implements OrderRepository {
   @override
   Future<String> place(LpgOrder order) async {
     final ref = _orders.doc();
-    await ref.set({
-      ..._newOrderData(ref.id, order, DateTime.now()),
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final batch = _db.batch()
+      ..set(ref, {
+        ..._newOrderData(ref.id, order, DateTime.now()),
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    if (order.couponCode.isNotEmpty) {
+      // The code is spent in the same step as the order.
+      batch.set(
+        _db.doc(FirestorePaths.couponUse(order.couponCode, order.customerId)),
+        {'orderId': ref.id, 'at': FieldValue.serverTimestamp()},
+      );
+    }
+    await batch.commit();
     return ref.id;
   }
 
@@ -316,6 +329,20 @@ class _FirestoreOrders implements OrderRepository {
       );
 
   @override
+  Stream<List<OrderReport>> watchCustomerReports(String customerId) => _db
+      .collection('reports')
+      .where('customerId', isEqualTo: customerId)
+      .snapshots()
+      .map(
+        (s) => [for (final d in s.docs) OrderReport.fromMap(d.id, d.data())]
+          ..sort(
+            (a, b) => (b.createdAt ?? DateTime(0)).compareTo(
+              a.createdAt ?? DateTime(0),
+            ),
+          ),
+      );
+
+  @override
   Stream<List<OrderReport>> watchRiderReports(String orderId, String riderId) =>
       _db
           .collection('reports')
@@ -350,7 +377,9 @@ class _FirestoreOrders implements OrderRepository {
     String id, {
     required String reply,
     bool resolved = true,
+    String refund = 'none',
   }) => _db.collection('reports').doc(id).update({
+    'refund': refund,
     'reply': reply,
     'status': resolved ? 'resolved' : 'open',
     'resolvedAt': resolved ? FieldValue.serverTimestamp() : null,
@@ -677,19 +706,35 @@ class _FirestoreOrders implements OrderRepository {
     String by, {
     Map<String, dynamic> extra = const {},
     String note = '',
-  }) => _orders.doc(id).update({
-    ...extra,
-    'status': status.name,
-    'history': FieldValue.arrayUnion([
-      StatusEvent(
-        status: status,
-        at: DateTime.now(),
-        by: by,
-        note: note,
-      ).toMap(),
-    ]),
-    'updatedAt': FieldValue.serverTimestamp(),
-  });
+  }) async {
+    await _orders.doc(id).update({
+      ...extra,
+      'status': status.name,
+      'history': FieldValue.arrayUnion([
+        StatusEvent(
+          status: status,
+          at: DateTime.now(),
+          by: by,
+          note: note,
+        ).toMap(),
+      ]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    if (status == OrderStatus.cancelled) await _releaseCoupon(id);
+  }
+
+  /// A cancelled order gives its discount code back to the customer.
+  Future<void> _releaseCoupon(String id) async {
+    try {
+      final d = (await _orders.doc(id).get()).data();
+      final code = d?['couponCode'] as String? ?? '';
+      final uid = d?['customerId'] as String? ?? '';
+      if (code.isEmpty || uid.isEmpty) return;
+      await _db.doc(FirestorePaths.couponUse(code, uid)).delete();
+    } catch (_) {
+      // Best effort: the shop can also hand the code back.
+    }
+  }
 }
 
 class _MemoryOrders implements OrderRepository {
@@ -710,6 +755,14 @@ class _MemoryOrders implements OrderRepository {
       'createdAt': now,
       'updatedAt': now,
     });
+    if (order.couponCode.isNotEmpty) {
+      final path = FirestorePaths.couponUse(order.couponCode, order.customerId);
+      final k = path.lastIndexOf('/');
+      _s.set(path.substring(0, k), path.substring(k + 1), {
+        'orderId': id,
+        'at': now,
+      });
+    }
     return id;
   }
 
@@ -787,6 +840,15 @@ class _MemoryOrders implements OrderRepository {
   );
 
   @override
+  Stream<List<OrderReport>> watchCustomerReports(String customerId) =>
+      watchReports().map(
+        (l) => [
+          for (final r in l)
+            if (r.customerId == customerId) r,
+        ],
+      );
+
+  @override
   Stream<List<OrderReport>> watchRiderReports(String orderId, String riderId) =>
       watchReports().map(
         (l) => [
@@ -813,11 +875,13 @@ class _MemoryOrders implements OrderRepository {
     String id, {
     required String reply,
     bool resolved = true,
+    String refund = 'none',
   }) async => _s.update(
     'reports',
     id,
     (d) => {
       ...d,
+      'refund': refund,
       'reply': reply,
       'status': resolved ? 'resolved' : 'open',
       'resolvedAt': resolved ? DateTime.now() : null,
@@ -1171,23 +1235,35 @@ class _MemoryOrders implements OrderRepository {
     String by, {
     Map<String, dynamic> extra = const {},
     String note = '',
-  }) => _s.update(
-    _path,
-    id,
-    (d) => {
-      ...d,
-      ...extra,
-      'status': status.name,
-      'history': [
-        ...(d['history'] as List),
-        StatusEvent(
-          status: status,
-          at: DateTime.now(),
-          by: by,
-          note: note,
-        ).toMap(),
-      ],
-      'updatedAt': DateTime.now(),
-    },
-  );
+  }) {
+    _s.update(
+      _path,
+      id,
+      (d) => {
+        ...d,
+        ...extra,
+        'status': status.name,
+        'history': [
+          ...(d['history'] as List),
+          StatusEvent(
+            status: status,
+            at: DateTime.now(),
+            by: by,
+            note: note,
+          ).toMap(),
+        ],
+        'updatedAt': DateTime.now(),
+      },
+    );
+    if (status == OrderStatus.cancelled) {
+      final d = _s.get(_path, id);
+      final code = d?['couponCode'] as String? ?? '';
+      final uid = d?['customerId'] as String? ?? '';
+      if (code.isNotEmpty) {
+        final path = FirestorePaths.couponUse(code, uid);
+        final k = path.lastIndexOf('/');
+        _s.delete(path.substring(0, k), path.substring(k + 1));
+      }
+    }
+  }
 }

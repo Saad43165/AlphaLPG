@@ -11,6 +11,9 @@ class PriceBreakdown {
     required this.deliveryFee,
     required this.cylinders,
     this.lines = 0,
+    this.couponDiscount = 0,
+    this.pointsUsed = 0,
+    this.pointsDiscount = 0,
   });
 
   final int subtotal;
@@ -24,7 +27,13 @@ class PriceBreakdown {
   /// security rules).
   static const maxLines = 6;
 
-  int get total => subtotal + deliveryFee;
+  /// Rupees taken off by a discount code, and by spending points.
+  final int couponDiscount;
+  final int pointsUsed;
+  final int pointsDiscount;
+
+  int get discount => couponDiscount + pointsDiscount;
+  int get total => subtotal + deliveryFee - discount;
   bool get freeDelivery => deliveryFee == 0;
 
   static PriceBreakdown of(
@@ -43,6 +52,36 @@ class PriceBreakdown {
       cylinders: cylinders,
       lines: items.length,
     );
+  }
+
+  /// The same prices with a discount code and/or points applied.
+  PriceBreakdown withDiscounts({
+    int couponDiscount = 0,
+    int pointsUsed = 0,
+    int pointValue = 1,
+  }) => PriceBreakdown(
+    subtotal: subtotal,
+    deliveryFee: deliveryFee,
+    cylinders: cylinders,
+    lines: lines,
+    couponDiscount: couponDiscount,
+    pointsUsed: pointsUsed,
+    pointsDiscount: pointsUsed * pointValue,
+  );
+
+  /// Most points that can be spent on this order: the balance, capped by the
+  /// shop's percentage of the price (and by what is left after a code).
+  static int maxPoints(
+    int subtotal,
+    int couponDiscount,
+    int balance,
+    AppSettings s,
+  ) {
+    if (s.pointValue <= 0) return 0;
+    final byPercent = subtotal * s.maxPointsPercent ~/ 100;
+    final byPrice = subtotal - couponDiscount;
+    final cap = (byPercent < byPrice ? byPercent : byPrice) ~/ s.pointValue;
+    return cap < 0 ? 0 : (cap < balance ? cap : balance);
   }
 
   /// Why the order cannot be placed yet, or null if it can.

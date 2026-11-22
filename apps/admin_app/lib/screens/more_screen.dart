@@ -16,6 +16,7 @@ import 'cash_screen.dart';
 import 'customers_screen.dart';
 import 'reports_inbox_screen.dart';
 import 'reports_screen.dart';
+import 'rewards_screen.dart';
 import 'team_screen.dart';
 
 class MoreScreen extends StatelessWidget {
@@ -67,6 +68,20 @@ class MoreScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.local_offer_rounded),
+              title: const Text('Coupons and rewards'),
+              subtitle: const Text('Discount codes, points, invite a friend'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: s,
+                    child: const RewardsScreen(),
+                  ),
+                ),
+              ),
+            ),
             ListTile(
               leading: const Icon(Icons.insights_rounded),
               title: const Text('Sales & cash report'),

@@ -104,32 +104,66 @@ class ReportCard extends StatelessWidget {
   Future<void> _answer(BuildContext context) async {
     final s = context.read<AdminSession>();
     final c = TextEditingController(text: r.reply);
+    var refund = r.refund;
     final resolved = await showDialog<bool>(
       context: context,
-      builder: (d) => AlertDialog(
-        title: const Text('Answer the customer'),
-        content: TextField(
-          controller: c,
-          maxLines: 3,
-          maxLength: 500,
-          decoration: const InputDecoration(
-            labelText: 'What did you do? (the customer sees this)',
+      builder: (d) => StatefulBuilder(
+        builder: (d, setS) => AlertDialog(
+          title: const Text('Answer the customer'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: c,
+                  maxLines: 3,
+                  maxLength: 500,
+                  decoration: const InputDecoration(
+                    labelText: 'What did you do? (the customer sees this)',
+                  ),
+                ),
+                if (!r.fromRider) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Refund (shown to the customer)',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final (v, label) in const [
+                        ('none', 'No refund'),
+                        ('refunded', 'Refunded'),
+                        ('declined', 'Declined'),
+                      ])
+                        ChoiceChip(
+                          label: Text(label),
+                          selected: refund == v,
+                          onSelected: (_) => setS(() => refund = v),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(d),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(d, false),
+              child: const Text('Reply, keep open'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(d, true),
+              child: const Text('Reply and close'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(d),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(d, false),
-            child: const Text('Reply, keep open'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(d, true),
-            child: const Text('Reply and close'),
-          ),
-        ],
       ),
     );
     if (resolved == null || !context.mounted) return;
@@ -137,6 +171,7 @@ class ReportCard extends StatelessWidget {
       r,
       reply: c.text.trim(),
       resolved: resolved,
+      refund: refund,
     );
     if (context.mounted) {
       showMessage(context, err ?? 'Sent to the customer', error: err != null);

@@ -17,6 +17,7 @@ class Backend {
     required this.profiles,
     required this.quotes,
     required this.riders,
+    required this.promo,
     this.isDemo = false,
   });
 
@@ -27,6 +28,7 @@ class Backend {
     profiles: ProfileRepository.firestore(db),
     quotes: QuoteRepository.firestore(db),
     riders: RiderRepository.firestore(db),
+    promo: PromoRepository.firestore(db),
   );
 
   /// In-memory backend. With [simulateDispatch] new orders move through
@@ -40,6 +42,7 @@ class Backend {
       profiles: ProfileRepository.memory(store),
       quotes: QuoteRepository.memory(store),
       riders: RiderRepository.memory(store),
+      promo: PromoRepository.memory(store),
       isDemo: true,
     );
     return backend;
@@ -51,6 +54,7 @@ class Backend {
   final ProfileRepository profiles;
   final QuoteRepository quotes;
   final RiderRepository riders;
+  final PromoRepository promo;
   final bool isDemo;
 
   /// Connects to the real Firebase project. There is no demo mode: if
