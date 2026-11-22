@@ -10,7 +10,14 @@ import 'repositories/order_repository.dart';
 /// customer, a rider and the shop each get the same behaviour as in
 /// ride-hailing apps: badge, preview, and "Seen".
 class ChatInbox extends ChangeNotifier {
-  ChatInbox(this._orders, this.me);
+  ChatInbox(
+    this._orders,
+    this.me, {
+    this.retryStep = const Duration(seconds: 2),
+  });
+
+  /// Wait before the first quiet retry (it grows with each try).
+  final Duration retryStep;
 
   final OrderRepository _orders;
 
@@ -22,7 +29,32 @@ class ChatInbox extends ChangeNotifier {
   final _subs = <String, List<StreamSubscription<dynamic>>>{};
   final _pinned = <String, int>{};
   final _errors = <String, Object>{};
+  final _tries = <String, int>{};
+  final _timers = <String, Timer>{};
   Set<String> _wanted = {};
+
+  /// A chat that fails right after an order is placed is usually just the
+  /// order not being saved on the server yet (the rules look it up), and a
+  /// failed listener never recovers by itself. So quietly try again a few
+  /// times before showing an error.
+  void _failed(String id, Object e) {
+    final n = (_tries[id] ?? 0) + 1;
+    _tries[id] = n;
+    if (n <= 3) {
+      for (final s
+          in _subs.remove(id) ?? const <StreamSubscription<dynamic>>[]) {
+        s.cancel();
+      }
+      _timers[id]?.cancel();
+      _timers[id] = Timer(retryStep * n, () {
+        _timers.remove(id);
+        _apply();
+      });
+      return;
+    }
+    _errors[id] = e;
+    notifyListeners();
+  }
 
   /// Start / stop following chats so that exactly [orderIds] are followed.
   void follow(Iterable<String> orderIds) {
@@ -52,19 +84,12 @@ class ChatInbox extends ChangeNotifier {
     for (final id in want) {
       if (_subs.containsKey(id)) continue;
       _subs[id] = [
-        _orders
-            .watchMessages(id)
-            .listen(
-              (m) {
-                _messages[id] = m;
-                _errors.remove(id);
-                notifyListeners();
-              },
-              onError: (Object e) {
-                _errors[id] = e;
-                notifyListeners();
-              },
-            ),
+        _orders.watchMessages(id).listen((m) {
+          _messages[id] = m;
+          _tries.remove(id);
+          _errors.remove(id);
+          notifyListeners();
+        }, onError: (Object e) => _failed(id, e)),
         _orders.watchChatReads(id).listen((r) {
           _reads[id] = r;
           notifyListeners();
@@ -78,6 +103,8 @@ class ChatInbox extends ChangeNotifier {
       }
       _messages.remove(id);
       _reads.remove(id);
+      _tries.remove(id);
+      _timers.remove(id)?.cancel();
     }
   }
 
@@ -92,6 +119,8 @@ class ChatInbox extends ChangeNotifier {
       s.cancel();
     }
     _errors.remove(orderId);
+    _tries.remove(orderId);
+    _timers.remove(orderId)?.cancel();
     _apply();
     notifyListeners();
   }
@@ -146,6 +175,9 @@ class ChatInbox extends ChangeNotifier {
       }
     }
     _subs.clear();
+    for (final t in _timers.values) {
+      t.cancel();
+    }
     super.dispose();
   }
 }

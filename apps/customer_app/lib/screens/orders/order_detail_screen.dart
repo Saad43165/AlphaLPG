@@ -55,7 +55,9 @@ class OrderDetailScreen extends StatelessWidget {
                   ),
           );
         }
-        return _TrackingView(o);
+        // Orders still on their way get live tracking; finished ones get a
+        // calm receipt-style page with nothing live on it.
+        return o.status.isActive ? _TrackingView(o) : _ClosedView(o);
       },
     );
   }
@@ -234,7 +236,7 @@ class _TrackingView extends StatelessWidget {
                         _ProblemButton(o),
                       ],
                       const SizedBox(height: 20),
-                      if (o.status != OrderStatus.delivered)
+                      if (o.status.isActive)
                         Row(
                           children: [
                             Expanded(
@@ -1320,11 +1322,7 @@ class _DeliveredActions extends StatelessWidget {
               () => context.push('/invoice', extra: o),
             ),
             const SizedBox(width: 10),
-            small(
-              Icons.chat_rounded,
-              'Get help',
-              () => context.push('/orders/${o.id}/chat'),
-            ),
+            small(Icons.flag_outlined, 'Report', () => openReport(context, o)),
             const SizedBox(width: 10),
             small(Icons.copy_rounded, 'Copy no.', () {
               Clipboard.setData(ClipboardData(text: o.displayNumber));
@@ -1665,4 +1663,169 @@ class _DeliveryPhotos extends StatelessWidget {
       );
     },
   );
+}
+
+// ---------------------------------------------------------------------------
+// Finished orders (delivered or cancelled): a receipt, not a tracker.
+
+class _ClosedView extends StatelessWidget {
+  const _ClosedView(this.o);
+  final LpgOrder o;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    final done = o.status == OrderStatus.delivered;
+    final color = done ? Brand.success : pal.muted;
+    final at = o.timeOf(o.status) ?? o.updatedAt ?? o.createdAt;
+    return Scaffold(
+      appBar: AppBar(
+        leading: const ScreenBack(),
+        title: Text('Order ${o.displayNumber}'),
+        actions: [
+          if (done)
+            IconButton(
+              tooltip: 'Invoice',
+              onPressed: () => context.push('/invoice', extra: o),
+              icon: const Icon(Icons.receipt_long_rounded),
+            ),
+          IconButton(
+            tooltip: 'Copy order number',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: o.displayNumber));
+              showMessage(context, 'Order number copied');
+            },
+            icon: const Icon(Icons.copy_rounded),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [
+          Constrained(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+                  decoration: BoxDecoration(
+                    color: pal.card,
+                    borderRadius: BorderRadius.circular(Brand.radius),
+                    border: Border.all(color: pal.line),
+                  ),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: color.withValues(alpha: 0.14),
+                        child: Icon(
+                          done ? Icons.check_rounded : Icons.close_rounded,
+                          color: color,
+                          size: 34,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        done ? 'Delivered' : 'Cancelled',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: done ? pal.ink : pal.muted,
+                        ),
+                      ),
+                      if (at != null)
+                        Text(
+                          formatDateTime(at),
+                          style: TextStyle(color: pal.muted),
+                        ),
+                      if (!done && o.cancelReason.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Reason: ${o.cancelReason}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: pal.muted),
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      Divider(color: pal.line, height: 1),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Text(
+                            done ? 'Total paid' : 'Order total',
+                            style: TextStyle(color: pal.muted),
+                          ),
+                          const Spacer(),
+                          Text(
+                            formatRupees(o.total),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text('Paid by', style: TextStyle(color: pal.muted)),
+                          const Spacer(),
+                          Text(
+                            o.paymentMethod.label,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (done) ...[
+                  _DeliveredActions(o),
+                  const SizedBox(height: 14),
+                  _DeliveryPhotos(o),
+                  if (o.canBeRated) ...[
+                    _RateCard(o),
+                    const SizedBox(height: 14),
+                  ],
+                  if (o.rating != null) _RatedCard(o),
+                ] else
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(54),
+                    ),
+                    onPressed: () {
+                      context.read<Cart>().reorder(o);
+                      context.push('/cart');
+                    },
+                    icon: const Icon(Icons.replay_rounded),
+                    label: const Text('Order again'),
+                  ),
+                const _Heading('Order details'),
+                _ItemsCard(o),
+                const _Heading('Payment'),
+                _PaymentCard(o),
+                const _Heading('Delivery'),
+                _DeliveryCard(o),
+                if (done) ...[
+                  const _Heading('History'),
+                  _StepTracker(o),
+                  const SizedBox(height: 14),
+                  _ProblemButton(o),
+                ],
+                if (o.createdAt != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Placed ${formatDateTime(o.createdAt!)} · ${o.displayNumber}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: pal.muted, fontSize: 12),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

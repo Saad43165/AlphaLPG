@@ -75,10 +75,34 @@ void main() {
     customer.dispose();
   });
 
+  test(
+    'a first failure that clears up on its own never shows an error',
+    () async {
+      final repo = _Denied();
+      final inbox = ChatInbox(
+        repo,
+        MessageRole.customer,
+        retryStep: const Duration(milliseconds: 20),
+      )..follow(['o1']);
+      await settle();
+      repo.allow = true; // e.g. the order reached the server meanwhile
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(inbox.error('o1'), isNull);
+      expect(inbox.messages('o1'), isEmpty);
+      inbox.dispose();
+    },
+  );
+
   test('a chat that cannot be loaded says why, and can be retried', () async {
     final repo = _Denied();
-    final inbox = ChatInbox(repo, MessageRole.customer)..follow(['o1']);
+    final inbox = ChatInbox(
+      repo,
+      MessageRole.customer,
+      retryStep: const Duration(milliseconds: 5),
+    )..follow(['o1']);
     await settle();
+    expect(inbox.error('o1'), isNull, reason: 'quiet retries come first');
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     expect(inbox.error('o1'), isNotNull);
     expect(ChatInbox.explain(inbox.error('o1')!), contains('database rules'));
     repo.allow = true;
