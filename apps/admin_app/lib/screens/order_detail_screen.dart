@@ -343,6 +343,45 @@ class OrderDetailScreen extends StatelessWidget {
               ],
             ),
 
+            // ---- First order from this customer ----------------------------
+            if (s.isNewCustomer(o))
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Brand.blueDark.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(Brand.radius),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'New customer: call to confirm',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'This is their first order. Phone numbers are not verified by SMS, '
+                      'so call once to confirm the person and the address before sending a rider. '
+                      'After their first delivery this reminder goes away.',
+                      style: TextStyle(height: 1.4),
+                    ),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 44),
+                      ),
+                      onPressed: () => Launch.call(o.customerPhone),
+                      icon: const Icon(Icons.call_rounded, size: 18),
+                      label: Text('Call ${prettyPhone(o.customerPhone)}'),
+                    ),
+                  ],
+                ),
+              ),
+
             // ---- Customer reports on this order ----------------------------
             for (final r in s.reports.where((x) => x.orderId == o.id))
               Padding(

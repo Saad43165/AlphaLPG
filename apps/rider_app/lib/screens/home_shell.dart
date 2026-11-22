@@ -7,6 +7,7 @@ import '../state/session.dart';
 import '../utils/launch.dart';
 import '../widgets/common.dart';
 import 'account_screen.dart';
+import 'battery_guide_screen.dart';
 import 'available_screen.dart';
 import 'history_screen.dart';
 import 'jobs_screen.dart';
@@ -33,6 +34,7 @@ class _HomeShellState extends State<HomeShell> {
           children: [
             _Header(session: s),
             _Notices(session: s),
+            if (s.showBatteryTip) _BatteryTip(session: s),
             _LocationBanner(session: s),
             Expanded(
               child: IndexedStack(
@@ -322,4 +324,58 @@ class _Notices extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Shown once: how to stop the phone closing the app.
+class _BatteryTip extends StatelessWidget {
+  const _BatteryTip({required this.session});
+  final RiderSession session;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    color: const Color(0xFFFFF4D6),
+    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+    child: Row(
+      children: [
+        const Icon(
+          Icons.battery_alert_rounded,
+          color: Color(0xFF8A6D00),
+          size: 20,
+        ),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: Text(
+            'Do this once so you never miss a job.',
+            style: TextStyle(
+              color: Color(0xFF5C4600),
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            session.dismissBatteryTip();
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const BatteryGuideScreen(),
+              ),
+            );
+          },
+          child: const Text('Show me'),
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          tooltip: 'Close',
+          onPressed: session.dismissBatteryTip,
+          icon: const Icon(
+            Icons.close_rounded,
+            size: 18,
+            color: Color(0xFF8A6D00),
+          ),
+        ),
+      ],
+    ),
+  );
 }

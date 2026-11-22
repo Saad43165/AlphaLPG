@@ -319,6 +319,14 @@ class RiderSession extends ChangeNotifier {
   bool _selfToggled = false;
   Timer? _beat;
 
+  /// The one-time "keep the app running" tip.
+  bool get showBatteryTip => prefs?.getBool('batteryTipDone') != true;
+
+  void dismissBatteryTip() {
+    prefs?.setBool('batteryTipDone', true);
+    notifyListeners();
+  }
+
   void dismissNotice() {
     notice = null;
     notifyListeners();

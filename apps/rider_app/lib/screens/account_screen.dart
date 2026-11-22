@@ -6,6 +6,7 @@ import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/version.dart';
 import '../widgets/common.dart';
+import 'battery_guide_screen.dart';
 import 'earnings_screen.dart';
 
 class AccountScreen extends StatelessWidget {
@@ -92,6 +93,30 @@ class AccountScreen extends StatelessWidget {
                       value: s,
                       child: const EarningsScreen(),
                     ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: panel(context),
+            child: Material(
+              type: MaterialType.transparency,
+              child: ListTile(
+                leading: const Icon(
+                  Icons.battery_charging_full_rounded,
+                  color: Brand.blueDark,
+                ),
+                title: const Text(
+                  'Keep the app running',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text('Do this once so you never miss a job'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const BatteryGuideScreen(),
                   ),
                 ),
               ),

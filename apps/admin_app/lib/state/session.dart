@@ -567,6 +567,17 @@ class AdminSession extends ChangeNotifier {
   final _waitAlerted = <String>{};
   Timer? _waitTimer;
 
+  /// A customer with no delivered order yet: call them once to confirm the
+  /// order before the first delivery.
+  bool isNewCustomer(LpgOrder o) =>
+      (o.status == OrderStatus.placed ||
+          o.status == OrderStatus.confirmed ||
+          o.status == OrderStatus.assigned) &&
+      !orders.any(
+        (x) =>
+            x.customerId == o.customerId && x.status == OrderStatus.delivered,
+      );
+
   /// Orders nobody has taken for [waitingMinutes] or more.
   static const waitingMinutes = 10;
   List<LpgOrder> get waitingForRider {

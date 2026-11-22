@@ -455,6 +455,12 @@ class OrderTile extends StatelessWidget {
                               _ => const Color(0xFF8A6D00),
                             },
                     ),
+                    if (context.watch<AdminSession>().isNewCustomer(o))
+                      const Pill(
+                        Icons.phone_in_talk_rounded,
+                        'New customer: call to confirm',
+                        color: Brand.blueDark,
+                      ),
                     if (!paid &&
                         context.watch<AdminSession>().hasPaymentWarning(o))
                       const Pill(
