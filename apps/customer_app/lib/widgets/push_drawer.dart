@@ -89,11 +89,8 @@ class PushDrawerState extends State<PushDrawerHost>
                           alignment: Alignment.centerLeft,
                           child: SizedBox(
                             width: w,
-                            // The menu is always dark, whatever the app theme.
-                            child: Theme(
-                              data: Brand.theme(Brightness.dark),
-                              child: widget.drawer,
-                            ),
+                            // Follows the app theme (light menu in light mode).
+                            child: widget.drawer,
                           ),
                         ),
                       ),
