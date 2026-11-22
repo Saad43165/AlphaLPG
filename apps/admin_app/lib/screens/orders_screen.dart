@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
+import '../utils/rider_state.dart';
 import '../widgets/common.dart';
 import '../widgets/schedule.dart';
 import 'order_detail_screen.dart';
@@ -740,9 +741,11 @@ class _RiderStrip extends StatelessWidget {
           for (final r in s.riders)
             if (r.active) r,
         ]..sort((a, b) {
-          int rank(RiderProfile r) =>
-              r.isLive() ? (s.jobsOf(r.uid).isEmpty ? 0 : 1) : 2;
-          return rank(a).compareTo(rank(b));
+          return riderStateIn(
+            s,
+            a,
+            pal.muted,
+          ).rank.compareTo(riderStateIn(s, b, pal.muted).rank);
         });
     return SizedBox(
       height: 62 + (MediaQuery.textScalerOf(context).scale(14) - 14) * 3,
@@ -753,16 +756,9 @@ class _RiderStrip extends StatelessWidget {
           for (final r in riders)
             Builder(
               builder: (context) {
-                final jobs = s.jobsOf(r.uid);
-                final live = r.isLive();
-                final (String label, Color color) = !live
-                    ? ('Offline', pal.muted)
-                    : jobs.isEmpty
-                    ? ('Free', Brand.success)
-                    : (
-                        '${jobs.length} job${jobs.length == 1 ? '' : 's'}',
-                        Brand.flame,
-                      );
+                final st = riderStateIn(s, r, pal.muted);
+                final label = st.label;
+                final color = st.color;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Material(
@@ -855,12 +851,11 @@ class _RiderJobsSheet extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
             ),
             Text(
-              rider.isLive()
-                  ? (jobs.isEmpty
-                        ? 'On shift and free'
-                        : 'On shift, ${jobs.length} job${jobs.length == 1 ? '' : 's'}')
-                  : 'Not on shift',
-              style: TextStyle(color: pal.muted),
+              riderStateOf(rider, jobs, pal.muted).label,
+              style: TextStyle(
+                color: riderStateOf(rider, jobs, pal.muted).color,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 12),
             if (jobs.isEmpty)

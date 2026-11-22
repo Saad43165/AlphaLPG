@@ -277,6 +277,7 @@ class RiderSession extends ChangeNotifier {
         _alertJobs(jobs);
         _syncTracking();
         _syncKeepAlive();
+        _syncHeartbeat();
         notifyListeners();
       }, onError: (_) {}),
     );
@@ -371,10 +372,19 @@ class RiderSession extends ChangeNotifier {
     }
   }
 
+  /// An order is with this rider (assigned or on the way): the shop must keep
+  /// seeing them, whatever the shift switch says.
+  bool get _carrying => jobs.any((o) => o.status.isActive);
+
   Future<void> _beatNow(String u) async {
     final p = await tracker.quickPosition();
     try {
-      await backend.riders.heartbeat(u, lat: p?.lat, lng: p?.lng);
+      await backend.riders.heartbeat(
+        u,
+        lat: p?.lat,
+        lng: p?.lng,
+        onShift: online,
+      );
     } catch (_) {}
   }
 
@@ -382,10 +392,10 @@ class RiderSession extends ChangeNotifier {
   /// phone is still here. Stops when offline.
   void _syncHeartbeat() {
     final id = _uid;
-    if (id != null && online && isRider) {
+    if (id != null && (online || _carrying) && isRider) {
       _beat ??= Timer.periodic(const Duration(seconds: 60), (_) {
         final u = _uid;
-        if (u != null && online) _beatNow(u);
+        if (u != null && (online || _carrying)) _beatNow(u);
         // A scheduled order may have just come due.
         _alertAvailable(available);
         notifyListeners();

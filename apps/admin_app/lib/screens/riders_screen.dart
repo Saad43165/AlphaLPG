@@ -166,8 +166,15 @@ class _RiderCard extends StatelessWidget {
     final pal = context.pal;
     final live = r.isLive();
     final jobs = s.jobsOf(r.uid);
+    final onRoad = jobs.any((o) => o.status == OrderStatus.outForDelivery);
     final (String status, Color color, IconData icon) = !r.active
         ? ('Blocked', Brand.danger, Icons.block_rounded)
+        : onRoad
+        ? (
+            'On the road · seen ${timeAgo(r.lastSeen)}',
+            Brand.flame,
+            Icons.two_wheeler_rounded,
+          )
         : live
         ? (
             'On shift · seen ${timeAgo(r.lastSeen)}',

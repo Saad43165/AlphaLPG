@@ -18,7 +18,12 @@ abstract interface class RiderRepository {
 
   /// "Still here": called every minute while a rider is online, so customers
   /// and the shop know the rider's app is really running.
-  Future<void> heartbeat(String uid, {double? lat, double? lng});
+  Future<void> heartbeat(
+    String uid, {
+    double? lat,
+    double? lng,
+    bool onShift = true,
+  });
 
   /// Owner / admin only (enforced by security rules).
   Future<void> saveRider(RiderProfile rider);
@@ -79,12 +84,18 @@ class _FirestoreRiders implements RiderRepository {
   }
 
   @override
-  Future<void> heartbeat(String uid, {double? lat, double? lng}) async {
+  Future<void> heartbeat(
+    String uid, {
+    double? lat,
+    double? lng,
+    bool onShift = true,
+  }) async {
     await _col.doc(uid).update({
       'lastSeen': FieldValue.serverTimestamp(),
       if (lat != null && lng != null) ...{'lat': lat, 'lng': lng},
     });
-    await _presenceSet(uid, true);
+    // Only a rider on shift counts as "a rider is available" for customers.
+    if (onShift) await _presenceSet(uid, true);
   }
 
   @override
@@ -139,16 +150,20 @@ class _MemoryRiders implements RiderRepository {
   );
 
   @override
-  Future<void> heartbeat(String uid, {double? lat, double? lng}) async =>
-      _s.update(
-        FirestorePaths.riders,
-        uid,
-        (d) => {
-          ...d,
-          'lastSeen': DateTime.now(),
-          if (lat != null && lng != null) ...{'lat': lat, 'lng': lng},
-        },
-      );
+  Future<void> heartbeat(
+    String uid, {
+    double? lat,
+    double? lng,
+    bool onShift = true,
+  }) async => _s.update(
+    FirestorePaths.riders,
+    uid,
+    (d) => {
+      ...d,
+      'lastSeen': DateTime.now(),
+      if (lat != null && lng != null) ...{'lat': lat, 'lng': lng},
+    },
+  );
 
   @override
   Future<void> saveRider(RiderProfile r) async =>
