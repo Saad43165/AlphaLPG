@@ -130,7 +130,7 @@ class PromoState extends ChangeNotifier {
   PriceBreakdown priced(PriceBreakdown base) {
     final s = _app.settings;
     final cd = coupon == null ? 0 : coupon!.discountFor(base.subtotal);
-    final pts = usePoints
+    final pts = usePoints && s.pointsEnabled
         ? PriceBreakdown.maxPoints(base.subtotal, cd, loyalty.points, s)
         : 0;
     return base.withDiscounts(

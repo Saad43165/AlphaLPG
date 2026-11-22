@@ -704,6 +704,8 @@ class _SettingsEditorState extends State<SettingsEditor> {
       referralDiscount: cur.referralDiscount,
       referralBonusPoints: cur.referralBonusPoints,
       reminderDays: cur.reminderDays,
+      pointsSince: cur.pointsSince,
+      planEnabled: cur.planEnabled,
     );
     final err = await context.read<AdminSession>().saveSettings(next);
     if (!mounted) return;

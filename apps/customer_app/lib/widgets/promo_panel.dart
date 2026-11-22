@@ -123,7 +123,9 @@ class _PromoPanelState extends State<PromoPanel> {
               ),
             ],
           ),
-        if (promo.loyalty.points > 0 && maxPts > 0) ...[
+        if (settings.pointsEnabled &&
+            promo.loyalty.points > 0 &&
+            maxPts > 0) ...[
           const SizedBox(height: 8),
           Material(
             type: MaterialType.transparency,

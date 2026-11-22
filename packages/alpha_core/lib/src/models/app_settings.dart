@@ -34,6 +34,8 @@ class AppSettings {
     this.referralDiscount = 200,
     this.referralBonusPoints = 200,
     this.reminderDays = 25,
+    this.pointsSince = 0,
+    this.planEnabled = false,
   });
 
   final bool acceptingOrders;
@@ -109,6 +111,15 @@ class AppSettings {
   /// Days after a delivery before "time to refill?" is sent.
   final int reminderDays;
 
+  /// Reward points are off (0) or on since this moment (milliseconds). Only
+  /// deliveries after it earn points, so switching on later never pays out
+  /// for old orders.
+  final int pointsSince;
+  bool get pointsEnabled => pointsSince > 0;
+
+  /// Whether customers can set up a repeat-order plan.
+  final bool planEnabled;
+
   /// Delivery fee for [area] (before the free-delivery rule).
   int feeForArea(String area) =>
       areaFees[area.trim().toLowerCase()] ?? deliveryFee;
@@ -160,6 +171,8 @@ class AppSettings {
       referralBonusPoints:
           (m['referralBonusPoints'] as num?)?.toInt() ?? d.referralBonusPoints,
       reminderDays: (m['reminderDays'] as num?)?.toInt() ?? d.reminderDays,
+      pointsSince: (m['pointsSince'] as num?)?.toInt() ?? 0,
+      planEnabled: m['planEnabled'] as bool? ?? false,
     );
   }
 
@@ -196,5 +209,7 @@ class AppSettings {
     'referralDiscount': referralDiscount,
     'referralBonusPoints': referralBonusPoints,
     'reminderDays': reminderDays,
+    'pointsSince': pointsSince,
+    'planEnabled': planEnabled,
   };
 }

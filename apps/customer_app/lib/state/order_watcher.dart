@@ -150,7 +150,7 @@ class OrderWatcher {
     }
     if (last == null) return;
     var due = last.add(Duration(days: _state.settings.reminderDays));
-    final plan = _state.planDue;
+    final plan = _state.settings.planEnabled ? _state.planDue : null;
     if (plan != null && plan.isAfter(last)) due = plan;
     // Morning, not the middle of the night.
     due = DateTime(due.year, due.month, due.day, 10);

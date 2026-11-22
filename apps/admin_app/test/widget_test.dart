@@ -218,6 +218,9 @@ void main() {
       final store = MemoryStore();
       final b = _backend(store);
       await tester.runAsync(() async {
+        await b.catalog.saveSettings(
+          AppSettings.fromMap({...SeedData.settings.toMap(), 'pointsSince': 1}),
+        );
         final id = await b.orders.place(_order());
         await b.orders.updateStatus(id, OrderStatus.delivered, 'r1');
         await b.orders.rate(id, 5, 'Fast');
@@ -699,4 +702,23 @@ void main() {
       }
     });
   }
+
+  testWidgets('with points switched off nothing is awarded', (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final b = _backend(MemoryStore());
+    await tester.runAsync(() async {
+      final id = await b.orders.place(_order());
+      await b.orders.updateStatus(id, OrderStatus.delivered, 'r1');
+    });
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    final l = (await tester.runAsync(() => b.promo.watchLoyalty('c1').first))!;
+    expect(l.points, 0);
+  });
 }

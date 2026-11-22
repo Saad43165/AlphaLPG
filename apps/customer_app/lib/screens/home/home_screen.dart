@@ -722,7 +722,10 @@ class _OrderStrip extends StatelessWidget {
       stream: () => backend.orders.watchCustomerOrders(uid, limit: 12),
       builder: (context, snap) {
         final orders = snap.data ?? const <LpgOrder>[];
-        final plan = context.watch<PromoState>().plan;
+        final plan =
+            context.select<AppState, bool>((s) => s.settings.planEnabled)
+            ? context.watch<PromoState>().plan
+            : null;
         if (orders.isEmpty) return const SizedBox.shrink();
         final active = orders.where((o) => o.status.isActive).toList();
         final lastDelivered = orders.where(

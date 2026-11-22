@@ -105,15 +105,18 @@ class AccountScreen extends StatelessWidget {
                     _tile(
                       context,
                       Icons.card_giftcard_rounded,
-                      'Rewards and invite friends',
+                      s.pointsEnabled
+                          ? 'Rewards and invite friends'
+                          : 'Invite friends',
                       '/rewards',
                     ),
-                    _tile(
-                      context,
-                      Icons.event_repeat_rounded,
-                      'Refill plan',
-                      '/plan',
-                    ),
+                    if (s.planEnabled)
+                      _tile(
+                        context,
+                        Icons.event_repeat_rounded,
+                        'Refill plan',
+                        '/plan',
+                      ),
                     _tile(
                       context,
                       Icons.support_agent_rounded,

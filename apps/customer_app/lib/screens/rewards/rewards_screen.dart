@@ -28,47 +28,49 @@ class RewardsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const ScreenBack(),
-        title: const Text('Rewards and invites'),
+        title: Text(s.pointsEnabled ? 'Rewards and invites' : 'Invite friends'),
       ),
       body: Constrained(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: Brand.headerGradient,
-                borderRadius: BorderRadius.circular(Brand.radius),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Your points',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${promo.loyalty.points}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 44,
-                      fontWeight: FontWeight.w800,
+            if (s.pointsEnabled) ...[
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: Brand.headerGradient,
+                  borderRadius: BorderRadius.circular(Brand.radius),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Your points',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
-                  ),
-                  Text(
-                    '= ${formatRupees(promo.loyalty.points * s.pointValue)} off your next orders',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '${promo.loyalty.points}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 44,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      '= ${formatRupees(promo.loyalty.points * s.pointValue)} off your next orders',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'You earn ${s.pointsPerHundred} points for every Rs. 100 of a delivered order. '
-              'Spend them at checkout: 1 point is ${formatRupees(s.pointValue)}, up to ${s.maxPointsPercent}% of an order.',
-              style: TextStyle(color: pal.muted, height: 1.4),
-            ),
+              const SizedBox(height: 12),
+              Text(
+                'You earn ${s.pointsPerHundred} points for every Rs. 100 of a delivered order. '
+                'Spend them at checkout: 1 point is ${formatRupees(s.pointValue)}, up to ${s.maxPointsPercent}% of an order.',
+                style: TextStyle(color: pal.muted, height: 1.4),
+              ),
+            ],
             const SectionTitle('Invite a friend'),
             Container(
               padding: const EdgeInsets.all(16),
@@ -77,8 +79,10 @@ class RewardsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Your friend gets ${formatRupees(s.referralDiscount)} off their first order. '
-                    'You get ${s.referralBonusPoints} points when it is delivered.',
+                    s.pointsEnabled
+                        ? 'Your friend gets ${formatRupees(s.referralDiscount)} off their first order. '
+                              'You get ${s.referralBonusPoints} points when it is delivered.'
+                        : 'Your friend gets ${formatRupees(s.referralDiscount)} off their first order.',
                     style: const TextStyle(height: 1.4),
                   ),
                   const SizedBox(height: 14),
@@ -133,8 +137,8 @@ class RewardsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SectionTitle('Points history'),
-            if (uid == null)
+            if (s.pointsEnabled) const SectionTitle('Points history'),
+            if (uid == null || !s.pointsEnabled)
               const SizedBox.shrink()
             else
               StreamBuilder<List<LoyaltyEntry>>(

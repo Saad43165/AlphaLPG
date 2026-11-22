@@ -79,7 +79,12 @@ class AdminSession extends ChangeNotifier {
     for (final o in list) {
       if (_rewardBusy.contains(o.id)) continue;
       Future<void>? job;
-      if (o.status == OrderStatus.delivered && o.rewardedAt == null) {
+      final deliveredAt = o.timeOf(OrderStatus.delivered) ?? o.updatedAt;
+      if (o.status == OrderStatus.delivered &&
+          o.rewardedAt == null &&
+          settings.pointsEnabled &&
+          deliveredAt != null &&
+          deliveredAt.millisecondsSinceEpoch >= settings.pointsSince) {
         job = _award(o);
       } else if (o.pointsUsed > 0 &&
           o.pointsSettledAt == null &&
@@ -856,6 +861,7 @@ class AdminSession extends ChangeNotifier {
       settings = v ?? const AppSettings();
       _hasSettings = v != null;
       storeReady = _hasProducts && _hasSettings;
+      _processRewards(orders);
     });
   }
 

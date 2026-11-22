@@ -8,9 +8,22 @@ import 'package:provider/provider.dart';
 
 import 'helpers.dart';
 
-Future<Backend> signedInBackend(WidgetTester tester) async {
+Future<Backend> signedInBackend(
+  WidgetTester tester, {
+  bool extrasOn = true,
+}) async {
   final backend = testBackend();
   await tester.runAsync(() async {
+    if (extrasOn) {
+      await backend.catalog.saveSettings(
+        AppSettings.fromMap({
+          ...SeedData.settings.toMap(),
+          'loginMode': 'sms',
+          'pointsSince': 1,
+          'planEnabled': true,
+        }),
+      );
+    }
     await backend.auth.sendCode('+923001234567');
     await backend.auth.verifyCode('123456');
     await backend.profiles.saveAddress(
@@ -256,4 +269,38 @@ void main() {
       expect(find.text('4.8 · 320+ deliveries'), findsOneWidget);
     },
   );
+
+  testWidgets('with the extras switched off there are no points and no plan', (
+    tester,
+  ) async {
+    final backend = await signedInBackend(tester, extrasOn: false);
+    final uid = backend.auth.uid!;
+    await tester.runAsync(() async {
+      await backend.promo.savePlan(
+        uid,
+        RefillPlan(
+          lines: const [
+            {'productId': 'cyl-11-8kg', 'type': 'refill', 'quantity': 1},
+          ],
+          nextDue: DateTime.now().subtract(const Duration(days: 1)),
+        ),
+      );
+    });
+    await pumpApp(tester, backend);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 60)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Time for your refill'), findsNothing);
+    GoRouter.of(tester.element(find.byType(Navigator).first)).go('/account');
+    await tester.pumpAndSettle();
+    expect(find.text('Invite friends'), findsOneWidget);
+    expect(find.text('Refill plan'), findsNothing);
+    expect(find.text('Rewards and invite friends'), findsNothing);
+    expect(find.text('Help center'), findsOneWidget);
+    GoRouter.of(tester.element(find.byType(Navigator).first)).go('/rewards');
+    await tester.pumpAndSettle();
+    expect(find.text('Your points'), findsNothing);
+    expect(find.text(referralCodeFor(uid)), findsOneWidget);
+  });
 }

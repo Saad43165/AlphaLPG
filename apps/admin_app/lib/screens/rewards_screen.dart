@@ -91,24 +91,79 @@ class RewardsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Customers earn ${st.pointsPerHundred} points for every Rs. 100 of a delivered order. '
-                    '1 point is worth ${rs(st.pointValue)} and can pay up to ${st.maxPointsPercent}% of a new order. '
-                    'The points appear after the delivery is marked done, while this app is open.',
-                    style: TextStyle(color: pal.muted, height: 1.4),
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: OutlinedButton.icon(
-                      onPressed: s.isOwner
-                          ? () => editRewardSettings(context)
+                  Material(
+                    type: MaterialType.transparency,
+                    child: SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Use reward points',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(
+                        st.pointsEnabled
+                            ? 'On. Customers see their points.'
+                            : 'Off. Customers do not see points.',
+                      ),
+                      value: st.pointsEnabled,
+                      onChanged: s.isOwner
+                          ? (v) => s.saveSettings(
+                              AppSettings.fromMap({
+                                ...st.toMap(),
+                                'pointsSince': v
+                                    ? DateTime.now().millisecondsSinceEpoch
+                                    : 0,
+                              }),
+                            )
                           : null,
-                      icon: const Icon(Icons.tune_rounded, size: 18),
-                      label: Text(s.isOwner ? 'Change' : 'Owner only'),
                     ),
                   ),
+                  if (st.pointsEnabled) ...[
+                    Text(
+                      'Customers earn ${st.pointsPerHundred} points for every Rs. 100 of an order delivered from now on. '
+                      '1 point is worth ${rs(st.pointValue)} and can pay up to ${st.maxPointsPercent}% of a new order. '
+                      'Points appear after the delivery is marked done, while this app is open.',
+                      style: TextStyle(color: pal.muted, height: 1.4),
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: OutlinedButton.icon(
+                        onPressed: s.isOwner
+                            ? () => editRewardSettings(context)
+                            : null,
+                        icon: const Icon(Icons.tune_rounded, size: 18),
+                        label: Text(s.isOwner ? 'Change' : 'Owner only'),
+                      ),
+                    ),
+                  ],
                 ],
+              ),
+            ),
+            const Heading('Refill plan'),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: panel(context),
+              child: Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'Let customers set up a refill plan',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: const Text(
+                    'They repeat their last order on a schedule and get reminded. Nothing is ordered automatically.',
+                  ),
+                  value: st.planEnabled,
+                  onChanged: s.isOwner
+                      ? (v) => s.saveSettings(
+                          AppSettings.fromMap({
+                            ...st.toMap(),
+                            'planEnabled': v,
+                          }),
+                        )
+                      : null,
+                ),
               ),
             ),
             const Heading('Invite a friend'),
@@ -116,8 +171,8 @@ class RewardsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: panel(context),
               child: Text(
-                'Every customer has their own invite code (REF-…). A friend who uses it gets ${rs(st.referralDiscount)} off their first order, '
-                'and the customer gets ${st.referralBonusPoints} points when that order is delivered.',
+                'Every customer has their own invite code (REF-…). A friend who uses it gets ${rs(st.referralDiscount)} off their first order'
+                '${st.pointsEnabled ? ', and the customer gets ${st.referralBonusPoints} points when that order is delivered.' : '.'}',
                 style: TextStyle(color: pal.muted, height: 1.4),
               ),
             ),
