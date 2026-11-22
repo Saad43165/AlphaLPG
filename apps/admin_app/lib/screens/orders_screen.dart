@@ -24,6 +24,55 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   _Filter _f = _Filter.fresh;
   String _q = '';
+
+  /// Picking several waiting orders to give to one rider.
+  bool _selecting = false;
+  final _picked = <String>{};
+
+  bool _isWaiting(LpgOrder o) =>
+      o.status == OrderStatus.confirmed && o.riderId == null && !o.isUpcoming();
+
+  Future<void> _giveToRider(AdminSession s) async {
+    final orders = [
+      for (final o in s.orders)
+        if (_picked.contains(o.id) && _isWaiting(o)) o,
+    ];
+    if (orders.isEmpty) return;
+    final r = await showModalBottomSheet<RiderProfile>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => RiderPicker(
+        riders: s.riders,
+        order: orders.first,
+        allOrders: s.orders,
+        extraCylinders: orders.fold<int>(0, (n, o) => n + o.cylinderCount),
+        count: orders.length,
+      ),
+    );
+    if (r == null || !mounted) return;
+    var done = 0;
+    String? error;
+    for (final o in orders) {
+      final err = await s.assign(o, r);
+      if (err != null) {
+        error = err;
+        break;
+      }
+      done++;
+    }
+    if (!mounted) return;
+    setState(() {
+      _selecting = false;
+      _picked.clear();
+    });
+    showMessage(
+      context,
+      error ?? 'Gave $done order${done == 1 ? '' : 's'} to ${r.name}',
+      error: error != null,
+    );
+  }
+
   bool _searching = false;
 
   /// What the list shows: orders, with plain-text headings between groups.
@@ -159,6 +208,23 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: _selecting && _picked.isNotEmpty
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                  ),
+                  onPressed: () => _giveToRider(s),
+                  icon: const Icon(Icons.two_wheeler_rounded),
+                  label: Text(
+                    'Give ${_picked.length} order${_picked.length == 1 ? '' : 's'} to a rider',
+                  ),
+                ),
+              ),
+            )
+          : null,
       body: Constrained(
         child: Column(
           children: [
@@ -292,18 +358,69 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       itemBuilder: (_, i) {
                         final item = list[i];
                         if (item is String) {
+                          final waiting = item.startsWith(
+                            'Waiting for a rider',
+                          );
+                          final many =
+                              waiting &&
+                              s.activeOrders.where(_isWaiting).length >= 2;
                           return Padding(
                             padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              item,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: context.pal.muted,
-                              ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: context.pal.muted,
+                                    ),
+                                  ),
+                                ),
+                                if (many)
+                                  TextButton(
+                                    onPressed: () => setState(() {
+                                      _selecting = !_selecting;
+                                      _picked.clear();
+                                    }),
+                                    child: Text(
+                                      _selecting ? 'Cancel' : 'Select several',
+                                    ),
+                                  ),
+                              ],
                             ),
                           );
                         }
-                        return OrderTile(order: item as LpgOrder);
+                        final order = item as LpgOrder;
+                        if (_selecting && _isWaiting(order)) {
+                          final on = _picked.contains(order.id);
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(Brand.radius),
+                            onTap: () => setState(
+                              () => on
+                                  ? _picked.remove(order.id)
+                                  : _picked.add(order.id),
+                            ),
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: on,
+                                  onChanged: (_) => setState(
+                                    () => on
+                                        ? _picked.remove(order.id)
+                                        : _picked.add(order.id),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: AbsorbPointer(
+                                    child: OrderTile(order: order),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return OrderTile(order: order);
                       },
                     ),
             ),

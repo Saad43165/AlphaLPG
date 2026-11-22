@@ -22,6 +22,7 @@ export 'src/models/quote_request.dart';
 export 'src/models/rider.dart';
 export 'src/ops_math.dart';
 export 'src/pricing.dart';
+export 'src/route.dart';
 export 'src/repositories/catalog_repository.dart';
 export 'src/repositories/memory_store.dart';
 export 'src/repositories/ops_repository.dart';

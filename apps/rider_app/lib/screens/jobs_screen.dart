@@ -31,17 +31,12 @@ class JobsScreen extends StatelessWidget {
         ),
       );
     }
-    // The delivery on the road first, then the ones still to start.
-    final jobs = [...s.jobs]
-      ..sort((a, b) {
-        int rank(LpgOrder o) => o.status == OrderStatus.outForDelivery ? 0 : 1;
-        final c = rank(a).compareTo(rank(b));
-        return c != 0
-            ? c
-            : (a.scheduledFor ?? a.createdAt ?? DateTime(0)).compareTo(
-                b.scheduledFor ?? b.createdAt ?? DateTime(0),
-              );
-      });
+    // With two or more orders: the suggested round (nearest next). With one
+    // order: just that order.
+    final stops = s.jobs.length >= 2 ? s.route : const <RouteStop>[];
+    final jobs = stops.isNotEmpty
+        ? [for (final st in stops) st.order]
+        : [...s.jobs];
     return Constrained(
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -52,6 +47,7 @@ class JobsScreen extends StatelessWidget {
           final o = jobs[i - 1];
           return JobCard(
             order: o,
+            stop: stops.isEmpty ? null : stops[i - 1],
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute<void>(
@@ -130,7 +126,9 @@ class _TodayStrip extends StatelessWidget {
             Icons.inventory_2_rounded,
             Brand.blueDark,
             '${s.jobs.length}',
-            'To do',
+            s.carrying == 0
+                ? 'To do'
+                : 'To do · ${s.carrying}${(s.profile?.capacity ?? 0) > 0 ? '/${s.profile!.capacity}' : ''} cyl',
           ),
           cell(
             Icons.check_circle_rounded,

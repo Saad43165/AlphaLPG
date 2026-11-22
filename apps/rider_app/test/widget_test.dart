@@ -56,9 +56,25 @@ class FakeTracker extends LocationTracker {
   String? get lastError => error;
   @override
   Future<TrackerAccess> ensureAccess() async => access;
+  final ids = <String>{};
+  @override
+  Set<String> get orderIds => {...ids};
+
+  @override
+  Future<void> follow(Set<String> wanted, OrderRepository orders) async {
+    ids
+      ..clear()
+      ..addAll(wanted);
+    _id = ids.isEmpty ? null : ids.first;
+    notifyListeners();
+  }
+
   @override
   Future<void> start(String orderId, OrderRepository orders) async {
     _id = orderId;
+    ids
+      ..clear()
+      ..add(orderId);
     notifyListeners();
   }
 
@@ -66,6 +82,7 @@ class FakeTracker extends LocationTracker {
   Future<void> stop() async {
     if (_id != null) {
       _id = null;
+      ids.clear();
       notifyListeners();
     }
   }
@@ -157,17 +174,22 @@ Future<void> signIn(
   await tapText(tester, 'Sign in');
 }
 
-Future<void> addRider(WidgetTester tester, Rig rig, {bool active = true}) =>
-    tester.runAsync(
-      () => rig.backend.riders.saveRider(
-        RiderProfile(
-          uid: 'r1',
-          name: 'Imran Khan',
-          phone: '+923005550001',
-          active: active,
-        ),
-      ),
-    );
+Future<void> addRider(
+  WidgetTester tester,
+  Rig rig, {
+  bool active = true,
+  int capacity = 0,
+}) => tester.runAsync(
+  () => rig.backend.riders.saveRider(
+    RiderProfile(
+      uid: 'r1',
+      name: 'Imran Khan',
+      phone: '+923005550001',
+      active: active,
+      capacity: capacity,
+    ),
+  ),
+);
 
 Future<LpgOrder> orderOf(WidgetTester tester, Rig rig, String id) async =>
     (await tester.runAsync(() => rig.backend.orders.watchOrder(id).first))!;
@@ -691,6 +713,104 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Accept job'), findsOneWidget);
+    },
+  );
+
+  testWidgets('two orders on the road: both customers get the position', (
+    tester,
+  ) async {
+    final rig = Rig();
+    await addRider(tester, rig);
+    final a = await placeOrder(tester, rig);
+    final b = await placeOrder(tester, rig);
+    await tester.runAsync(() => rig.backend.riders.setOnline('r1', true));
+    await pumpRider(tester, rig);
+    await signIn(tester);
+    Future<void> settle() async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 80)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    for (final id in [a, b]) {
+      await tester.runAsync(
+        () => rig.backend.orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran',
+          phone: '0300',
+        ),
+      );
+    }
+    await settle();
+    expect(rig.tracker!.orderIds, isEmpty, reason: 'nobody is on the road yet');
+    await tester.runAsync(() => rig.backend.orders.startDelivery(a, 'r1'));
+    await settle();
+    expect(rig.tracker!.orderIds, {a});
+    await tester.runAsync(() => rig.backend.orders.startDelivery(b, 'r1'));
+    await settle();
+    expect(rig.tracker!.orderIds, {a, b}, reason: 'both customers follow');
+
+    // One is delivered: the other keeps being followed.
+    await tester.runAsync(
+      () => rig.backend.orders.completeDelivery(
+        a,
+        'r1',
+        cashCollected: 6592,
+        emptiesCollected: 2,
+        markPaid: true,
+      ),
+    );
+    await settle();
+    expect(rig.tracker!.orderIds, {b});
+  });
+
+  testWidgets(
+    'with several orders the app suggests the round; a full vehicle refuses more',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig, capacity: 4);
+      final a = await placeOrder(tester, rig);
+      final b = await placeOrder(tester, rig);
+      final c = await placeOrder(tester, rig);
+      await tester.runAsync(() => rig.backend.riders.setOnline('r1', true));
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      // Each order has 2 cylinders: two fit on a vehicle that takes 4, a third does not.
+      await tester.runAsync(
+        () => rig.backend.orders.acceptOrder(
+          a,
+          riderId: 'r1',
+          name: 'Imran',
+          phone: '0300',
+        ),
+      );
+      await tester.runAsync(
+        () => rig.backend.orders.acceptOrder(
+          b,
+          riderId: 'r1',
+          name: 'Imran',
+          phone: '0300',
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 80)),
+      );
+      await tester.pumpAndSettle();
+      await tapText(tester, 'My jobs');
+      expect(find.text('Next stop'), findsOneWidget);
+      expect(find.text('Stop 2'), findsOneWidget);
+      expect(find.textContaining('4/4 cyl'), findsOneWidget);
+
+      await tapText(tester, 'New');
+      await tapText(tester, 'Accept job');
+      expect(
+        find.textContaining('more cylinders than your vehicle can carry'),
+        findsOneWidget,
+      );
+      final third = await orderOf(tester, rig, c);
+      expect(third.riderId, isNull);
     },
   );
 }

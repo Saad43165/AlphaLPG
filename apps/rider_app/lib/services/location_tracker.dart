@@ -31,6 +31,20 @@ abstract class LocationTracker extends ChangeNotifier {
   Future<({double lat, double lng})?> quickPosition() async => null;
 
   Future<void> start(String orderId, OrderRepository orders);
+
+  /// Every order currently being shared (a rider can carry several).
+  Set<String> get orderIds => orderId == null ? const {} : {orderId!};
+
+  /// Share the position with exactly these orders: starts, adds, drops or
+  /// stops as needed.
+  Future<void> follow(Set<String> ids, OrderRepository orders) async {
+    if (ids.isEmpty) {
+      if (isTracking) await stop();
+    } else if (orderId == null) {
+      await start(ids.first, orders);
+    }
+  }
+
   Future<void> stop();
   Future<void> openSettings();
 }
@@ -56,8 +70,35 @@ class GeolocatorTracker extends LocationTracker {
   static const _moveMetres = 15.0;
   Position? _lastSentPos;
 
+  /// Orders that get every position (the first one is also [orderId]).
+  final _ids = <String>{};
+
   @override
-  String? get orderId => _orderId;
+  String? get orderId => _ids.isEmpty ? _orderId : _ids.first;
+  @override
+  Set<String> get orderIds => {..._ids};
+
+  @override
+  Future<void> follow(Set<String> ids, OrderRepository orders) async {
+    if (ids.isEmpty) {
+      if (isTracking) await stop();
+      return;
+    }
+    if (_sub == null) {
+      await start(ids.first, orders);
+    }
+    final added = ids.difference(_ids);
+    _ids
+      ..clear()
+      ..addAll(ids);
+    _orders = orders;
+    notifyListeners();
+    // A new customer gets a dot straight away, not after the next update.
+    if (added.isNotEmpty && _lastSentPos != null) {
+      unawaited(_send(_lastSentPos!, only: added));
+    }
+  }
+
   @override
   DateTime? get lastShared => _lastShared;
   @override
@@ -113,22 +154,24 @@ class GeolocatorTracker extends LocationTracker {
 
   /// Sends one position. Records the reason when it fails, so the rider's
   /// screen can say so instead of pretending it works.
-  Future<void> _send(Position p) async {
-    final id = _orderId;
+  Future<void> _send(Position p, {Set<String>? only}) async {
+    final targets =
+        only ?? (_ids.isEmpty && _orderId != null ? {_orderId!} : _ids);
     final orders = _orders;
-    if (id == null || orders == null) return;
-    _lastSent = DateTime.now();
+    if (targets.isEmpty || orders == null) return;
+    if (only == null) _lastSent = DateTime.now();
     try {
-      await orders.publishRiderLocation(
-        id,
-        RiderLocation(
-          lat: p.latitude,
-          lng: p.longitude,
-          heading: p.heading.isNaN ? 0 : p.heading,
-          speedKmh: p.speed.isNaN || p.speed < 0 ? 0 : p.speed * 3.6,
-          accuracy: p.accuracy,
-        ),
+      final here = RiderLocation(
+        lat: p.latitude,
+        lng: p.longitude,
+        heading: p.heading.isNaN ? 0 : p.heading,
+        speedKmh: p.speed.isNaN || p.speed < 0 ? 0 : p.speed * 3.6,
+        accuracy: p.accuracy,
       );
+      // One position, every customer who is waiting for this rider.
+      await Future.wait([
+        for (final id in {...targets}) orders.publishRiderLocation(id, here),
+      ]);
       _lastShared = DateTime.now();
       _lastError = null;
     } catch (e) {
@@ -144,9 +187,12 @@ class GeolocatorTracker extends LocationTracker {
 
   @override
   Future<void> start(String orderId, OrderRepository orders) async {
-    if (_orderId == orderId && _sub != null) return;
+    if (_sub != null && _ids.contains(orderId)) return;
     await stop();
     _orderId = orderId;
+    _ids
+      ..clear()
+      ..add(orderId);
     _orders = orders;
     _startedAt = DateTime.now();
     _lastError = null;
@@ -228,6 +274,7 @@ class GeolocatorTracker extends LocationTracker {
     _sub = null;
     final had = _orderId != null;
     _orderId = null;
+    _ids.clear();
     _orders = null;
     _startedAt = null;
     _lastError = null;

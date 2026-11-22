@@ -31,6 +31,12 @@ class AvailableScreen extends StatelessWidget {
           'Go online first (top of the screen) to accept jobs.',
           error: true,
         );
+      case AcceptResult.tooMany:
+        showMessage(
+          context,
+          'That would be more cylinders than your vehicle can carry (${s.profile?.capacity}). Deliver some first.',
+          error: true,
+        );
       case AcceptResult.error:
         showMessage(
           context,

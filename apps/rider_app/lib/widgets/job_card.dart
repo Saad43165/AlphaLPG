@@ -18,8 +18,12 @@ class JobCard extends StatelessWidget {
     required this.order,
     required this.onTap,
     this.action,
+    this.stop,
   });
   final LpgOrder order;
+
+  /// Where this order falls in the suggested round (only with 2+ orders).
+  final RouteStop? stop;
   final VoidCallback onTap;
   final Widget? action;
 
@@ -42,6 +46,29 @@ class JobCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
+                    if (stop != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Brand.blueDark,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          stop!.number == 1
+                              ? 'Next stop'
+                              : 'Stop ${stop!.number}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Expanded(
                       child: Text(
                         o.displayNumber,

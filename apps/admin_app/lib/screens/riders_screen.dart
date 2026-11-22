@@ -450,6 +450,9 @@ class _EditRiderState extends State<_EditRider> {
   late final _name = TextEditingController(text: widget.rider.name);
   late final _phone = TextEditingController(text: widget.rider.phone);
   late final _vehicle = TextEditingController(text: widget.rider.vehicle);
+  late final _capacity = TextEditingController(
+    text: widget.rider.capacity > 0 ? '${widget.rider.capacity}' : '',
+  );
   final _form = GlobalKey<FormState>();
   bool _busy = false;
   String? _error;
@@ -459,6 +462,7 @@ class _EditRiderState extends State<_EditRider> {
     _name.dispose();
     _phone.dispose();
     _vehicle.dispose();
+    _capacity.dispose();
     super.dispose();
   }
 
@@ -475,6 +479,7 @@ class _EditRiderState extends State<_EditRider> {
       vehicle: _vehicle.text.trim().isEmpty
           ? 'Motorbike'
           : _vehicle.text.trim(),
+      capacity: int.tryParse(_capacity.text.trim()) ?? 0,
     );
     if (!mounted) return;
     if (err == null) {
@@ -525,6 +530,15 @@ class _EditRiderState extends State<_EditRider> {
             TextFormField(
               controller: _vehicle,
               decoration: const InputDecoration(labelText: 'Vehicle'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _capacity,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Most cylinders at once (empty = no limit)',
+                helperText: 'You are warned when a rider would carry more.',
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 10),

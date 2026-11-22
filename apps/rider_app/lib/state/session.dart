@@ -12,7 +12,7 @@ import 'package:alpha_ui/alpha_ui.dart' show Alerts, KeepAlive;
 import '../services/location_tracker.dart';
 import '../utils/order_x.dart';
 
-enum AcceptResult { ok, taken, offline, error }
+enum AcceptResult { ok, taken, offline, tooMany, error }
 
 enum StartResult {
   ok,
@@ -298,16 +298,20 @@ class RiderSession extends ChangeNotifier {
   /// Keeps location sharing in step with the order that is on the way, also
   /// after the app was closed and reopened mid-delivery.
   Future<void> _syncTracking() async {
-    LpgOrder? onTheWay;
-    for (final o in jobs) {
-      if (o.status == OrderStatus.outForDelivery) onTheWay = o;
-    }
-    if (onTheWay == null) {
+    // Every order on the road gets the position, not just one.
+    final onTheWay = {
+      for (final o in jobs)
+        if (o.status == OrderStatus.outForDelivery) o.id,
+    };
+    if (onTheWay.isEmpty) {
       if (tracker.isTracking) await tracker.stop();
       trackingProblem = null;
       return;
     }
-    if (tracker.orderId == onTheWay.id) return;
+    if (tracker.orderIds.length == onTheWay.length &&
+        tracker.orderIds.containsAll(onTheWay)) {
+      return;
+    }
     final access = await tracker.ensureAccess();
     if (access != TrackerAccess.granted) {
       trackingProblem =
@@ -316,7 +320,7 @@ class RiderSession extends ChangeNotifier {
       return;
     }
     trackingProblem = null;
-    await tracker.start(onTheWay.id, backend.orders);
+    await tracker.follow(onTheWay, backend.orders);
   }
 
   /// Re-checks location access and restarts sharing from scratch.
@@ -406,10 +410,20 @@ class RiderSession extends ChangeNotifier {
     }
   }
 
+  /// Cylinders on this rider's bike right now.
+  int get carrying => cylindersCarried(jobs);
+
+  /// The suggested round: who to visit first.
+  List<RouteStop> get route =>
+      suggestedRoute(jobs, lat: profile?.lat, lng: profile?.lng);
+
   Future<AcceptResult> accept(LpgOrder order) async {
     final p = profile;
     if (p == null || !isRider) return AcceptResult.error;
     if (!p.online) return AcceptResult.offline;
+    if (p.overCapacity(cylindersCarried(jobs), order.cylinderCount)) {
+      return AcceptResult.tooMany;
+    }
     try {
       final ok = await backend.orders.acceptOrder(
         order.id,
@@ -439,7 +453,7 @@ class RiderSession extends ChangeNotifier {
     }
     try {
       await backend.orders.startDelivery(order.id, id);
-      await tracker.start(order.id, backend.orders);
+      await tracker.follow({...tracker.orderIds, order.id}, backend.orders);
       return StartResult.ok;
     } catch (_) {
       return StartResult.error;
@@ -542,7 +556,13 @@ class RiderSession extends ChangeNotifier {
             order.paymentMethod == PaymentMethod.cashOnDelivery &&
             order.paymentStatus != PaymentStatus.paid,
       );
-      if (tracker.orderId == order.id) await tracker.stop();
+      if (tracker.orderIds.contains(order.id)) {
+        // The others on the road keep getting the position.
+        await tracker.follow(
+          {...tracker.orderIds}..remove(order.id),
+          backend.orders,
+        );
+      }
       completeError = null;
       return true;
     } catch (e) {

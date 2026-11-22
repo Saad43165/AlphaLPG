@@ -542,6 +542,7 @@ class AdminSession extends ChangeNotifier {
     required String name,
     required String phone,
     required String vehicle,
+    int capacity = 0,
   }) => _run(
     () => backend.riders.saveRider(
       RiderProfile(
@@ -551,6 +552,7 @@ class AdminSession extends ChangeNotifier {
         vehicle: vehicle,
         active: r.active,
         online: r.online,
+        capacity: capacity,
       ),
     ),
   );

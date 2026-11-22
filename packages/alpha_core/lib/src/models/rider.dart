@@ -13,6 +13,7 @@ class RiderProfile {
     this.lastSeen,
     this.lat,
     this.lng,
+    this.capacity = 0,
   });
 
   final String uid;
@@ -36,6 +37,13 @@ class RiderProfile {
 
   bool get hasPosition => lat != null && lng != null;
 
+  /// Most cylinders this rider's vehicle can carry at once. 0 = no limit.
+  final int capacity;
+
+  /// Would taking [more] cylinders on top of [carrying] be too much?
+  bool overCapacity(int carrying, int more) =>
+      capacity > 0 && carrying + more > capacity;
+
   /// A rider is really available only while their app keeps reporting in.
   bool isLive([DateTime? now]) =>
       active &&
@@ -55,6 +63,7 @@ class RiderProfile {
         lastSeen: readDate(m['lastSeen']),
         lat: (m['lat'] as num?)?.toDouble(),
         lng: (m['lng'] as num?)?.toDouble(),
+        capacity: (m['capacity'] as num?)?.toInt() ?? 0,
       );
 
   Map<String, dynamic> toMap() => {
@@ -63,6 +72,7 @@ class RiderProfile {
     'vehicle': vehicle,
     'active': active,
     'online': online,
+    'capacity': capacity,
   };
 }
 

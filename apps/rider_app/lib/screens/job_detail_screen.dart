@@ -519,6 +519,8 @@ class JobDetailScreen extends StatelessWidget {
                       context,
                       r == AcceptResult.offline
                           ? 'Go online first to accept jobs.'
+                          : r == AcceptResult.tooMany
+                          ? 'That is more cylinders than your vehicle can carry. Deliver some first.'
                           : 'Could not accept this order.',
                       error: true,
                     );

@@ -14,7 +14,7 @@ import 'package:image/image.dart' as img;
 import 'package:flutter/widgets.dart' show Brightness;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart'
-    show Switch, Size, Scrollable, TextField;
+    show Switch, Size, Scrollable, TextField, Checkbox;
 
 class FakeAuth extends AdminAuth {
   @override
@@ -780,6 +780,83 @@ void main() {
       // The automatic slot line is not repeated in the notes.
       expect(find.text('Call at the gate'), findsOneWidget);
       expect(find.text('Slot: Afternoon 12pm–4pm'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'several waiting orders go to one rider together, with a capacity warning',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final b = _backend(MemoryStore());
+      late List<String> ids;
+      await tester.runAsync(() async {
+        await b.riders.saveRider(
+          const RiderProfile(
+            uid: 'r1',
+            name: 'Imran',
+            phone: '03001112222',
+            online: true,
+            capacity: 3,
+          ),
+        );
+        await b.riders.setOnline('r1', true);
+        await b.riders.heartbeat('r1');
+        ids = [];
+        for (final n in ['Ali Raza', 'Sana Malik']) {
+          final id = await b.orders.place(
+            LpgOrder(
+              customerId: n,
+              customerName: n,
+              customerPhone: '+923001234567',
+              items: const [
+                OrderItem(
+                  productId: 'cyl-11-8kg',
+                  name: '11.8kg Gas Cylinder',
+                  sizeKg: 11.8,
+                  type: PurchaseType.refill,
+                  unitPrice: 3296,
+                  quantity: 2,
+                ),
+              ],
+              subtotal: 6592,
+              deliveryFee: 0,
+              total: 6592,
+              address: const Address(
+                label: 'Home',
+                line1: '12-B',
+                area: 'Gulberg',
+              ),
+            ),
+          );
+          await b.orders.updateStatus(id, OrderStatus.confirmed, 'boss');
+          ids.add(id);
+        }
+      });
+      await tester.pumpWidget(AdminApp(backend: b));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('In progress'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Waiting for a rider'), findsOneWidget);
+      await tester.tap(find.text('Select several'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Checkbox).at(0));
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Give 2 orders to a rider'));
+      await tester.pumpAndSettle();
+      // 4 cylinders on a bike that takes 3: the picker warns.
+      expect(find.text('Choose a rider for 2 orders'), findsOneWidget);
+      expect(find.text('Too many'), findsOneWidget);
+      await tester.tap(find.text('Imran').last);
+      await tester.pumpAndSettle();
+      expect(find.text('More than they can carry'), findsOneWidget);
+      await tester.tap(find.text('Give anyway'));
+      await tester.pumpAndSettle();
+      final all = (await tester.runAsync(() => b.orders.watchRecent().first))!;
+      expect(all.where((o) => o.riderId == 'r1'), hasLength(2));
+      expect(all.every((o) => o.status == OrderStatus.assigned), isTrue);
     },
   );
 }

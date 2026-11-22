@@ -1119,7 +1119,7 @@ class _ActionsState extends State<_Actions> {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (_) => _RiderPicker(
+      builder: (_) => RiderPicker(
         riders: s.riders,
         current: widget.order.riderId,
         order: widget.order,
@@ -1338,17 +1338,32 @@ class _ActionsState extends State<_Actions> {
   }
 }
 
-class _RiderPicker extends StatelessWidget {
-  const _RiderPicker({
+class RiderPicker extends StatelessWidget {
+  const RiderPicker({
+    super.key,
     required this.riders,
     this.current,
     required this.order,
     this.allOrders = const [],
+    this.extraCylinders,
+    this.count = 1,
   });
   final List<RiderProfile> riders;
   final String? current;
   final LpgOrder order;
   final List<LpgOrder> allOrders;
+
+  /// Cylinders being handed over (all of them when several orders go to one
+  /// rider). Defaults to this order's own.
+  final int? extraCylinders;
+
+  /// How many orders are being handed over.
+  final int count;
+
+  int get _adding => extraCylinders ?? order.cylinderCount;
+
+  int _carried(RiderProfile r) =>
+      cylindersCarried(allOrders.where((o) => o.riderId == r.uid));
 
   int _jobs(RiderProfile r) =>
       allOrders.where((o) => o.riderId == r.uid && o.status.isActive).length;
@@ -1387,10 +1402,12 @@ class _RiderPicker extends StatelessWidget {
             : ListView(
                 shrinkWrap: true,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                     child: Text(
-                      'Choose a rider',
+                      count > 1
+                          ? 'Choose a rider for $count orders'
+                          : 'Choose a rider',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 18,
@@ -1440,14 +1457,59 @@ class _RiderPicker extends StatelessWidget {
                           _jobs(r) == 0
                               ? 'free'
                               : '${_jobs(r)} job${_jobs(r) == 1 ? '' : 's'} now',
+                          if (r.capacity > 0)
+                            'carrying ${_carried(r)} of ${r.capacity} cylinders'
+                          else if (_carried(r) > 0)
+                            'carrying ${_carried(r)} cylinders',
                         ].join(' · '),
+                        style: TextStyle(
+                          color: r.overCapacity(_carried(r), _adding)
+                              ? Brand.danger
+                              : null,
+                        ),
                       ),
                       trailing: r.uid == current
                           ? const Icon(Icons.check_rounded)
-                          : null,
+                          : (r.overCapacity(_carried(r), _adding)
+                                ? const Pill(
+                                    Icons.warning_amber_rounded,
+                                    'Too many',
+                                    color: Brand.danger,
+                                  )
+                                : null),
                       enabled: r.isLive(),
                       onTap: r.isLive()
-                          ? () => Navigator.pop(context, r)
+                          ? () async {
+                              if (r.overCapacity(_carried(r), _adding)) {
+                                final ok = await showDialog<bool>(
+                                  context: context,
+                                  builder: (d) => AlertDialog(
+                                    title: const Text(
+                                      'More than they can carry',
+                                    ),
+                                    content: Text(
+                                      '${r.name} would carry ${_carried(r) + _adding} cylinders, '
+                                      'and their vehicle takes ${r.capacity}. Give it to them anyway?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(d, false),
+                                        child: const Text(
+                                          'Choose someone else',
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(d, true),
+                                        child: const Text('Give anyway'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (ok != true || !context.mounted) return;
+                              }
+                              Navigator.pop(context, r);
+                            }
                           : null,
                     ),
                 ],
