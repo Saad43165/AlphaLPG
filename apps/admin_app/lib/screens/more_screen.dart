@@ -79,8 +79,8 @@ class MoreScreen extends StatelessWidget {
                 label: Text('${s.openReportCount}'),
                 child: const Icon(Icons.report_rounded),
               ),
-              title: const Text('Customer reports'),
-              subtitle: const Text('Problems with orders and riders'),
+              title: const Text('Reports and problems'),
+              subtitle: const Text('From customers and riders'),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(

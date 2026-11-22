@@ -627,12 +627,20 @@ class _NextStep extends StatelessWidget {
         'Waiting for $rider to start',
         '$rider has this order. You can still take it back until they leave.$payNote',
       ),
-      OrderStatus.outForDelivery => (
-        Icons.navigation_rounded,
-        Brand.success,
-        '$rider is on the way',
-        'Follow the live location below.$payNote',
-      ),
+      OrderStatus.outForDelivery =>
+        o.arrivedAt != null
+            ? (
+                Icons.pin_drop_rounded,
+                Brand.success,
+                '$rider has arrived',
+                "They are at the customer's door now.$payNote",
+              )
+            : (
+                Icons.navigation_rounded,
+                Brand.success,
+                '$rider is on the way',
+                'Follow the live location below.$payNote',
+              ),
       OrderStatus.delivered =>
         o.paymentStatus == PaymentStatus.paid
             ? (

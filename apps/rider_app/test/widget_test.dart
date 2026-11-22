@@ -236,7 +236,7 @@ void main() {
       expect(find.text('Job accepted. Find it in "My jobs".'), findsOneWidget);
 
       // It moved to My jobs, with the cash to collect shown.
-      expect(find.text('Collect Rs. 6,592'), findsOneWidget);
+      expect(find.text('Take Rs. 6,592 cash'), findsOneWidget);
       expect(find.text('Ready to go'), findsOneWidget);
       var o = await orderOf(tester, rig, id);
       expect(o.riderId, 'r1');
@@ -273,7 +273,7 @@ void main() {
       // Today's totals on the History tab.
       await tapText(tester, 'History');
       expect(find.text('Rs. 6,592'), findsWidgets);
-      expect(find.text('Cash to hand in'), findsOneWidget);
+      expect(find.text('Cash with you'), findsOneWidget);
       expect(find.text('Delivered today'), findsOneWidget);
     },
   );
@@ -462,8 +462,8 @@ void main() {
     await pumpRider(tester, rig);
     await signIn(tester);
     await tapText(tester, 'New');
-    expect(find.textContaining('Collect Rs.'), findsNothing);
-    expect(find.textContaining('JazzCash: awaiting'), findsOneWidget);
+    expect(find.textContaining('cash'), findsNothing);
+    expect(find.textContaining('JazzCash not confirmed'), findsOneWidget);
   });
 
   testWidgets(
@@ -616,4 +616,50 @@ void main() {
       }
     });
   }
+
+  testWidgets(
+    'a rider reports a problem on a job: it reaches the shop, not the chat',
+    (tester) async {
+      final rig = Rig();
+      await addRider(tester, rig);
+      final id = await placeOrder(tester, rig);
+      await tester.runAsync(() async {
+        await rig.backend.riders.setOnline('r1', true);
+        await rig.backend.orders.acceptOrder(
+          id,
+          riderId: 'r1',
+          name: 'Imran Khan',
+          phone: '0300',
+        );
+      });
+      await pumpRider(tester, rig);
+      await signIn(tester);
+      final session = Provider.of<RiderSession>(
+        tester.element(find.text('Ready to go')),
+        listen: false,
+      );
+      final err = await tester.runAsync(
+        () => session.reportProblem(
+          session.jobs.single,
+          'Customer is not answering',
+          'Rang 3 times',
+        ),
+      );
+      expect(err, isNull);
+      final reports = await tester.runAsync(
+        () => rig.backend.orders.watchReports().first,
+      );
+      expect(reports!.single.fromRider, isTrue);
+      expect(reports.single.reason, 'Customer is not answering');
+      expect(reports.single.riderId, 'r1');
+      final mine = await tester.runAsync(
+        () => rig.backend.orders.watchRiderReports(id, 'r1').first,
+      );
+      expect(mine, hasLength(1));
+      final chat = await tester.runAsync(
+        () => rig.backend.orders.watchMessages(id).first,
+      );
+      expect(chat, isEmpty);
+    },
+  );
 }

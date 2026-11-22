@@ -8,6 +8,7 @@ import '../state/session.dart';
 import '../utils/launch.dart';
 import '../utils/order_x.dart';
 import '../widgets/common.dart';
+import '../widgets/job_guide.dart';
 import '../widgets/job_map.dart';
 import 'chat_screen.dart';
 import 'job_actions.dart';
@@ -75,6 +76,9 @@ class JobDetailScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
           children: [
+            JobNextStep(order: o, mine: mine),
+            JobSchedule(order: o),
+            const SizedBox(height: 12),
             if (due > 0 && o.status != OrderStatus.delivered)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -340,10 +344,12 @@ class JobDetailScreen extends StatelessWidget {
                   _kv(
                     'Status',
                     o.paymentStatus == PaymentStatus.paid
-                        ? 'Paid'
+                        ? (o.paymentMethod.isPrepaid
+                              ? 'Paid online: no cash to take'
+                              : 'Paid')
                         : (o.paymentMethod.isPrepaid
-                              ? 'Awaiting transfer'
-                              : 'Cash on delivery'),
+                              ? 'Not confirmed yet: do not take cash'
+                              : 'Take ${formatRupees(o.total)} cash'),
                   ),
                   if (o.paymentReference.isNotEmpty)
                     _kv('Transaction ID', o.paymentReference),
@@ -355,28 +361,12 @@ class JobDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-            if (o.scheduledFor != null) ...[
-              const Heading('Scheduled'),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: panel(context),
-                child: Row(
-                  children: [
-                    const Icon(Icons.event_rounded, color: Brand.blueDark),
-                    const SizedBox(width: 10),
-                    Text(
-                      o.notes.split('\n').first.startsWith('Slot:')
-                          ? o.notes.split('\n').first
-                          : 'See notes',
-                    ),
-                  ],
-                ),
-              ),
-            ],
             const SizedBox(height: 22),
             if (mine &&
                 (o.status == OrderStatus.assigned ||
                     o.status == OrderStatus.outForDelivery)) ...[
+              JobProblem(order: o),
+              const SizedBox(height: 10),
               Badge(
                 isLabelVisible: s.chat.unread(o.id) > 0,
                 label: Text('${s.chat.unread(o.id)}'),

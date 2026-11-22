@@ -722,10 +722,14 @@ class AdminSession extends ChangeNotifier {
           if (!_knownReports.contains(r.id)) {
             Alerts.show(
               id: 600000 + (r.id.hashCode & 0xffff),
-              title: r.aboutRider
+              title: r.fromRider
+                  ? 'Rider problem · ${r.orderNumber}'
+                  : r.aboutRider
                   ? 'Rider reported · ${r.orderNumber}'
                   : 'Problem reported · ${r.orderNumber}',
-              body: '${r.customerName}: ${r.reason}',
+              body: r.fromRider
+                  ? '${r.riderName ?? 'Rider'}: ${r.reason}'
+                  : '${r.customerName}: ${r.reason}',
               payload: 'order:${r.orderId}',
             );
           }

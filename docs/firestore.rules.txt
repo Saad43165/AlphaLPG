@@ -490,14 +490,15 @@ service cloud.firestore {
 
     match /reports/{id} {
       allow read: if isAdmin()
-        || (signedIn() && resource.data.customerId == request.auth.uid);
+        || (signedIn() && resource.data.customerId == request.auth.uid)
+        || (isRider() && resource.data.get('by', 'customer') == 'rider'
+            && resource.data.riderId == request.auth.uid);
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
              'orderId', 'orderNumber', 'customerId', 'customerName', 'customerPhone',
-             'riderId', 'riderName', 'about', 'reason', 'details', 'status', 'reply', 'createdAt'])
-        && request.resource.data.customerId == request.auth.uid
-        && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.customerId == request.auth.uid
+             'riderId', 'riderName', 'about', 'by', 'reason', 'details', 'status', 'reply', 'createdAt'])
         && request.resource.data.about in ['order', 'rider']
+        && request.resource.data.get('by', 'customer') in ['customer', 'rider']
         && isText(request.resource.data.reason, 80)
         && request.resource.data.reason.size() > 0
         && isText(request.resource.data.details, 600)
@@ -506,7 +507,19 @@ service cloud.firestore {
         && isText(request.resource.data.customerPhone, 20)
         && request.resource.data.status == 'open'
         && request.resource.data.reply == ''
-        && request.resource.data.createdAt == request.time;
+        && request.resource.data.createdAt == request.time
+        && (
+          // A customer reports their own order.
+          (request.resource.data.get('by', 'customer') == 'customer'
+            && request.resource.data.customerId == request.auth.uid
+            && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.customerId == request.auth.uid)
+          // A rider reports a problem on a delivery that is theirs.
+          || (request.resource.data.by == 'rider'
+            && isRider()
+            && request.resource.data.customerId == ''
+            && request.resource.data.riderId == request.auth.uid
+            && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.riderId == request.auth.uid)
+        );
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'resolvedAt'])
         && request.resource.data.status in ['open', 'resolved']

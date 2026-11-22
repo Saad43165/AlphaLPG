@@ -33,7 +33,7 @@ class _ReportsInboxScreenState extends State<ReportsInboxScreen> {
           r,
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('Customer reports')),
+      appBar: AppBar(title: const Text('Reports and problems')),
       body: Constrained(
         child: Column(
           children: [
@@ -60,7 +60,7 @@ class _ReportsInboxScreenState extends State<ReportsInboxScreen> {
                   ? const EmptyState(
                       icon: Icons.verified_user_rounded,
                       title: 'Nothing to look at',
-                      message: 'When a customer reports a problem with an order or a rider, it shows up here.',
+                      message: 'When a customer or a rider reports a problem, it shows up here. Answer it and the sender sees your reply.',
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
@@ -139,8 +139,16 @@ class ReportCard extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Pill(
-                r.aboutRider ? Icons.two_wheeler_rounded : Icons.flag_rounded,
-                r.aboutRider ? 'About rider' : 'About order',
+                r.fromRider
+                    ? Icons.two_wheeler_rounded
+                    : r.aboutRider
+                    ? Icons.person_off_rounded
+                    : Icons.flag_rounded,
+                r.fromRider
+                    ? 'From rider ${r.riderName ?? ''}'.trim()
+                    : r.aboutRider
+                    ? 'Customer: about rider'
+                    : 'Customer: about order',
                 color: color,
               ),
               Pill(

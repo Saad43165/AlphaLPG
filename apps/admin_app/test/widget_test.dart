@@ -569,7 +569,7 @@ void main() {
         expect(tester.takeException(), isNull, reason: tab);
       }
       for (final item in [
-        'Customer reports',
+        'Reports and problems',
         'Customers',
         'Cash handover',
         'Sales & cash report',

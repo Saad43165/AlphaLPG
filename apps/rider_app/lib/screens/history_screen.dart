@@ -52,8 +52,8 @@ class HistoryScreen extends StatelessWidget {
               _Stat(
                 icon: Icons.payments_rounded,
                 color: const Color(0xFF9A6B00),
-                value: formatRupees(s.cashToday),
-                label: 'Cash to hand in',
+                value: formatRupees(s.cashPending),
+                label: 'Cash with you',
               ),
               const SizedBox(width: 10),
               _Stat(

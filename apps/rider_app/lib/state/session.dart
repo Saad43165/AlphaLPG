@@ -96,6 +96,11 @@ class RiderSession extends ChangeNotifier {
 
   int get cashToday =>
       deliveredToday.fold(0, (n, o) => n + (o.cashCollected ?? 0));
+
+  /// Cash this rider still has to hand to the shop (collected minus handed in).
+  int get cashPending =>
+      riderCash(profile?.uid ?? _uid ?? '', history, handovers).pending;
+
   int get emptiesToday =>
       deliveredToday.fold(0, (n, o) => n + (o.emptiesCollected ?? 0));
 
@@ -526,6 +531,36 @@ class RiderSession extends ChangeNotifier {
           ? 'The shop has not published the latest database rules yet, so deliveries cannot be saved. Ask Alpha LPG to publish them.'
           : null;
       return false;
+    }
+  }
+
+  /// A problem on the way (customer not answering, wrong address…), sent
+  /// straight to Alpha LPG. Returns an error message, or null when sent.
+  Future<String?> reportProblem(
+    LpgOrder o,
+    String reason,
+    String details,
+  ) async {
+    final id = _uid;
+    if (id == null) return 'Please sign in again.';
+    try {
+      await backend.orders.addReport(
+        OrderReport(
+          orderId: o.id,
+          orderNumber: o.displayNumber,
+          customerId: '',
+          customerName: o.customerName,
+          customerPhone: o.customerPhone,
+          riderId: id,
+          riderName: profile?.name,
+          by: 'rider',
+          reason: reason,
+          details: details,
+        ),
+      );
+      return null;
+    } catch (_) {
+      return 'Could not send. Check your internet and try again, or call the shop.';
     }
   }
 

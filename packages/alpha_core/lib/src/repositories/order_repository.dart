@@ -45,6 +45,9 @@ abstract interface class OrderRepository {
     String customerId,
   );
 
+  /// Rider: their own reports on one order (with the shop's answers).
+  Stream<List<OrderReport>> watchRiderReports(String orderId, String riderId);
+
   /// Admin: all reports, newest first.
   Stream<List<OrderReport>> watchReports({int limit = 200});
 
@@ -311,6 +314,26 @@ class _FirestoreOrders implements OrderRepository {
             ),
           ),
       );
+
+  @override
+  Stream<List<OrderReport>> watchRiderReports(String orderId, String riderId) =>
+      _db
+          .collection('reports')
+          .where('riderId', isEqualTo: riderId)
+          .where('by', isEqualTo: 'rider')
+          .snapshots()
+          .map(
+            (s) =>
+                [
+                  for (final d in s.docs)
+                    if (d.data()['orderId'] == orderId)
+                      OrderReport.fromMap(d.id, d.data()),
+                ]..sort(
+                  (a, b) => (b.createdAt ?? DateTime(0)).compareTo(
+                    a.createdAt ?? DateTime(0),
+                  ),
+                ),
+          );
 
   @override
   Stream<List<OrderReport>> watchReports({int limit = 200}) => _db
@@ -762,6 +785,15 @@ class _MemoryOrders implements OrderRepository {
         if (r.orderId == orderId && r.customerId == customerId) r,
     ],
   );
+
+  @override
+  Stream<List<OrderReport>> watchRiderReports(String orderId, String riderId) =>
+      watchReports().map(
+        (l) => [
+          for (final r in l)
+            if (r.orderId == orderId && r.riderId == riderId && r.fromRider) r,
+        ],
+      );
 
   @override
   Stream<List<OrderReport>> watchReports({int limit = 200}) =>

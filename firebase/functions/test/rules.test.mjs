@@ -397,6 +397,19 @@ describe('customer reports', () => {
     await assertFails(updateDoc(doc(customer(), ref.path), { status: 'resolved' }));
     await assertSucceeds(updateDoc(doc(staff('boss'), ref.path), { status: 'resolved', reply: 'We spoke to the rider', resolvedAt: serverTimestamp() }));
   });
+  it('a rider reports a problem on their delivery to the shop; customers never see it', async () => {
+    await seedOrder({ riderId: 'r1', status: 'outForDelivery' });
+    const rr = (over = {}) => rep({ customerId: '', by: 'rider', about: 'order', riderId: 'r1', riderName: 'Imran', reason: 'Customer not answering', details: '', ...over });
+    const ref = await addDoc(collection(staff('r1'), 'reports'), rr());
+    await assertSucceeds(getDoc(doc(staff('r1'), ref.path)));
+    await assertSucceeds(getDoc(doc(staff('boss'), ref.path)));
+    await assertFails(getDoc(doc(customer(), ref.path)));
+    await assertFails(addDoc(collection(staff('r2'), 'reports'), rr({ riderId: 'r2' })));
+    await assertFails(addDoc(collection(staff('r1'), 'reports'), rr({ riderId: 'r2' })));
+    await assertFails(addDoc(collection(staff('r1'), 'reports'), rr({ customerId: 'u1' })));
+    await assertFails(addDoc(collection(customer(), 'reports'), rr({ by: 'customer', customerId: 'u1' , reason: 'x'.repeat(100) })));
+    await assertSucceeds(updateDoc(doc(staff('boss'), ref.path), { status: 'resolved', reply: 'We called them', resolvedAt: serverTimestamp() }));
+  });
   it('rider star rating: everyone signed in reads, only the shop writes', async () => {
     await assertSucceeds(setDoc(doc(staff('boss'), 'riderStats/r1'), { average: 4.6, count: 12 }));
     await assertSucceeds(getDoc(doc(customer(), 'riderStats/r1')));

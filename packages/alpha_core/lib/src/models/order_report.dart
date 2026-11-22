@@ -13,6 +13,7 @@ class OrderReport {
     this.riderId,
     this.riderName,
     this.about = 'order',
+    this.by = 'customer',
     required this.reason,
     this.details = '',
     this.status = 'open',
@@ -32,6 +33,11 @@ class OrderReport {
 
   /// 'order' or 'rider'.
   final String about;
+
+  /// Who sent it: 'customer' or 'rider' (a problem on the way, such as
+  /// "customer not answering").
+  final String by;
+  bool get fromRider => by == 'rider';
   final String reason;
   final String details;
 
@@ -56,6 +62,7 @@ class OrderReport {
     riderId: m['riderId'] as String?,
     riderName: m['riderName'] as String?,
     about: m['about'] == 'rider' ? 'rider' : 'order',
+    by: m['by'] == 'rider' ? 'rider' : 'customer',
     reason: m['reason'] as String? ?? '',
     details: m['details'] as String? ?? '',
     status: m['status'] == 'resolved' ? 'resolved' : 'open',
@@ -73,6 +80,7 @@ class OrderReport {
     'riderId': riderId,
     'riderName': riderName,
     'about': about,
+    'by': by,
     'reason': reason,
     'details': details,
     'status': 'open',

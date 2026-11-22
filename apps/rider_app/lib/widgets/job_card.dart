@@ -1,5 +1,6 @@
 import 'package:alpha_core/alpha_core.dart';
 import 'package:alpha_ui/alpha_ui.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:provider/provider.dart';
@@ -68,6 +69,16 @@ class JobCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
+                Text(
+                  o.customerName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                  ),
+                ),
+                const SizedBox(height: 6),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -87,7 +98,7 @@ class JobCard extends StatelessWidget {
                           ),
                           Text(
                             o.address.line1,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(color: pal.muted, fontSize: 13),
                           ),
@@ -106,22 +117,36 @@ class JobCard extends StatelessWidget {
                       o.itemsLine,
                       color: Brand.blueDark,
                     ),
+                    if (o.scheduledFor != null)
+                      Pill(
+                        Icons.event_rounded,
+                        'Scheduled ${DateFormat('d MMM').format(o.scheduledFor!)}',
+                        color: Brand.flame,
+                      ),
                     if (due > 0)
                       Pill(
                         Icons.payments_rounded,
-                        'Collect ${formatRupees(due)}',
+                        'Take ${formatRupees(due)} cash',
                         color: const Color(0xFF9A6B00),
                       )
                     else if (o.paymentStatus == PaymentStatus.paid)
-                      const Pill(
+                      Pill(
                         Icons.check_circle_rounded,
-                        'Paid',
+                        o.paymentMethod.isPrepaid
+                            ? 'Paid online: no cash'
+                            : 'Paid',
                         color: Brand.success,
                       )
                     else
                       Pill(
                         Icons.hourglass_top_rounded,
-                        '${o.paymentMethod.label}: awaiting',
+                        'Wait: ${o.paymentMethod.label} not confirmed',
+                        color: Brand.danger,
+                      ),
+                    if (o.emptiesToCollect > 0)
+                      Pill(
+                        Icons.autorenew_rounded,
+                        'Take back ${o.emptiesToCollect} empty',
                         color: pal.muted,
                       ),
                   ],
