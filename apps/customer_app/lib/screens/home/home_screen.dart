@@ -778,7 +778,6 @@ class _PlanDueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pal = context.pal;
     return Material(
       color: Brand.flame,
       borderRadius: BorderRadius.circular(14),

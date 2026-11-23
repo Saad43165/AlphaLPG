@@ -419,23 +419,30 @@ class ActiveOrderCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Brand.navy,
-                            minimumSize: const Size(0, 40),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                          ),
-                          onPressed: () =>
-                              context.push('/orders/${o.id}/payment'),
-                          child: Text(
-                            o.paymentIssue.isNotEmpty
-                                ? 'Fix'
-                                : o.paymentRequest != null &&
-                                      o.receiptAt == null
-                                ? 'Pay now'
-                                : 'View',
-                            style: const TextStyle(fontWeight: FontWeight.w800),
+                        Flexible(
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Brand.navy,
+                              minimumSize: const Size(0, 40),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                            ),
+                            onPressed: () =>
+                                context.push('/orders/${o.id}/payment'),
+                            child: Text(
+                              o.paymentIssue.isNotEmpty
+                                  ? 'Fix'
+                                  : o.paymentRequest != null &&
+                                        o.receiptAt == null
+                                  ? 'Pay now'
+                                  : 'View',
+                              maxLines: 1,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
                         ),
                       ],
