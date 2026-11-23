@@ -137,7 +137,7 @@ class GuideScreen extends StatelessWidget {
         title: Bi('Cash and earnings', 'رقم اور کمائی'),
         steps: [
           Bi(
-            '"Cash you hold" shows the money you collected and still have to hand in.',
+            '"Cash held" shows the money you collected and still have to hand in.',
             '"آپ کے پاس رقم" وہ پیسے ہیں جو آپ نے وصول کیے اور ابھی جمع کروانے ہیں۔',
           ),
           Bi(

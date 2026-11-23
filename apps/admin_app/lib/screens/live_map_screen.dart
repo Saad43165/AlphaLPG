@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:alpha_core/alpha_core.dart';
 import 'package:alpha_ui/alpha_ui.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -14,7 +16,10 @@ import 'order_detail_screen.dart';
 
 /// Every rider and every open order on one map. Tap a pin for details.
 class LiveMapScreen extends StatefulWidget {
-  const LiveMapScreen({super.key});
+  const LiveMapScreen({super.key, this.focusOrderId});
+
+  /// Zoom to this order and its rider when opened from an order.
+  final String? focusOrderId;
 
   @override
   State<LiveMapScreen> createState() => _LiveMapScreenState();
@@ -27,10 +32,52 @@ class _LiveMapScreenState extends State<LiveMapScreen> {
   bool _ridersOn = true;
   bool _ordersOn = true;
 
+  /// Freshest position of each rider on the road, straight from the order's
+  /// live tracking (more accurate than the shift heartbeat).
+  final _live = <String, RiderLocation>{};
+  final _subs = <String, StreamSubscription<RiderLocation?>>{};
+
+  void _sync(AdminSession s) {
+    final ids = {
+      for (final o in s.orders)
+        if (o.status == OrderStatus.outForDelivery) o.id,
+    };
+    for (final id in _subs.keys.where((k) => !ids.contains(k)).toList()) {
+      _subs.remove(id)?.cancel();
+      _live.remove(id);
+    }
+    for (final id in ids.where((k) => !_subs.containsKey(k))) {
+      _subs[id] = s.backend.orders.watchRiderLocation(id).listen((l) {
+        if (!mounted) return;
+        setState(() {
+          if (l == null) {
+            _live.remove(id);
+          } else {
+            _live[id] = l;
+          }
+        });
+      }, onError: (_) {});
+    }
+  }
+
+  /// Where this rider is: live tracking first, then the shift heartbeat.
+  LatLng? _where(AdminSession s, RiderProfile r) {
+    for (final o in s.jobsOf(r.uid)) {
+      final l = _live[o.id];
+      if (o.status == OrderStatus.outForDelivery && l != null && l.isFresh()) {
+        return LatLng(l.lat, l.lng);
+      }
+    }
+    return r.hasPosition ? LatLng(r.lat!, r.lng!) : null;
+  }
+
   static const _lahore = LatLng(31.5204, 74.3587);
 
   @override
   void dispose() {
+    for (final sub in _subs.values) {
+      sub.cancel();
+    }
     _controller.dispose();
     super.dispose();
   }
@@ -175,21 +222,37 @@ class _LiveMapScreenState extends State<LiveMapScreen> {
   Widget build(BuildContext context) {
     final s = context.watch<AdminSession>();
     final pal = context.pal;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _sync(s);
+    });
     final riders = [
       for (final r in s.riders)
-        if (r.hasPosition && (r.isLive() || s.jobsOf(r.uid).isNotEmpty)) r,
+        if (_where(s, r) != null && (r.isLive() || s.jobsOf(r.uid).isNotEmpty))
+          r,
     ];
     final orders = _open(s);
     final waiting = s.waitingForRider.map((o) => o.id).toSet();
     final points = [
       if (_ridersOn)
-        for (final r in riders) LatLng(r.lat!, r.lng!),
+        for (final r in riders) _where(s, r)!,
       if (_ordersOn)
         for (final o in orders) LatLng(o.address.lat!, o.address.lng!),
     ];
-    if (!_fitted && _ready && points.isNotEmpty) {
+    final focus = widget.focusOrderId == null
+        ? null
+        : s.orders.where((o) => o.id == widget.focusOrderId).firstOrNull;
+    final fitPts = <LatLng>[
+      if (focus != null) ...[
+        if (focus.address.hasLocation)
+          LatLng(focus.address.lat!, focus.address.lng!),
+        for (final r in riders)
+          if (r.uid == focus.riderId) _where(s, r)!,
+      ],
+    ];
+    final target = fitPts.isNotEmpty ? fitPts : points;
+    if (!_fitted && _ready && target.isNotEmpty) {
       _fitted = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _fit(points));
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fit(target));
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Live map')),
@@ -210,7 +273,7 @@ class _LiveMapScreenState extends State<LiveMapScreen> {
                 _ready = true;
                 if (points.isNotEmpty && !_fitted) {
                   _fitted = true;
-                  _fit(points);
+                  _fit(fitPts.isNotEmpty ? fitPts : points);
                 }
               },
             ),
@@ -248,7 +311,7 @@ class _LiveMapScreenState extends State<LiveMapScreen> {
                   if (_ridersOn)
                     for (final r in riders)
                       Marker(
-                        point: LatLng(r.lat!, r.lng!),
+                        point: _where(s, r)!,
                         width: 78,
                         height: 76,
                         child: GestureDetector(

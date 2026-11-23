@@ -208,7 +208,8 @@ abstract final class Brand {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: pal.card,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        shadowColor: Colors.black,
+        elevation: dark ? 0 : 8,
         height: 68,
         indicatorColor: dark
             ? const Color(0xFF1F5C99)
@@ -320,9 +321,9 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   static final light = AppPalette(
     isDark: false,
-    surface: const Color(0xFFEDF2F7),
+    surface: const Color(0xFFE8F0F8),
     card: Colors.white,
-    line: const Color(0xFFCFDBE7),
+    line: const Color(0xFFC6D5E4),
     ink: Brand.navy,
     muted: const Color(0xFF4B6074),
     tint: const Color(0xFFD9ECFA),
@@ -339,11 +340,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   static const night = AppPalette(
     isDark: true,
-    surface: Color(0xFF0A1621),
-    card: Color(0xFF122434),
-    line: Color(0xFF223A4F),
-    ink: Color(0xFFE9F1F8),
-    muted: Color(0xFF8CA3B8),
+    surface: Color(0xFF0B1520),
+    card: Color(0xFF16293B),
+    line: Color(0xFF2C4862),
+    ink: Color(0xFFF1F6FB),
+    muted: Color(0xFFA6BACC),
     tint: Color(0xFF1B4163),
     warn: Color(0xFFF6C23E),
     warnBg: Color(0xFF4A3708),

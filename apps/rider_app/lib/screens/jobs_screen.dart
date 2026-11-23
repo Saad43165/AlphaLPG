@@ -186,7 +186,7 @@ class _TodayStrip extends StatelessWidget {
             Icons.payments_rounded,
             s.cashPending > 0 ? const Color(0xFF9A6B00) : pal.muted,
             formatRupees(s.cashPending),
-            'Cash you hold',
+            'Cash held',
           ),
         ],
       ),

@@ -219,36 +219,25 @@ class _LocationBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final problem = session.trackingProblem;
     if (problem != null) {
-      return Container(
-        width: double.infinity,
+      return StatusStrip(
+        icon: Icons.location_off_rounded,
         color: Brand.danger,
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-        child: Row(
-          children: [
-            const Icon(Icons.location_off_rounded, color: Colors.white),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                problem,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              onPressed: session.tracker.openSettings,
-              child: const Text('Settings'),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              onPressed: session.retryTracking,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+        text: 'Location is off',
+        detail: problem,
+        actions: [
+          StatusStrip.action(
+            context,
+            'Settings',
+            session.tracker.openSettings,
+            Brand.danger,
+          ),
+          StatusStrip.action(
+            context,
+            'Retry',
+            session.retryTracking,
+            Brand.danger,
+          ),
+        ],
       );
     }
     final t = session.tracker;
@@ -256,47 +245,30 @@ class _LocationBanner extends StatelessWidget {
       final err = t.lastError;
       final sent = t.lastShared;
       // Honest status: waiting, working, or failing (with the reason).
-      final (color, icon, text) = err != null
-          ? (Brand.danger, Icons.location_off_rounded, err)
+      final (color, icon, text, detail) = err != null
+          ? (Brand.danger, Icons.location_off_rounded, 'Location problem', err)
           : sent == null
           ? (
               Brand.warning,
               Icons.location_searching_rounded,
               'Finding your position…',
+              null,
             )
           : (
               Brand.success,
               Icons.my_location_rounded,
-              'Sharing live location · updated ${timeAgo(sent)}',
+              'Live location is on',
+              'Customers can follow you · updated ${timeAgo(sent)}',
             );
-      return Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: context.pal.card,
-          border: Border.all(color: color, width: 2),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            if (err != null)
-              TextButton(
-                onPressed: session.retryTracking,
-                child: const Text('Retry'),
-              ),
-          ],
-        ),
+      return StatusStrip(
+        icon: icon,
+        color: color,
+        text: text,
+        detail: detail,
+        actions: [
+          if (err != null)
+            StatusStrip.action(context, 'Retry', session.retryTracking, color),
+        ],
       );
     }
     return const SizedBox.shrink();
@@ -318,35 +290,18 @@ class _Notices extends StatelessWidget {
       Color color,
       String text, {
       VoidCallback? onClose,
-    }) => Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: context.pal.card,
-        border: Border.all(color: color, width: 2),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
+    }) => StatusStrip(
+      icon: icon,
+      color: color,
+      text: text,
+      actions: [
+        if (onClose != null)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            onPressed: onClose,
+            icon: const Icon(Icons.close_rounded, size: 18),
           ),
-          if (onClose != null)
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              onPressed: onClose,
-              icon: Icon(Icons.close_rounded, color: color, size: 18),
-            ),
-        ],
-      ),
+      ],
     );
     return Column(
       children: [
@@ -374,43 +329,23 @@ class _BatteryTip extends StatelessWidget {
   final RiderSession session;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
+  Widget build(BuildContext context) => StatusStrip(
+    icon: Icons.battery_alert_rounded,
     color: Brand.flame,
-    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-    child: Row(
-      children: [
-        const Icon(Icons.battery_alert_rounded, color: Brand.navy, size: 20),
-        const SizedBox(width: 10),
-        const Expanded(
-          child: Text(
-            'Do this once so you never miss a job.',
-            style: TextStyle(
-              color: Brand.navy,
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-            ),
-          ),
-        ),
-        TextButton(
-          style: TextButton.styleFrom(foregroundColor: Brand.navy),
-          onPressed: () {
-            session.dismissBatteryTip();
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const BatteryGuideScreen(),
-              ),
-            );
-          },
-          child: const Text('Show me'),
-        ),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          tooltip: 'Close',
-          onPressed: session.dismissBatteryTip,
-          icon: const Icon(Icons.close_rounded, size: 18, color: Brand.warning),
-        ),
-      ],
-    ),
+    text: 'Do this once so you never miss a job.',
+    actions: [
+      StatusStrip.action(context, 'Show me', () {
+        session.dismissBatteryTip();
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const BatteryGuideScreen()),
+        );
+      }, Brand.flame),
+      IconButton(
+        visualDensity: VisualDensity.compact,
+        tooltip: 'Close',
+        onPressed: session.dismissBatteryTip,
+        icon: const Icon(Icons.close_rounded, size: 18),
+      ),
+    ],
   );
 }

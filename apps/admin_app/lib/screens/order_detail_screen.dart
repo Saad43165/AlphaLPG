@@ -13,6 +13,7 @@ import '../widgets/common.dart';
 import '../widgets/schedule.dart';
 import '../widgets/payment_panel.dart';
 import 'chat_screen.dart';
+import 'live_map_screen.dart';
 import 'reports_inbox_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
@@ -505,6 +506,18 @@ class OrderDetailScreen extends StatelessWidget {
                   ],
                   if (o.status == OrderStatus.outForDelivery)
                     _LiveRider(orderId: o.id),
+                  if (o.status.isActive) ...[
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => LiveMapScreen(focusOrderId: o.id),
+                        ),
+                      ),
+                      icon: const Icon(Icons.map_rounded),
+                      label: const Text('See rider and customer on the map'),
+                    ),
+                  ],
                 ],
               ),
 

@@ -17,3 +17,6 @@ apps/customer_app/config/keys.json
 *-debug.log
 apps/rider_app/config/keys.json
 apps/admin_app/config/keys.json
+
+# tester logins (never commit)
+apps/*/config/test_login.json

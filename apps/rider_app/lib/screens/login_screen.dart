@@ -15,8 +15,15 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _form = GlobalKey<FormState>();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  // Test builds (flutter build --dart-define-from-file=config/test_login.json)
+  // start with the tester's email and password filled in. Normal builds
+  // leave both empty.
+  final _email = TextEditingController(
+    text: const String.fromEnvironment('TEST_EMAIL'),
+  );
+  final _password = TextEditingController(
+    text: const String.fromEnvironment('TEST_PASS'),
+  );
   bool _hide = true;
   bool _busy = false;
   String? _error;

@@ -70,29 +70,37 @@ class JobCard extends StatelessWidget {
                       const SizedBox(width: 8),
                     ],
                     Expanded(
-                      child: Text(
-                        o.displayNumber,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          o.displayNumber,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
-                    Flexible(
+                    if (o.status == OrderStatus.assigned ||
+                        o.status == OrderStatus.outForDelivery)
+                      _ChatButton(order: o),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    StatusChip(o.status),
+                    const SizedBox(width: 10),
+                    Expanded(
                       child: Text(
                         timeAgo(o.createdAt),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: pal.muted, fontSize: 12),
+                        style: TextStyle(color: pal.muted, fontSize: 12.5),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    StatusChip(o.status),
-                    if (o.status == OrderStatus.assigned ||
-                        o.status == OrderStatus.outForDelivery)
-                      _ChatButton(order: o),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -143,6 +151,7 @@ class JobCard extends StatelessWidget {
                       Icons.propane_tank_rounded,
                       o.itemsLine,
                       color: Brand.blueDark,
+                      maxLines: 3,
                     ),
                     if (o.scheduledFor != null)
                       Pill(

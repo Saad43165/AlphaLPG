@@ -7,5 +7,6 @@ export 'src/brand.dart';
 export 'src/chat.dart';
 export 'src/guide.dart';
 export 'src/photo.dart';
+export 'src/strip.dart';
 export 'src/tour.dart';
 export 'src/whatsapp_icon.dart';

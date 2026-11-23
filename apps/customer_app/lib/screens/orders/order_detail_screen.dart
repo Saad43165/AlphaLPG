@@ -148,12 +148,17 @@ class _TrackingView extends StatelessWidget {
               scrolledUnderElevation: 0,
               foregroundColor: Colors.white,
               systemOverlayStyle: Brand.lightStatusBar,
-              title: Text(
-                'Order ${o.displayNumber}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
+              title: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  o.displayNumber,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               actions: [

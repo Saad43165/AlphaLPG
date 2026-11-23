@@ -775,21 +775,27 @@ class _ShopBar extends StatelessWidget {
     final s = context.watch<AdminSession>();
     final open = s.settings.acceptingOrders;
     final live = s.liveRiders.length;
-    final pal = context.pal;
     final color = open ? Brand.success : Brand.danger;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
       decoration: BoxDecoration(
-        color: context.pal.card,
+        color: Tone.fill(color),
         borderRadius: BorderRadius.circular(Brand.radius),
-        border: Border.all(color: color, width: 2),
       ),
       child: Row(
         children: [
-          Icon(
-            open ? Icons.storefront_rounded : Icons.pause_circle_rounded,
-            color: color,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              open ? Icons.storefront_rounded : Icons.pause_circle_rounded,
+              color: Tone.fill(color),
+              size: 22,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -798,7 +804,11 @@ class _ShopBar extends StatelessWidget {
               children: [
                 Text(
                   open ? 'Shop is open' : 'Shop is closed',
-                  style: TextStyle(fontWeight: FontWeight.w800, color: color),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
                 ),
                 Text(
                   open
@@ -806,13 +816,17 @@ class _ShopBar extends StatelessWidget {
                             ? 'No rider on shift'
                             : '$live rider${live == 1 ? '' : 's'} on shift')
                       : 'Customers cannot place orders',
-                  style: TextStyle(color: pal.muted, fontSize: 12.5),
+                  style: const TextStyle(color: Colors.white, fontSize: 12.5),
                 ),
               ],
             ),
           ),
           Switch(
             value: open,
+            activeTrackColor: Colors.white,
+            activeThumbColor: Tone.fill(color),
+            inactiveTrackColor: Colors.white,
+            inactiveThumbColor: Tone.fill(color),
             onChanged: (v) async {
               if (!v) {
                 final ok = await showDialog<bool>(
@@ -863,35 +877,13 @@ class _PayBanner extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-    child: Material(
-      color: Brand.flame,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Icon(icon, color: Brand.navy),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  text,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: Brand.navy,
-                  ),
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: Brand.navy),
-            ],
-          ),
-        ),
-      ),
-    ),
+  Widget build(BuildContext context) => StatusStrip(
+    icon: icon,
+    text: text,
+    color: Brand.flame,
+    onTap: onTap,
+    chevron: true,
+    margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
   );
 }
 

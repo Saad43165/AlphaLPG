@@ -140,7 +140,14 @@ class StatusChip extends StatelessWidget {
 }
 
 class Pill extends StatelessWidget {
-  const Pill(this.icon, this.label, {super.key, required this.color});
+  const Pill(
+    this.icon,
+    this.label, {
+    super.key,
+    required this.color,
+    this.maxLines = 1,
+  });
+  final int maxLines;
   final IconData icon;
   final String label;
   final Color color;
@@ -162,7 +169,7 @@ class Pill extends StatelessWidget {
         Flexible(
           child: Text(
             label,
-            maxLines: 1,
+            maxLines: maxLines,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: _fg(context),
