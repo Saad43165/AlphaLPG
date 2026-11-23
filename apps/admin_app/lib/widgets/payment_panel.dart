@@ -78,11 +78,13 @@ class PaymentPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color:
-                  (stage == PayStage.sendDetails
-                          ? Brand.cylinderRed
-                          : context.pal.warn)
-                      .withValues(alpha: 0.14),
+              color: context.pal.card,
+              border: Border.all(
+                color: stage == PayStage.sendDetails
+                    ? Brand.cylinderRed
+                    : context.pal.warn,
+                width: 2,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(switch (stage) {
@@ -105,9 +107,9 @@ class PaymentPanel extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Brand.danger.withValues(alpha: 0.22),
+                color: context.pal.card,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Brand.danger.withValues(alpha: 0.4)),
+                border: Border.all(color: Brand.danger, width: 2),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +142,8 @@ class PaymentPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Brand.blueDark.withValues(alpha: 0.22),
+              color: context.pal.card,
+              border: Border.all(color: Brand.blueDark, width: 2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -179,7 +182,8 @@ class PaymentPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Brand.danger.withValues(alpha: 0.22),
+              color: context.pal.card,
+              border: Border.all(color: Brand.danger, width: 2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(

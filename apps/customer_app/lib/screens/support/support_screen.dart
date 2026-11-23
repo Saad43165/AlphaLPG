@@ -226,13 +226,13 @@ class _Ticket extends StatelessWidget {
                   vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.22),
+                  color: Tone.fill(color),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: color,
+                    color: Tone.on(Tone.fill(color)),
                     fontWeight: FontWeight.w800,
                     fontSize: 12.5,
                   ),

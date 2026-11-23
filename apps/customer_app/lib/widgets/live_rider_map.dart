@@ -138,7 +138,8 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Brand.success.withValues(alpha: 0.22),
+              color: context.pal.card,
+              border: Border.all(color: Brand.success, width: 2),
               borderRadius: BorderRadius.circular(Brand.radius),
             ),
             child: const Row(
@@ -190,7 +191,7 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
           child: Column(
             children: [
               SizedBox(
-                height: 300,
+                height: 340,
                 child: !svc.hasMap || !hasPin
                     ? Container(
                         color: pal.tint,
@@ -343,6 +344,47 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                               ),
                             ],
                           ),
+                          if (metres != null && metres >= 150)
+                            Positioned(
+                              left: 10,
+                              top: 10,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Brand.navy,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x44000000),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.two_wheeler_rounded,
+                                      color: Brand.flame,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    mu.Text(
+                                      '${minutes ?? '–'} min · ${km?.toStringAsFixed(1) ?? '–'} km',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           // Bring the whole trip back into view after panning.
                           Positioned(
                             right: 10,

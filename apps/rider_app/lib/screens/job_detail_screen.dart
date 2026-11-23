@@ -464,7 +464,8 @@ class JobDetailScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Brand.success.withValues(alpha: 0.22),
+                    color: context.pal.card,
+                    border: Border.all(color: Brand.success, width: 2),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Row(
@@ -484,13 +485,14 @@ class JobDetailScreen extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF4D6),
+                    color: context.pal.card,
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: context.pal.warn, width: 2),
                   ),
                   child: Text(
                     'Online payment (${o.paymentMethod.label}) is not confirmed yet. Alpha LPG confirms it, then you can finish. Do not take cash.',
-                    style: const TextStyle(
-                      color: Color(0xFF5C4600),
+                    style: TextStyle(
+                      color: context.pal.ink,
                       fontWeight: FontWeight.w600,
                       height: 1.35,
                     ),

@@ -377,8 +377,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Brand.blueDark.withValues(
-                                      alpha: 0.1,
+                                    color: context.pal.card,
+                                    border: Border.all(
+                                      color: Brand.blueDark,
+                                      width: 2,
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -611,7 +613,7 @@ class _WhenTile extends StatelessWidget {
       button: true,
       selected: selected,
       child: Material(
-        color: selected ? Brand.blueDark.withValues(alpha: 0.22) : pal.surface,
+        color: selected ? pal.tint : pal.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
@@ -755,13 +757,11 @@ class _SlotTile extends StatelessWidget {
       DeliverySlot.afternoon => Icons.wb_sunny_rounded,
       DeliverySlot.evening => Icons.nights_stay_rounded,
     };
-    final fg = !enabled
-        ? pal.muted.withValues(alpha: 0.5)
-        : (selected ? Brand.blueDark : pal.ink);
+    final fg = !enabled ? pal.muted : (selected ? Brand.blueDark : pal.ink);
     return Opacity(
       opacity: enabled ? 1 : 0.55,
       child: Material(
-        color: selected ? Brand.blueDark.withValues(alpha: 0.22) : pal.surface,
+        color: selected ? pal.tint : pal.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(

@@ -205,11 +205,9 @@ class PaymentMethodPicker extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: value.color.withValues(alpha: 0.22),
+                        color: context.pal.card,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: value.color.withValues(alpha: 0.4),
-                        ),
+                        border: Border.all(color: value.color, width: 2),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,7 +260,7 @@ class _MethodTile extends StatelessWidget {
     final brand = method.color;
     // Selected: the tile takes the provider's exact colours, like their app.
     final fg = selected ? Colors.white : pal.ink;
-    final sub = selected ? Colors.white.withValues(alpha: 0.88) : pal.muted;
+    final sub = selected ? Colors.white : pal.muted;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       decoration: BoxDecoration(
@@ -316,9 +314,7 @@ class _MethodTile extends StatelessWidget {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: selected
-                                    ? Colors.white.withValues(alpha: 0.25)
-                                    : brand.withValues(alpha: 0.22),
+                                color: selected ? Brand.navy : Tone.fill(brand),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -326,7 +322,7 @@ class _MethodTile extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: selected ? Colors.white : brand,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),

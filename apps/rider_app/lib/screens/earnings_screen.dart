@@ -115,8 +115,7 @@ class EarningsScreen extends StatelessWidget {
                   Text(
                     'Collected ${formatRupees(c.collected)} · handed in ${formatRupees(c.handedIn)}',
                     style: TextStyle(
-                      color: (c.pending > 0 ? Brand.navy : Colors.white)
-                          .withValues(alpha: 0.85),
+                      color: c.pending > 0 ? Brand.navy : Colors.white,
                     ),
                   ),
                 ],

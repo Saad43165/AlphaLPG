@@ -87,9 +87,7 @@ class _Body extends StatelessWidget {
                     ),
                     Text(
                       '${m.label} · order ${o.displayNumber}',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
+                      style: TextStyle(color: Colors.white),
                     ),
                   ],
                 ),

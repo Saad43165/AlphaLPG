@@ -130,7 +130,8 @@ class _PlanScreenState extends State<PlanScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Brand.blue.withValues(alpha: 0.22),
+                color: context.pal.card,
+                border: Border.all(color: Brand.blue, width: 2),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Text(

@@ -54,9 +54,9 @@ class ScheduleBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.22),
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: color, width: 2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +117,8 @@ class ScheduleChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.22),
+        color: context.pal.card,
+        border: Border.all(color: color, width: 2),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(

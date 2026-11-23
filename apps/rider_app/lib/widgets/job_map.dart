@@ -187,7 +187,7 @@ class _JobMapState extends State<JobMap> with WidgetsBindingObserver {
   }
 
   (IconData, Color, String, String?, VoidCallback?) _status() {
-    const amber = Color(0xFF8A6D00);
+    const amber = Brand.warning;
     switch (_gps) {
       case _Gps.checking:
         return (
@@ -257,7 +257,8 @@ class _JobMapState extends State<JobMap> with WidgetsBindingObserver {
         Container(
           padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.22),
+            color: context.pal.card,
+            border: Border.all(color: color, width: 2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -285,13 +286,14 @@ class _JobMapState extends State<JobMap> with WidgetsBindingObserver {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF4D6),
+              color: context.pal.card,
               borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: context.pal.warn, width: 2),
             ),
-            child: const Text(
+            child: Text(
               'The customer did not pin the spot on the map. Use the address below, or call the customer to ask the way.',
               style: TextStyle(
-                color: Color(0xFF5C4600),
+                color: context.pal.ink,
                 fontWeight: FontWeight.w600,
                 height: 1.35,
               ),

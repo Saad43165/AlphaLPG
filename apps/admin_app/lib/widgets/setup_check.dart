@@ -42,9 +42,9 @@ class SetupCheck extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: context.pal.warnBg,
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.pal.warnBg),
+        border: Border.all(color: context.pal.warn, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

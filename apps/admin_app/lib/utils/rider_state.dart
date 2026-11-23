@@ -1,4 +1,5 @@
 import 'package:alpha_core/alpha_core.dart';
+import 'package:alpha_ui/alpha_ui.dart' show Brand;
 import 'package:material_ui/material_ui.dart';
 
 import '../state/session.dart' show AdminSession;
@@ -43,11 +44,11 @@ RiderState riderStateOf(
   if (jobs.isNotEmpty) {
     return RiderState(
       '${jobs.length} job${jobs.length == 1 ? '' : 's'} · no signal',
-      const Color(0xFF8A6D00),
+      Brand.warning,
       2,
     );
   }
-  if (r.online) return RiderState('No signal', const Color(0xFF8A6D00), 3);
+  if (r.online) return RiderState('No signal', Brand.warning, 3);
   return RiderState('Offline', muted, 4);
 }
 

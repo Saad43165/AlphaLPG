@@ -148,7 +148,7 @@ class CatalogueScreen extends StatelessWidget {
                                               Icons
                                                   .remove_shopping_cart_rounded,
                                               'Out of stock',
-                                              color: Color(0xFF8A6D00),
+                                              color: Brand.warning,
                                             ),
                                           if (p.active && p.inStock)
                                             Pill(

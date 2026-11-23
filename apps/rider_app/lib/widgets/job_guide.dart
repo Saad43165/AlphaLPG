@@ -77,9 +77,9 @@ class JobNextStep extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.22),
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: color, width: 2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,8 +204,11 @@ class JobProblem extends StatelessWidget {
                     margin: const EdgeInsets.only(top: 10),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: (r.isOpen ? context.pal.warn : Brand.success)
-                          .withValues(alpha: 0.12),
+                      color: context.pal.card,
+                      border: Border.all(
+                        color: r.isOpen ? context.pal.warn : Brand.success,
+                        width: 2,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -282,9 +285,7 @@ class _ProblemSheetState extends State<_ProblemSheet> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Material(
-                  color: _reason == label
-                      ? Brand.blueDark.withValues(alpha: 0.22)
-                      : pal.card,
+                  color: _reason == label ? pal.tint : pal.card,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(

@@ -158,10 +158,7 @@ class _GuidePageState extends State<GuidePage> {
                       const SizedBox(height: 8),
                       Text(
                         _t(widget.intro),
-                        style: _style(
-                          context,
-                          color: Colors.white.withValues(alpha: 0.92),
-                        ),
+                        style: _style(context, color: Colors.white),
                       ),
                     ],
                   ),
@@ -244,7 +241,7 @@ class _GuidePageState extends State<GuidePage> {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Brand.blue.withValues(alpha: 0.22),
+                      backgroundColor: context.pal.tint,
                       child: Icon(s.icon, color: Brand.blueDark),
                     ),
                     const SizedBox(width: 12),
@@ -323,8 +320,9 @@ class _GuidePageState extends State<GuidePage> {
                         margin: const EdgeInsets.only(top: 2),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: context.pal.warnBg,
+                          color: context.pal.card,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.pal.warn, width: 2),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,

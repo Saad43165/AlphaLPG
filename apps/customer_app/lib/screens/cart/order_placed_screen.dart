@@ -238,12 +238,11 @@ class _Content extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: (todoIsPayment ? context.pal.warn : Brand.blueDark)
-                  .withValues(alpha: 0.13),
+              color: context.pal.card,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: (todoIsPayment ? context.pal.warn : Brand.blueDark)
-                    .withValues(alpha: 0.4),
+                color: todoIsPayment ? context.pal.warn : Brand.blueDark,
+                width: 2,
               ),
             ),
             child: Column(

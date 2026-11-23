@@ -58,7 +58,7 @@ class EmptyState extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundColor: Brand.blue.withValues(alpha: 0.22),
+            backgroundColor: context.pal.tint,
             child: Icon(icon, size: 40, color: Brand.blueDark),
           ),
           const SizedBox(height: 16),
@@ -109,7 +109,7 @@ class StatusChip extends StatelessWidget {
   final OrderStatus status;
 
   static (String, Color) look(OrderStatus s) => switch (s) {
-    OrderStatus.placed => ('New', const Color(0xFF8A6D00)),
+    OrderStatus.placed => ('New', Brand.warning),
     OrderStatus.confirmed => ('Confirmed', Brand.blueDark),
     OrderStatus.assigned => ('Ready to go', Brand.blueDark),
     OrderStatus.outForDelivery => ('On the way', const Color(0xFF6A3FC1)),
@@ -123,7 +123,8 @@ class StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.22),
+        color: context.pal.card,
+        border: Border.all(color: color, width: 2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -144,16 +145,13 @@ class Pill extends StatelessWidget {
   final String label;
   final Color color;
 
-  /// Readable text colour: lightened on dark screens.
-  Color _fg(BuildContext context) => context.pal.isDark
-      ? Color.lerp(color, Colors.white, 0.5)!
-      : Color.lerp(color, Colors.black, 0.12)!;
+  Color _fg(BuildContext context) => Tone.on(Tone.fill(color));
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.22),
+      color: Tone.fill(color),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Row(

@@ -334,7 +334,8 @@ class _IconBubble extends StatelessWidget {
     width: size,
     height: size,
     decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.22),
+      color: context.pal.card,
+      border: Border.all(color: color, width: 2),
       borderRadius: BorderRadius.circular(size * 0.32),
     ),
     child: Icon(icon, color: color, size: size * 0.52),
@@ -384,16 +385,9 @@ class _EmergencyCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      // Light pink in the light theme, a deep red-brown in the dark theme.
-      color: context.pal.isDark
-          ? const Color(0xFF2B1A1C)
-          : const Color(0xFFFFEEEB),
+      color: context.pal.card,
       borderRadius: BorderRadius.circular(Brand.radius),
-      border: Border.all(
-        color: context.pal.isDark
-            ? const Color(0xFF5E2D2D)
-            : const Color(0xFFFAD0C9),
-      ),
+      border: Border.all(color: Brand.cylinderRed, width: 2),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -670,7 +664,7 @@ class _OrderSafelyCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Need LPG delivered in Lahore? Order directly from Alpha LPG.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+          style: TextStyle(color: Colors.white),
         ),
         const SizedBox(height: 14),
         Row(

@@ -213,7 +213,8 @@ class _SetupScreenState extends State<SetupScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Brand.success.withValues(alpha: 0.22),
+                            color: context.pal.card,
+                            border: Border.all(color: Brand.success, width: 2),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Row(
@@ -521,7 +522,7 @@ class _LocationStep extends StatelessWidget {
             width: 84,
             height: 84,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.16),
+              color: Brand.blueDeep,
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -543,10 +544,7 @@ class _LocationStep extends StatelessWidget {
           Text(
             'We pin your location and fill in the address for you. You only confirm.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              height: 1.4,
-            ),
+            style: TextStyle(color: Colors.white, height: 1.4),
           ),
           const SizedBox(height: 18),
           const Wrap(
@@ -574,7 +572,7 @@ class _StepChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.16),
+      color: Brand.blueDeep,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Row(

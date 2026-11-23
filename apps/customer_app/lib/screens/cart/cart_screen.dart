@@ -194,7 +194,7 @@ class CheckoutBar extends StatelessWidget {
       color: context.pal.card,
       boxShadow: [
         BoxShadow(
-          color: Brand.navy.withValues(alpha: 0.08),
+          color: Brand.navy.withValues(alpha: 0.28),
           blurRadius: 20,
           offset: const Offset(0, -4),
         ),
@@ -315,7 +315,8 @@ class FreeDeliveryMeter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: done ? Brand.success.withValues(alpha: 0.22) : context.pal.tint,
+        color: context.pal.tint,
+        border: done ? Border.all(color: Brand.success, width: 2) : null,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -673,8 +674,9 @@ class _InfoBox extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: context.pal.warnBg,
+      color: context.pal.card,
       borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: context.pal.warn, width: 2),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,

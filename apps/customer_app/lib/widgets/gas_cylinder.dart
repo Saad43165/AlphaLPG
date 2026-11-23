@@ -94,7 +94,7 @@ class _GasCylinderState extends State<GasCylinder>
                       Icons.local_fire_department_rounded,
                       size: widget.width * 0.34,
                       color: level > 0.5
-                          ? Colors.white.withValues(alpha: 0.95)
+                          ? Colors.white
                           : (pal.isDark
                                 ? const Color(0xFFB7CBDD)
                                 : Brand.navy.withValues(alpha: 0.7)),

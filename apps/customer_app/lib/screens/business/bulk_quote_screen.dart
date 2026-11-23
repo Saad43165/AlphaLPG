@@ -262,7 +262,8 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Brand.blue.withValues(alpha: 0.22),
+                  color: context.pal.card,
+                  border: Border.all(color: Brand.blue, width: 2),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Column(
@@ -529,7 +530,8 @@ class _MyRequests extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Brand.success.withValues(alpha: 0.22),
+                          color: context.pal.card,
+                          border: Border.all(color: Brand.success, width: 2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(

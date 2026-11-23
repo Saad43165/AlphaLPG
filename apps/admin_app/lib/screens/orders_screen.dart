@@ -10,6 +10,7 @@ import '../utils/order_x.dart';
 import '../utils/rider_state.dart';
 import '../widgets/common.dart';
 import '../widgets/schedule.dart';
+import 'live_map_screen.dart';
 import 'order_detail_screen.dart';
 
 enum _Filter { fresh, scheduled, active, verify, done, cancelled }
@@ -199,6 +200,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
         actions: [
           IconButton(
+            tooltip: 'Live map',
+            icon: const Icon(Icons.map_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const LiveMapScreen()),
+            ),
+          ),
+          IconButton(
             tooltip: _searching ? 'Close search' : 'Search orders',
             icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
             onPressed: () => setState(() {
@@ -288,7 +296,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             if (!_searching)
               SizedBox(
                 height:
-                    92 + (MediaQuery.textScalerOf(context).scale(14) - 14) * 4,
+                    100 + (MediaQuery.textScalerOf(context).scale(14) - 14) * 4,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -692,7 +700,7 @@ class OrderTile extends StatelessWidget {
                           : switch (o.payStage) {
                               PayStage.sendDetails => Brand.cylinderRed,
                               PayStage.receipt => context.pal.warn,
-                              _ => const Color(0xFF8A6D00),
+                              _ => Brand.warning,
                             },
                     ),
                     if (context.watch<AdminSession>().isNewCustomer(o))
@@ -773,9 +781,9 @@ class _ShopBar extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.22),
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: color, width: 2),
       ),
       child: Row(
         children: [
@@ -858,7 +866,7 @@ class _PayBanner extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
     child: Material(
-      color: context.pal.warnBg,
+      color: Brand.flame,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -867,15 +875,18 @@ class _PayBanner extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              Icon(icon),
+              Icon(icon, color: Brand.navy),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   text,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: Brand.navy,
+                  ),
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded),
+              const Icon(Icons.chevron_right_rounded, color: Brand.navy),
             ],
           ),
         ),

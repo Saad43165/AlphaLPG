@@ -424,6 +424,55 @@ void main() {
     expect(find.text('boss'), findsOneWidget);
   });
 
+  testWidgets('live map shows riders and open orders and opens details', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    await tester.runAsync(() async {
+      await b.riders.saveRider(
+        const RiderProfile(
+          uid: 'r1',
+          name: 'Imran',
+          phone: '03001112222',
+          online: true,
+        ),
+      );
+      await b.riders.setOnline('r1', true);
+      await b.riders.heartbeat('r1', lat: 31.52, lng: 74.35);
+      final o = _order();
+      await b.orders.place(
+        LpgOrder(
+          customerId: o.customerId,
+          customerName: o.customerName,
+          customerPhone: o.customerPhone,
+          items: o.items,
+          subtotal: o.subtotal,
+          deliveryFee: 0,
+          total: o.total,
+          address: const Address(
+            label: 'Home',
+            line1: '12-B',
+            area: 'Gulberg',
+            lat: 31.51,
+            lng: 74.34,
+          ),
+        ),
+      );
+    });
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Live map'));
+    await tester.pumpAndSettle();
+    expect(find.text('Live map'), findsWidgets);
+    expect(find.text('1 order'), findsOneWidget);
+    expect(find.text('1 rider'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('long item names never run out of the order card', (
     tester,
   ) async {

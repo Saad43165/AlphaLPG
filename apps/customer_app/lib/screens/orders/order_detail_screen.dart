@@ -484,10 +484,7 @@ class _Hero extends StatelessWidget {
                               o.cancelReason.isNotEmpty
                           ? 'Reason: ${o.cancelReason}'
                           : o.statusLine,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 15,
-                      ),
+                      style: TextStyle(color: Colors.white, fontSize: 15),
                     ),
                   ],
                 ),
@@ -503,7 +500,7 @@ class _Hero extends StatelessWidget {
                     vertical: 7,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
+                    color: Brand.blueDeep,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -688,8 +685,8 @@ class _CancelledCard extends StatelessWidget {
     child: Row(
       children: [
         const CircleAvatar(
-          backgroundColor: Color(0xFFFFEEEB),
-          child: Icon(Icons.cancel_rounded, color: Brand.danger),
+          backgroundColor: Brand.danger,
+          child: Icon(Icons.cancel_rounded, color: Colors.white),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1178,8 +1175,9 @@ class _RatedCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     decoration: BoxDecoration(
-      color: context.pal.warnBg,
+      color: context.pal.card,
       borderRadius: BorderRadius.circular(Brand.radius),
+      border: Border.all(color: context.pal.warn, width: 2),
     ),
     child: Row(
       children: [
@@ -1302,7 +1300,7 @@ class _FactChips extends StatelessWidget {
     Widget chip(IconData icon, String text) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
+        color: Brand.blueDeep,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -1428,9 +1426,7 @@ class _StageBar extends StatelessWidget {
             width: now ? 46 : 38,
             height: now ? 46 : 38,
             decoration: BoxDecoration(
-              color: done || now
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.2),
+              color: done || now ? Colors.white : Brand.blueDeep,
               shape: BoxShape.circle,
               boxShadow: now
                   ? [
@@ -1445,9 +1441,7 @@ class _StageBar extends StatelessWidget {
             child: Icon(
               done ? Icons.check_rounded : icons[i],
               size: now ? 24 : 20,
-              color: done || now
-                  ? o.heroGradient.colors.last
-                  : Colors.white.withValues(alpha: 0.85),
+              color: done || now ? o.heroGradient.colors.last : Colors.white,
             ),
           ),
           const SizedBox(height: 6),
@@ -1478,9 +1472,7 @@ class _StageBar extends StatelessWidget {
         child: Container(
           height: 4,
           decoration: BoxDecoration(
-            color: i < stage
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.25),
+            color: i < stage ? Colors.white : Brand.blueDeep,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -1591,7 +1583,8 @@ class _PayStatus extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.22),
+        color: context.pal.card,
+        border: Border.all(color: color, width: 2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1780,7 +1773,7 @@ class _ClosedView extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: color.withValues(alpha: 0.22),
+                        backgroundColor: context.pal.tint,
                         child: Icon(
                           done ? Icons.check_rounded : Icons.close_rounded,
                           color: color,

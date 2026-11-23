@@ -172,7 +172,7 @@ class _SlideToConfirmState extends State<SlideToConfirm>
                         width: x + _thumb,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
+                            color: Brand.blueDeep,
                             borderRadius: BorderRadius.circular(_height / 2),
                           ),
                         ),

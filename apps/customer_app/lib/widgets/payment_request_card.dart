@@ -65,9 +65,9 @@ class PaymentRequestCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: m.color.withValues(alpha: 0.22),
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: m.color.withValues(alpha: 0.5)),
+        border: Border.all(color: m.color, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -149,7 +149,8 @@ class ReceiptSection extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Brand.danger.withValues(alpha: 0.22),
+              color: context.pal.card,
+              border: Border.all(color: Brand.danger, width: 2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -346,7 +347,8 @@ class _PaySheetState extends State<_PaySheet> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Brand.success.withValues(alpha: 0.22),
+                  color: context.pal.card,
+                  border: Border.all(color: Brand.success, width: 2),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -371,8 +373,8 @@ class _PaySheetState extends State<_PaySheet> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Brand.blueDark, width: 1.4),
-                  color: Brand.blueDark.withValues(alpha: 0.22),
+                  color: context.pal.card,
+                  border: Border.all(color: Brand.blueDark, width: 2),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

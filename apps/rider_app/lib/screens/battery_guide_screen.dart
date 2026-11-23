@@ -54,13 +54,14 @@ class BatteryGuideScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF4D6),
+                color: context.pal.card,
                 borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.pal.warn, width: 2),
               ),
-              child: const Text(
+              child: Text(
                 'Many phones close apps in the background to save battery. If that happens, you will miss new jobs and customers cannot see where you are. Do these steps once.',
                 style: TextStyle(
-                  color: Color(0xFF5C4600),
+                  color: context.pal.ink,
                   height: 1.4,
                   fontWeight: FontWeight.w600,
                 ),

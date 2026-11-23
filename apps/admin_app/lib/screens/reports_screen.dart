@@ -300,7 +300,7 @@ class _Line extends StatelessWidget {
           v,
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: warn ? const Color(0xFF8A6D00) : null,
+            color: warn ? Brand.warning : null,
           ),
         ),
       ],

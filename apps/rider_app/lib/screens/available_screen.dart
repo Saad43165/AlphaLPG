@@ -1,3 +1,4 @@
+import 'package:alpha_ui/alpha_ui.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -58,21 +59,19 @@ class AvailableScreen extends StatelessWidget {
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF4D6),
+                color: context.pal.card,
                 borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.pal.warn, width: 2),
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    color: Color(0xFF8A6D00),
-                  ),
+                  Icon(Icons.info_outline_rounded, color: context.pal.warn),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'You are offline, so you cannot accept orders.',
                       style: TextStyle(
-                        color: Color(0xFF5C4600),
+                        color: context.pal.ink,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

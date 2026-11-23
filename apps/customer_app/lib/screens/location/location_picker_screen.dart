@@ -525,8 +525,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     margin: const EdgeInsets.only(top: 10),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: const Color(0xFFFFEEEB),
+      color: context.pal.card,
       borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: Brand.danger, width: 2),
     ),
     child: const Row(
       children: [

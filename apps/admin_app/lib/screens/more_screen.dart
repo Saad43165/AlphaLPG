@@ -226,7 +226,7 @@ class _Quick extends StatelessWidget {
                   backgroundColor: Brand.cylinderRed,
                   child: CircleAvatar(
                     radius: 24,
-                    backgroundColor: Brand.blue.withValues(alpha: 0.22),
+                    backgroundColor: context.pal.tint,
                     child: Icon(icon, color: Brand.blueDark, size: 26),
                   ),
                 ),
@@ -313,7 +313,7 @@ class _Item extends StatelessWidget {
       label: Text('$badge'),
       backgroundColor: Brand.cylinderRed,
       child: CircleAvatar(
-        backgroundColor: Brand.blue.withValues(alpha: 0.22),
+        backgroundColor: context.pal.tint,
         child: Icon(icon, color: Brand.blueDark),
       ),
     ),
@@ -555,7 +555,11 @@ class QuotesScreen extends StatelessWidget {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Brand.success.withValues(alpha: 0.22),
+                              color: context.pal.card,
+                              border: Border.all(
+                                color: Brand.success,
+                                width: 2,
+                              ),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(

@@ -248,8 +248,9 @@ class _CompleteSheetState extends State<_CompleteSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: context.pal.warnBg,
+                      color: context.pal.card,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.pal.warn, width: 2),
                     ),
                     child: Text(
                       _cashValue < due

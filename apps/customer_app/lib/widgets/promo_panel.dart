@@ -60,7 +60,8 @@ class _PromoPanelState extends State<PromoPanel> {
           Container(
             padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
             decoration: BoxDecoration(
-              color: Brand.success.withValues(alpha: 0.22),
+              color: context.pal.card,
+              border: Border.all(color: Brand.success, width: 2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(

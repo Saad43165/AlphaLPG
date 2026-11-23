@@ -9,6 +9,7 @@ import '../widgets/common.dart';
 import '../widgets/job_card.dart';
 import 'job_actions.dart';
 import 'job_detail_screen.dart';
+import 'stops_map_screen.dart';
 
 /// Jobs this rider has accepted and still has to do.
 class JobsScreen extends StatelessWidget {
@@ -44,7 +45,34 @@ class JobsScreen extends StatelessWidget {
         itemCount: jobs.length + 1,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, i) {
-          if (i == 0) return _TodayStrip(session: s);
+          if (i == 0) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _TodayStrip(session: s),
+                if (s.jobs.any((o) => o.address.hasLocation)) ...[
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                    ),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const StopsMapScreen(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.map_rounded),
+                    label: Text(
+                      s.jobs.length >= 2
+                          ? 'See all ${s.jobs.length} stops on the map'
+                          : 'See my stop on the map',
+                    ),
+                  ),
+                ],
+              ],
+            );
+          }
           final o = jobs[i - 1];
           return JobCard(
             order: o,

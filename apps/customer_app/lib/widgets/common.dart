@@ -242,7 +242,7 @@ class CartBar extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: Colors.white,
                               fontSize: 12.5,
                             ),
                           ),
@@ -342,7 +342,7 @@ class StatusPill extends StatelessWidget {
   final OrderStatus status;
 
   static Color colorOf(OrderStatus s) => switch (s) {
-    OrderStatus.placed => const Color(0xFF8A6D00),
+    OrderStatus.placed => Brand.warning,
     OrderStatus.confirmed || OrderStatus.assigned => Brand.blueDark,
     OrderStatus.outForDelivery => const Color(0xFF6A3FC1),
     OrderStatus.delivered => Brand.success,
@@ -355,12 +355,16 @@ class StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.22),
+        color: Tone.fill(c),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         status.label,
-        style: TextStyle(color: c, fontWeight: FontWeight.w700, fontSize: 12),
+        style: TextStyle(
+          color: Tone.on(Tone.fill(c)),
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
       ),
     );
   }
@@ -412,7 +416,7 @@ class EmptyState extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundColor: Brand.blue.withValues(alpha: 0.22),
+            backgroundColor: context.pal.tint,
             child: Icon(icon, size: 40, color: Brand.blueDark),
           ),
           const SizedBox(height: 16),

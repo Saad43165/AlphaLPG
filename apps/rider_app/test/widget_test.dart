@@ -602,6 +602,30 @@ void main() {
     },
   );
 
+  testWidgets('stops map shows the next stop with a navigate button', (
+    tester,
+  ) async {
+    final rig = Rig();
+    await addRider(tester, rig);
+    final id = await placeOrder(tester, rig);
+    await tester.runAsync(() async {
+      await rig.backend.riders.setOnline('r1', true);
+      await rig.backend.orders.acceptOrder(
+        id,
+        riderId: 'r1',
+        name: 'Imran Khan',
+        phone: '0300',
+      );
+    });
+    await pumpRider(tester, rig);
+    await signIn(tester);
+    await tapText(tester, 'See my stop on the map');
+    expect(find.text('My stops'), findsOneWidget);
+    expect(find.text('NEXT STOP'), findsOneWidget);
+    expect(find.text('Bilal Ahmed'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final dark in [false, true]) {
     testWidgets('rider screens at large text, ${dark ? 'dark' : 'light'}', (
       tester,

@@ -165,7 +165,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Brand.blueDeep.withValues(alpha: 0.30),
+                      color: Brand.blueDeep.withValues(alpha: 0.28),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),

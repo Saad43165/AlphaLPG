@@ -18,6 +18,79 @@ import '../../widgets/common.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/live.dart';
 
+/// "Find an order": type the order number (or the last few characters).
+Future<void> _findOrder(BuildContext context, String uid) async {
+  final backend = context.read<Backend>();
+  final router = GoRouter.of(context);
+  final ctrl = TextEditingController();
+  String? error;
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) => AlertDialog(
+        title: const Text('Find an order'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Type the order number you were given, for example AL-261124-TI3C.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: tr('Order number'),
+                prefixIcon: const Icon(Icons.tag_rounded),
+                errorText: error == null ? null : tr(error!),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final q = ctrl.text.toUpperCase().replaceAll(
+                RegExp(r'[^A-Z0-9]'),
+                '',
+              );
+              if (q.length < 3) {
+                setState(() => error = 'Type at least 3 letters or numbers');
+                return;
+              }
+              final orders = await backend.orders
+                  .watchCustomerOrders(uid)
+                  .first;
+              final hit = orders.where(
+                (o) => o.displayNumber
+                    .toUpperCase()
+                    .replaceAll(RegExp(r'[^A-Z0-9]'), '')
+                    .contains(q),
+              );
+              if (hit.isEmpty) {
+                setState(
+                  () => error = 'No order with that number on your account',
+                );
+                return;
+              }
+              if (ctx.mounted) Navigator.pop(ctx);
+              router.push('/orders/${hit.first.id}');
+            },
+            child: const Text('Find'),
+          ),
+        ],
+      ),
+    ),
+  );
+  ctrl.dispose();
+}
+
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
 
@@ -27,7 +100,15 @@ class OrdersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My orders'),
-        actions: const [CartButton()],
+        actions: [
+          if (uid != null)
+            IconButton(
+              tooltip: tr('Find an order'),
+              icon: const Icon(Icons.search_rounded),
+              onPressed: () => _findOrder(context, uid),
+            ),
+          const CartButton(),
+        ],
       ),
       body: uid == null
           ? EmptyState(
@@ -240,7 +321,7 @@ class ActiveOrderCard extends StatelessWidget {
         color: pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
         boxShadow: pal.shadow,
-        border: Border.all(color: color.withValues(alpha: 0.35), width: 1.5),
+        border: Border.all(color: color, width: 2),
       ),
       child: Material(
         color: Colors.transparent,
@@ -300,45 +381,61 @@ class ActiveOrderCard extends StatelessWidget {
                 ),
                 if (o.paymentMethod.isPrepaid &&
                     o.paymentStatus != PaymentStatus.paid) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+                    padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
                     decoration: BoxDecoration(
-                      color: context.pal.warnBg,
-                      borderRadius: BorderRadius.circular(12),
+                      color: o.paymentIssue.isNotEmpty
+                          ? Brand.danger
+                          : o.receiptAt != null
+                          ? Brand.blueDark
+                          : const Color(0xFFD9480F),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.account_balance_wallet_rounded,
-                          size: 18,
-                          color: context.pal.warn,
+                          size: 22,
+                          color: Colors.white,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             o.paymentIssue.isNotEmpty
-                                ? 'Payment problem: tap to fix'
+                                ? 'Payment problem'
                                 : o.receiptAt != null
-                                ? 'Payment sent: being checked'
+                                ? 'Payment being checked'
                                 : o.paymentRequest != null
-                                ? 'Payment details are ready'
-                                : 'Waiting for payment details',
+                                ? 'Pay ${formatRupees(o.total)}'
+                                : 'Payment details coming',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                        Flexible(
-                          child: TextButton(
-                            onPressed: () =>
-                                context.push('/orders/${o.id}/payment'),
-                            child: Text(
-                              o.paymentRequest != null && o.receiptAt == null
-                                  ? 'Pay now'
-                                  : 'Open',
-                            ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Brand.navy,
+                            minimumSize: const Size(0, 40),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                          onPressed: () =>
+                              context.push('/orders/${o.id}/payment'),
+                          child: Text(
+                            o.paymentIssue.isNotEmpty
+                                ? 'Fix'
+                                : o.paymentRequest != null &&
+                                      o.receiptAt == null
+                                ? 'Pay now'
+                                : 'View',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
                           ),
                         ),
                       ],
@@ -422,7 +519,7 @@ class OrderTile extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor: color.withValues(alpha: 0.22),
+                        backgroundColor: context.pal.tint,
                         child: Icon(
                           delivered ? Icons.check_rounded : Icons.close_rounded,
                           color: color,
@@ -536,7 +633,11 @@ class OrderTile extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5A623).withValues(alpha: 0.14),
+                        color: context.pal.card,
+                        border: Border.all(
+                          color: const Color(0xFFF5A623),
+                          width: 2,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(

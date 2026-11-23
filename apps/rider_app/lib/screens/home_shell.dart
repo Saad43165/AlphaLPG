@@ -134,9 +134,7 @@ class _Header extends StatelessWidget {
                       online
                           ? 'You are online and can take orders'
                           : 'You are offline',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.88),
-                      ),
+                      style: TextStyle(color: Colors.white),
                     ),
                   ],
                 ),
@@ -146,7 +144,7 @@ class _Header extends StatelessWidget {
                   Switch(
                     value: online,
                     activeTrackColor: Brand.success,
-                    inactiveTrackColor: Colors.white.withValues(alpha: 0.25),
+                    inactiveTrackColor: Brand.blueDeep,
                     onChanged: (v) async {
                       HapticFeedback.selectionClick();
                       if (!v &&
@@ -223,27 +221,29 @@ class _LocationBanner extends StatelessWidget {
     if (problem != null) {
       return Container(
         width: double.infinity,
-        color: const Color(0xFFFFEEEB),
+        color: Brand.danger,
         padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
         child: Row(
           children: [
-            const Icon(Icons.location_off_rounded, color: Brand.danger),
+            const Icon(Icons.location_off_rounded, color: Colors.white),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 problem,
                 style: const TextStyle(
-                  color: Color(0xFF7A1F1F),
-                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
               ),
             ),
             TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
               onPressed: session.tracker.openSettings,
               child: const Text('Settings'),
             ),
             TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
               onPressed: session.retryTracking,
               child: const Text('Retry'),
             ),
@@ -260,7 +260,7 @@ class _LocationBanner extends StatelessWidget {
           ? (Brand.danger, Icons.location_off_rounded, err)
           : sent == null
           ? (
-              const Color(0xFF8A6D00),
+              Brand.warning,
               Icons.location_searching_rounded,
               'Finding your position…',
             )
@@ -271,7 +271,10 @@ class _LocationBanner extends StatelessWidget {
             );
       return Container(
         width: double.infinity,
-        color: color.withValues(alpha: 0.22),
+        decoration: BoxDecoration(
+          color: context.pal.card,
+          border: Border.all(color: color, width: 2),
+        ),
         padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
         child: Row(
           children: [
@@ -317,7 +320,10 @@ class _Notices extends StatelessWidget {
       VoidCallback? onClose,
     }) => Container(
       width: double.infinity,
-      color: color.withValues(alpha: 0.22),
+      decoration: BoxDecoration(
+        color: context.pal.card,
+        border: Border.all(color: color, width: 2),
+      ),
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
       child: Row(
         children: [
@@ -354,7 +360,7 @@ class _Notices extends StatelessWidget {
         if (closed)
           bar(
             Icons.storefront_rounded,
-            const Color(0xFF8A6D00),
+            Brand.warning,
             'Alpha LPG is closed for orders. No new jobs will come in.',
           ),
       ],
@@ -370,27 +376,24 @@ class _BatteryTip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
-    color: const Color(0xFFFFF4D6),
+    color: Brand.flame,
     padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
     child: Row(
       children: [
-        const Icon(
-          Icons.battery_alert_rounded,
-          color: Color(0xFF8A6D00),
-          size: 20,
-        ),
+        const Icon(Icons.battery_alert_rounded, color: Brand.navy, size: 20),
         const SizedBox(width: 10),
         const Expanded(
           child: Text(
             'Do this once so you never miss a job.',
             style: TextStyle(
-              color: Color(0xFF5C4600),
+              color: Brand.navy,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),
           ),
         ),
         TextButton(
+          style: TextButton.styleFrom(foregroundColor: Brand.navy),
           onPressed: () {
             session.dismissBatteryTip();
             Navigator.of(context).push(
@@ -405,11 +408,7 @@ class _BatteryTip extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           tooltip: 'Close',
           onPressed: session.dismissBatteryTip,
-          icon: const Icon(
-            Icons.close_rounded,
-            size: 18,
-            color: Color(0xFF8A6D00),
-          ),
+          icon: const Icon(Icons.close_rounded, size: 18, color: Brand.warning),
         ),
       ],
     ),

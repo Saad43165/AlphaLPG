@@ -72,7 +72,8 @@ class OrderDetailScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Brand.blueDark.withValues(alpha: 0.22),
+                  color: context.pal.card,
+                  border: Border.all(color: Brand.blueDark, width: 2),
                   borderRadius: BorderRadius.circular(Brand.radius),
                 ),
                 child: Column(
@@ -148,7 +149,7 @@ class OrderDetailScreen extends StatelessWidget {
                           ? Icons.check_circle_rounded
                           : Icons.hourglass_top_rounded,
                       paid ? 'Paid' : 'Not paid yet',
-                      color: paid ? Brand.success : const Color(0xFF8A6D00),
+                      color: paid ? Brand.success : Brand.warning,
                     ),
                   ],
                 ),
@@ -402,7 +403,7 @@ class OrderDetailScreen extends StatelessWidget {
                 _KV(
                   'Status',
                   paid ? 'Paid' : 'Not paid yet',
-                  valueColor: paid ? Brand.success : const Color(0xFF8A6D00),
+                  valueColor: paid ? Brand.success : Brand.warning,
                 ),
                 if (o.paymentReference.isNotEmpty)
                   _KV(
@@ -547,7 +548,8 @@ class OrderDetailScreen extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: Brand.blueDark.withValues(alpha: 0.22),
+                        color: context.pal.card,
+                        border: Border.all(color: Brand.blueDark, width: 2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
@@ -674,9 +676,9 @@ class _NextStep extends StatelessWidget {
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.22),
+        color: context.pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: color, width: 2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -802,7 +804,8 @@ class _Section extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: Brand.blueDark.withValues(alpha: 0.22),
+                    color: context.pal.card,
+                    border: Border.all(color: Brand.blueDark, width: 2),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, size: 18, color: Brand.blueDark),
@@ -933,17 +936,14 @@ class _Note extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: const Color(0xFF8A6D00).withValues(alpha: 0.12),
+      color: context.pal.card,
+      border: Border.all(color: Brand.warning, width: 2),
       borderRadius: BorderRadius.circular(12),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(
-          Icons.info_outline_rounded,
-          size: 18,
-          color: Color(0xFF8A6D00),
-        ),
+        const Icon(Icons.info_outline_rounded, size: 18, color: Brand.warning),
         const SizedBox(width: 8),
         Expanded(child: Text(text, style: const TextStyle(height: 1.35))),
       ],
@@ -1422,10 +1422,7 @@ class RiderPicker extends StatelessWidget {
                   for (final r in list)
                     ListTile(
                       leading: CircleAvatar(
-                        backgroundColor:
-                            (r.online ? Brand.success : Colors.grey).withValues(
-                              alpha: 0.15,
-                            ),
+                        backgroundColor: context.pal.tint,
                         child: Icon(
                           Icons.two_wheeler,
                           color: r.online ? Brand.success : Colors.grey,

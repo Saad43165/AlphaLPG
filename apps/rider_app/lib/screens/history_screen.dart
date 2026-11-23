@@ -47,10 +47,14 @@ class HistoryScreen extends StatelessWidget {
         children: [
           // Cash the rider still has to hand over: the thing that matters.
           Material(
-            color: pending > 0
-                ? const Color(0xFFFFF4D6)
-                : Brand.success.withValues(alpha: 0.22),
-            borderRadius: BorderRadius.circular(Brand.radius),
+            color: context.pal.card,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Brand.radius),
+              side: BorderSide(
+                color: pending > 0 ? context.pal.warn : Brand.success,
+                width: 2,
+              ),
+            ),
             child: InkWell(
               borderRadius: BorderRadius.circular(Brand.radius),
               onTap: () => Navigator.of(context).push(
@@ -69,9 +73,7 @@ class HistoryScreen extends StatelessWidget {
                       pending > 0
                           ? Icons.account_balance_wallet_rounded
                           : Icons.verified_rounded,
-                      color: pending > 0
-                          ? const Color(0xFF8A6D00)
-                          : Brand.success,
+                      color: pending > 0 ? Brand.warning : Brand.success,
                       size: 30,
                     ),
                     const SizedBox(width: 14),

@@ -18,7 +18,7 @@ abstract final class Brand {
   static const whatsapp = Color(0xFF25D366);
   static const success = Color(0xFF1E9E5A);
   static const danger = Color(0xFFC62828);
-  static const warning = Color(0xFF9A6B00);
+  static const warning = Color(0xFFD9480F);
 
   static const radius = 18.0;
 
@@ -210,7 +210,9 @@ abstract final class Brand {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         height: 68,
-        indicatorColor: blue.withValues(alpha: dark ? 0.25 : 0.16),
+        indicatorColor: dark
+            ? const Color(0xFF1F5C99)
+            : const Color(0xFFBFDDF5),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (s) => TextStyle(
             fontFamily: 'Inter',
@@ -328,7 +330,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     warnBg: const Color(0xFFFFE9B8),
     shadow: [
       BoxShadow(
-        color: Brand.navy.withValues(alpha: 0.10),
+        color: Brand.navy.withValues(alpha: 0.28),
         blurRadius: 16,
         offset: const Offset(0, 6),
       ),
@@ -359,4 +361,26 @@ class AppPalette extends ThemeExtension<AppPalette> {
 extension PaletteContext on BuildContext {
   /// Light/dark colours for the current theme. Rebuilds when the theme changes.
   AppPalette get pal => Theme.of(this).extension<AppPalette>()!;
+}
+
+/// Solid (never see-through) colours for status chips and notices.
+abstract final class Tone {
+  /// A deep, fully opaque version of [hue] that white text can sit on.
+  static Color fill(Color hue) {
+    var c = hue;
+    for (var i = 0; i < 12 && _contrast(c, Colors.white) < 4.5; i++) {
+      c = Color.lerp(c, Colors.black, 0.1)!;
+    }
+    return c;
+  }
+
+  /// Text colour for a chip filled with [fill]: white, or navy on light fills.
+  static Color on(Color fill) =>
+      _contrast(fill, Colors.white) >= 3.2 ? Colors.white : Brand.navy;
+
+  static double _contrast(Color a, Color b) {
+    final la = a.computeLuminance(), lb = b.computeLuminance();
+    final hi = la > lb ? la : lb, lo = la > lb ? lb : la;
+    return (hi + 0.05) / (lo + 0.05);
+  }
 }

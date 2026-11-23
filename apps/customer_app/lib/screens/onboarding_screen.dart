@@ -194,7 +194,7 @@ class _SlideView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: Brand.navy.withValues(alpha: 0.18),
+                      color: Brand.navy.withValues(alpha: 0.28),
                       blurRadius: 30,
                       offset: const Offset(0, 14),
                     ),

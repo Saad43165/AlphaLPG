@@ -50,8 +50,7 @@ class RidersScreen extends StatelessWidget {
                     height: 52,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: (live > 0 ? Brand.success : Brand.danger)
-                          .withValues(alpha: 0.14),
+                      color: context.pal.tint,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
@@ -184,7 +183,7 @@ class _RiderCard extends StatelessWidget {
         : r.online
         ? (
             'No signal · last seen ${timeAgo(r.lastSeen)}',
-            const Color(0xFF8A6D00),
+            Brand.warning,
             Icons.signal_wifi_off_rounded,
           )
         : ('Offline', pal.muted, Icons.circle_outlined);
@@ -212,8 +211,7 @@ class _RiderCard extends StatelessWidget {
                 ),
                 child: CircleAvatar(
                   radius: 22,
-                  backgroundColor: (live ? Brand.success : Colors.grey)
-                      .withValues(alpha: 0.15),
+                  backgroundColor: context.pal.tint,
                   child: Icon(
                     Icons.two_wheeler,
                     color: live ? Brand.success : Colors.grey,

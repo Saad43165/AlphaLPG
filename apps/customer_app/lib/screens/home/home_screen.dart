@@ -253,7 +253,7 @@ class _Header extends StatelessWidget {
                     Text(
                       'Full, safety-checked cylinders delivered to your door across Lahore.',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.88),
+                        color: Colors.white,
                         fontSize: 15,
                         height: 1.35,
                       ),
@@ -297,7 +297,7 @@ class _DeliverToPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.white.withValues(alpha: 0.16),
+    color: Brand.blueDeep,
     borderRadius: BorderRadius.circular(14),
     child: InkWell(
       borderRadius: BorderRadius.circular(14),
@@ -317,7 +317,7 @@ class _DeliverToPill extends StatelessWidget {
                   Text(
                     'DELIVER TO',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.75),
+                      color: Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1,
@@ -681,13 +681,9 @@ class _ShopStatus extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: pal.isDark
-              ? tone.withValues(alpha: 0.16)
-              : (status.state == OrderingState.paused
-                    ? const Color(0xFFFFEEEB)
-                    : const Color(0xFFFFF4D6)),
+          color: pal.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: tone.withValues(alpha: 0.5)),
+          border: Border.all(color: tone, width: 2),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -784,7 +780,7 @@ class _PlanDueCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pal = context.pal;
     return Material(
-      color: context.pal.warnBg,
+      color: Brand.flame,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -793,7 +789,7 @@ class _PlanDueCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              Icon(Icons.event_repeat_rounded, color: context.pal.warn),
+              const Icon(Icons.event_repeat_rounded, color: Brand.navy),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -801,16 +797,19 @@ class _PlanDueCard extends StatelessWidget {
                   children: [
                     const Text(
                       'Time for your refill',
-                      style: TextStyle(fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Brand.navy,
+                      ),
                     ),
-                    Text(
+                    const Text(
                       'Your plan is due. Order in one tap.',
-                      style: TextStyle(color: pal.muted, fontSize: 13),
+                      style: TextStyle(color: Brand.navy, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded),
+              const Icon(Icons.chevron_right_rounded, color: Brand.navy),
             ],
           ),
         ),
@@ -1028,9 +1027,7 @@ class _BusinessCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     'Scheduled 45.4kg deliveries, bulk LPG and monthly billing.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
+                    style: TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 12),
                   const Row(

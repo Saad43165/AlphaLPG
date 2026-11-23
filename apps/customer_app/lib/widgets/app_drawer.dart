@@ -183,7 +183,7 @@ class _Header extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      backgroundColor: Brand.blueDeep,
                       child: const Icon(
                         Icons.person_rounded,
                         color: Colors.white,
@@ -211,9 +211,7 @@ class _Header extends StatelessWidget {
                                 : prettyPkMobile(p.phone),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.85),
-                            ),
+                            style: TextStyle(color: Colors.white),
                           ),
                         ],
                       ),
@@ -232,10 +230,7 @@ class _Header extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Sign in to order, track and save your locations.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    height: 1.35,
-                  ),
+                  style: TextStyle(color: Colors.white, height: 1.35),
                 ),
                 const SizedBox(height: 14),
                 FilledButton(
@@ -282,9 +277,7 @@ class _Tile extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: (color ?? Brand.blueDark).withValues(
-                    alpha: pal.isDark ? 0.22 : 0.1,
-                  ),
+                  color: pal.tint,
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(
