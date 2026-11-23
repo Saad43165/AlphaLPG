@@ -400,7 +400,7 @@ void main() {
       rig.tracker!.shared = DateTime.now();
       rig.tracker!.notifyListeners();
       await tester.pumpAndSettle();
-      expect(find.textContaining('Sharing live location'), findsOneWidget);
+      expect(find.textContaining('Live location is on'), findsOneWidget);
     },
   );
 
