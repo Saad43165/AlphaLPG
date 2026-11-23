@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'screens/chat_screen.dart';
 import 'screens/home_shell.dart';
+import 'screens/tour_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/status_screens.dart';
 import 'services/backend.dart';
@@ -97,6 +98,7 @@ class _Root extends StatelessWidget {
     if (!s.signedIn) return const LoginScreen();
     if (!s.profileLoaded) return const LoadingScreen();
     if (!s.isRider) return const NotRiderScreen();
+    if (s.showTour) return RiderTour(onDone: s.finishTour);
     return const HomeShell();
   }
 }

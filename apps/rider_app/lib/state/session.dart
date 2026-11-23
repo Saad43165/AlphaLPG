@@ -336,6 +336,16 @@ class RiderSession extends ChangeNotifier {
   bool _selfToggled = false;
   Timer? _beat;
 
+  /// The welcome tour shows once, the first time the app is opened. Without
+  /// saved settings (tests) it is skipped.
+  late bool showTour = prefs != null && prefs!.getBool('tourSeen') != true;
+
+  void finishTour() {
+    prefs?.setBool('tourSeen', true);
+    showTour = false;
+    notifyListeners();
+  }
+
   /// The one-time "keep the app running" tip.
   bool get showBatteryTip => prefs?.getBool('batteryTipDone') != true;
 

@@ -7,6 +7,7 @@ import 'package:alpha_core/alpha_core.dart' show LpgOrder;
 
 import 'screens/chat_screen.dart';
 import 'screens/home_shell.dart';
+import 'screens/tour_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/order_detail_screen.dart';
 import 'screens/status_screens.dart';
@@ -102,6 +103,7 @@ class _Root extends StatelessWidget {
     if (!s.signedIn) return const LoginScreen();
     if (s.isAdmin == null) return const LoadingScreen();
     if (s.isAdmin != true) return const NotAdminScreen();
+    if (s.showTour) return AdminTour(onDone: s.finishTour);
     return const HomeShell();
   }
 }

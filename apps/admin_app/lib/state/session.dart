@@ -215,6 +215,16 @@ class AdminSession extends ChangeNotifier {
   String? get uid => _uid;
   bool get signedIn => _uid != null;
 
+  /// The welcome tour shows once, the first time the app is opened. Without
+  /// saved settings (tests) it is skipped.
+  late bool showTour = prefs != null && prefs!.getBool('tourSeen') != true;
+
+  void finishTour() {
+    prefs?.setBool('tourSeen', true);
+    showTour = false;
+    notifyListeners();
+  }
+
   void setThemeMode(ThemeMode m) {
     themeMode.value = m;
     prefs?.setString('theme', m.name);

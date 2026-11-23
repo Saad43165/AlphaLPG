@@ -16,6 +16,8 @@ void main() {
     expect(find.text('Delivered to your door'), findsOneWidget);
     await tapText(tester, 'Next');
     expect(find.text('Checked before it leaves'), findsOneWidget);
+    await tapText(tester, 'Next');
+    expect(find.text('Stoves and regulators too'), findsOneWidget);
     await tapText(tester, 'Get started');
     expect(find.text('Need LPG today?'), findsOneWidget);
   });

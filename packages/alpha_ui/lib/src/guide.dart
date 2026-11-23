@@ -38,6 +38,7 @@ class GuidePage extends StatefulWidget {
     required this.sections,
     this.contactPhone = '',
     this.startInUrdu = false,
+    this.onTour,
   });
 
   final Bi appName;
@@ -48,6 +49,9 @@ class GuidePage extends StatefulWidget {
   /// Shown at the bottom as "Need help? Call the shop".
   final String contactPhone;
   final bool startInUrdu;
+
+  /// Shows a "Watch the quick tour" button that replays the welcome tour.
+  final VoidCallback? onTour;
 
   @override
   State<GuidePage> createState() => _GuidePageState();
@@ -119,6 +123,17 @@ class _GuidePageState extends State<GuidePage> {
                     onSelectionChanged: (v) => setState(() => _urdu = v.first),
                   ),
                 ),
+                if (widget.onTour != null) ...[
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: widget.onTour,
+                    icon: const Icon(Icons.play_circle_outline_rounded),
+                    label: Text(
+                      _urdu ? 'مختصر ٹور دیکھیں' : 'Watch the quick tour',
+                      style: TextStyle(fontFamily: _urdu ? _urduFont : null),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 // Welcome card.
                 Container(

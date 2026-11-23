@@ -45,6 +45,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'Checked before it leaves',
       'Every cylinder is safety-checked by our team. Pay cash on delivery or by JazzCash, Easypaisa or bank.',
     ),
+    (
+      'assets/brand/photo_depot.jpg',
+      Icons.soup_kitchen_rounded,
+      'Stoves and regulators too',
+      'Add a stove or regulator to your gas order. One delivery, one bill.',
+    ),
   ];
 
   bool get _last => _index == _slides.length - 1;

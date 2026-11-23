@@ -1,6 +1,8 @@
 import 'package:alpha_ui/alpha_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'tour_screen.dart';
+
 /// "How the Rider app works", in English and Urdu.
 class GuideScreen extends StatelessWidget {
   const GuideScreen({super.key, this.shopPhone = ''});
@@ -8,6 +10,11 @@ class GuideScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GuidePage(
+    onTour: () => Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (c) => RiderTour(onDone: () => Navigator.of(c).pop()),
+      ),
+    ),
     contactPhone: shopPhone,
     appName: const Bi('How the Rider app works', 'رائیڈر ایپ کیسے کام کرتی ہے'),
     headline: const Bi(
