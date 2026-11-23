@@ -415,7 +415,14 @@ class _ProductCard extends StatelessWidget {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: context.pal.tint,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          context.pal.tint,
+                          Color.lerp(context.pal.tint, context.pal.card, 0.55)!,
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Stack(
@@ -432,9 +439,11 @@ class _ProductCard extends StatelessWidget {
                         Positioned(
                           left: 8,
                           top: 8,
-                          child: product.isAccessory
-                              ? const SizedBox.shrink()
-                              : SizeBadge(product.sizeLabel),
+                          child: SizeBadge(
+                            product.isAccessory
+                                ? 'ACCESSORY'
+                                : product.sizeLabel,
+                          ),
                         ),
                         if (product.badge.isNotEmpty)
                           Positioned(

@@ -61,10 +61,8 @@ class _ProductSheetState extends State<_ProductSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (!p.isAccessory) ...[
-                        SizeBadge(p.sizeLabel),
-                        const SizedBox(height: 8),
-                      ],
+                      SizeBadge(p.isAccessory ? 'ACCESSORY' : p.sizeLabel),
+                      const SizedBox(height: 8),
                       Text(
                         p.name,
                         style: text.titleLarge?.copyWith(

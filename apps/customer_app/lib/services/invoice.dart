@@ -363,7 +363,9 @@ Future<Uint8List> buildInvoicePdf(
                         pw.SizedBox(
                           width: 46,
                           height: 44,
-                          child: a.cylinderFor(o.items[n].sizeKg) == null
+                          child:
+                              o.items[n].isAccessory ||
+                                  a.cylinderFor(o.items[n].sizeKg) == null
                               ? pw.SizedBox()
                               : pw.Image(
                                   a.cylinderFor(o.items[n].sizeKg)!,

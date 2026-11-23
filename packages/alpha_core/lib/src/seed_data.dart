@@ -58,6 +58,7 @@ abstract final class SeedData {
       name: 'Indus 2-Burner Glass Top Stove',
       sizeKg: 0,
       refillPrice: 14500,
+      imageAsset: 'assets/products/acc_indus_2burner.png',
       description: 'Toughened glass top, stainless steel body, brass burners and auto ignition.',
       segment: CustomerSegment.home,
       sortOrder: 5,
@@ -67,6 +68,7 @@ abstract final class SeedData {
       name: 'Germania Single Burner Stove',
       sizeKg: 0,
       refillPrice: 3800,
+      imageAsset: 'assets/products/acc_germania_1burner.png',
       description:
           'Stainless steel single burner LPG stove. Compact and easy to clean.',
       segment: CustomerSegment.home,
@@ -77,6 +79,7 @@ abstract final class SeedData {
       name: 'Eurogas LPG Regulator 22mm',
       sizeKg: 0,
       refillPrice: 1100,
+      imageAsset: 'assets/products/acc_eurogas_22mm.png',
       description: 'Low pressure regulator, 22mm, MS 1165:2008 certified. Fits domestic cylinders.',
       segment: CustomerSegment.home,
       sortOrder: 7,

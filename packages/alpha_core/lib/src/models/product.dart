@@ -47,6 +47,16 @@ class Product {
   /// been uploaded (so a new size always shows a sensible image).
   String get automaticImageAsset {
     if (imageAsset.isNotEmpty) return imageAsset;
+    if (isAccessory) {
+      // Photos of the sample stoves and regulator that ship with the apps;
+      // any other accessory uses an icon until its own photo is uploaded.
+      const photos = {
+        'acc-indus-2burner-glass': 'assets/products/acc_indus_2burner.png',
+        'acc-germania-1burner': 'assets/products/acc_germania_1burner.png',
+        'acc-eurogas-regulator-22mm': 'assets/products/acc_eurogas_22mm.png',
+      };
+      return photos[id] ?? '';
+    }
     const known = <(double, String)>[
       (6.0, 'assets/products/6kg.png'),
       (10.0, 'assets/products/10kg.png'),

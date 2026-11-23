@@ -475,7 +475,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     color: Brand.blueDark,
                   ),
                   title: Text(
-                    'Order summary · ${price.cylinders} cylinder${price.cylinders == 1 ? '' : 's'}',
+                    'Order summary · ${price.countLabel}',
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

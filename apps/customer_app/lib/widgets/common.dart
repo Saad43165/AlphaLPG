@@ -77,7 +77,7 @@ class ProductImage extends StatelessWidget {
         errorBuilder: (_, _, _) => fallback,
       );
     }
-    if (product.isAccessory) return fallback;
+    if (product.automaticImageAsset.isEmpty) return fallback;
     return Image.asset(
       product.automaticImageAsset,
       semanticLabel: product.name,
@@ -238,7 +238,7 @@ class CartBar extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${cart.count} cylinder${cart.count == 1 ? '' : 's'} in your cart',
+                            '${cart.count} item${cart.count == 1 ? '' : 's'} in your cart',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

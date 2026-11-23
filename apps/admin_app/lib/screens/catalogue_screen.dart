@@ -350,6 +350,7 @@ class _SampleAccessoriesState extends State<_SampleAccessories> {
                         sizeKg: 0,
                         refillPrice: p.refillPrice,
                         description: p.description,
+                        imageAsset: p.imageAsset,
                         segment: p.segment,
                         sortOrder: base + (++n),
                       ),

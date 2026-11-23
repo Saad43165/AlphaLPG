@@ -76,7 +76,7 @@ class ProductPicture extends StatelessWidget {
         errorBuilder: (_, _, _) => fallback,
       );
     }
-    if (product.isAccessory) return fallback;
+    if (product.automaticImageAsset.isEmpty) return fallback;
     return Image.asset(
       product.automaticImageAsset,
       height: height,
