@@ -45,7 +45,7 @@ void main() {
       await tester.pumpAndSettle();
       expectOnHome();
       expect(
-        find.text('1 cylinder in your cart'),
+        find.text('1 item in your cart'),
         findsOneWidget,
         reason: 'cart is kept',
       );

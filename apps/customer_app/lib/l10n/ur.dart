@@ -1042,8 +1042,8 @@ const Map<String, String> urTemplates = {
   'This goes privately to Alpha LPG for order {}.':
       'یہ آرڈر {} کے لیے صرف الفا ایل پی جی کو جاتا ہے۔',
   'Alpha LPG: {}': 'الفا ایل پی جی: {}',
-  'Keep {} empty cylinder ready': 'براہ کرم {1} خالی سلنڈر تیار رکھیں',
-  'Keep {} empty cylinders ready': 'براہ کرم {1} خالی سلنڈر تیار رکھیں',
+  'Keep {} empty cylinder ready': '{} خالی سلنڈر تیار رکھیں',
+  'Keep {} empty cylinders ready': '{} خالی سلنڈر تیار رکھیں',
   '{} star': '{1} ستارہ',
   '{} stars': '{1} ستارے',
   '{} · {} rating': '{1} · {2} ریٹنگ',
