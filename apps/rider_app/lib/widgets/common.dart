@@ -144,6 +144,11 @@ class Pill extends StatelessWidget {
   final String label;
   final Color color;
 
+  /// Readable text colour: lightened on dark screens.
+  Color _fg(BuildContext context) => context.pal.isDark
+      ? Color.lerp(color, Colors.white, 0.5)!
+      : Color.lerp(color, Colors.black, 0.12)!;
+
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -154,7 +159,7 @@ class Pill extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 15, color: color),
+        Icon(icon, size: 15, color: _fg(context)),
         const SizedBox(width: 5),
         Flexible(
           child: Text(
@@ -162,7 +167,7 @@ class Pill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: color,
+              color: _fg(context),
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),

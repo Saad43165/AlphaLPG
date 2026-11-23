@@ -424,6 +424,53 @@ void main() {
     expect(find.text('boss'), findsOneWidget);
   });
 
+  testWidgets('long item names never run out of the order card', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(720, 1600);
+    tester.view.devicePixelRatio = 2;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(tester.platformDispatcher.clearAllTestValues);
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    final b = _backend(store);
+    await tester.runAsync(() async {
+      final o = _order();
+      await b.orders.place(
+        LpgOrder(
+          customerId: o.customerId,
+          customerName: o.customerName,
+          customerPhone: o.customerPhone,
+          items: [
+            for (final n in const [
+              'Indus 2-Burner Glass Top Stove',
+              'Eurogas LPG Regulator 22mm',
+              'Germania Single Burner Stove',
+            ])
+              OrderItem(
+                productId: 'x',
+                name: n,
+                sizeKg: 0,
+                type: PurchaseType.refill,
+                unitPrice: 1000,
+                quantity: 17,
+              ),
+          ],
+          subtotal: 51000,
+          deliveryFee: 0,
+          total: 51000,
+          address: o.address,
+        ),
+      );
+    });
+    await tester.pumpWidget(AdminApp(backend: b));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.textContaining('Ali Raza').first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('empty shop offers to load the catalogue', (tester) async {
     tester.view.physicalSize = const Size(900, 1800);
     tester.view.devicePixelRatio = 1;

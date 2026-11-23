@@ -135,7 +135,7 @@ class Tag extends StatelessWidget {
       style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
-        color: dark ? Brand.navy : Colors.white,
+        color: color.computeLuminance() > 0.45 ? Brand.navy : Colors.white,
       ),
     ),
   );

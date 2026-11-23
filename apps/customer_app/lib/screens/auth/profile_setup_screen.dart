@@ -68,7 +68,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       final profile = CustomerProfile(
         uid: state.uid!,
         name: _name.text.trim(),
-        phone: backend.auth.phone ?? '',
+        phone: _phone(),
         type: _type,
         businessName: _type == CustomerSegment.business
             ? _business.text.trim()
@@ -91,15 +91,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
   }
 
-  String get _initials {
-    final parts = _name.text
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((e) => e.isNotEmpty);
-    if (parts.isEmpty) return '?';
-    final first = parts.first[0];
-    final last = parts.length > 1 ? parts.last[0] : '';
-    return (first + last).toUpperCase();
+  /// The number to save and show. Quick sign-in forgets the typed number when
+  /// the app restarts, so fall back to the one already on the profile.
+  String _phone() {
+    final fromAuth = context.read<Backend>().auth.phone ?? '';
+    if (fromAuth.isNotEmpty) return fromAuth;
+    return context.read<AppState>().profile?.phone ?? '';
   }
 
   static String _prettyPhone(String phone) {
@@ -126,7 +123,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final pal = context.pal;
-    final phone = context.read<Backend>().auth.phone ?? '';
+    final phone = _phone();
     final canSave = !_busy && (!widget.editing || _changed);
     return Scaffold(
       appBar: AppBar(
@@ -187,13 +184,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         child: CircleAvatar(
                           radius: 38,
                           backgroundColor: Brand.navy,
-                          child: Text(
-                            _initials,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                            ),
+                          child: const Icon(
+                            Icons.person_rounded,
+                            color: Colors.white,
+                            size: 46,
                           ),
                         ),
                       ),

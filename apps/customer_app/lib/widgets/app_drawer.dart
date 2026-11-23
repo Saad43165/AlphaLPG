@@ -163,12 +163,6 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = state.profile;
-    final initials = (p?.name ?? '')
-        .split(RegExp(r'\s+'))
-        .where((w) => w.isNotEmpty)
-        .take(2)
-        .map((w) => w[0].toUpperCase())
-        .join();
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -190,13 +184,10 @@ class _Header extends StatelessWidget {
                     CircleAvatar(
                       radius: 28,
                       backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      child: Text(
-                        initials.isEmpty ? '?' : initials,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 20,
-                        ),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        color: Colors.white,
+                        size: 32,
                       ),
                     ),
                     const SizedBox(width: 14),

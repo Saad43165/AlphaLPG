@@ -615,6 +615,36 @@ void main() {
       await addRider(tester, rig);
       final id = await placeOrder(tester, rig, method: PaymentMethod.easyPaisa);
       await placeOrder(tester, rig);
+      // An order of long-named accessories must stay inside its card.
+      await tester.runAsync(() async {
+        final o = sampleOrder();
+        await rig.backend.orders.place(
+          LpgOrder(
+            customerId: 'u1',
+            customerName: 'Bilal Ahmed',
+            customerPhone: '+923001234567',
+            items: [
+              for (final n in const [
+                'Indus 2-Burner Glass Top Stove',
+                'Eurogas LPG Regulator 22mm',
+                'Germania Single Burner Stove',
+              ])
+                OrderItem(
+                  productId: 'x',
+                  name: n,
+                  sizeKg: 0,
+                  type: PurchaseType.refill,
+                  unitPrice: 1000,
+                  quantity: 17,
+                ),
+            ],
+            subtotal: 51000,
+            deliveryFee: 0,
+            total: 51000,
+            address: o.address,
+          ),
+        );
+      });
       await tester.runAsync(() async {
         await rig.backend.riders.setOnline('r1', true);
         await rig.backend.orders.acceptOrder(

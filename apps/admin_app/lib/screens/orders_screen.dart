@@ -576,20 +576,32 @@ class OrderTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.propane_tank_rounded,
-                      size: 15,
-                      color: pal.muted,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(
+                        Icons.propane_tank_rounded,
+                        size: 15,
+                        color: pal.muted,
+                      ),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      o.itemsLine,
-                      style: TextStyle(color: pal.muted, fontSize: 13),
+                    Expanded(
+                      child: Text(
+                        o.itemsLine,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: pal.ink, fontSize: 13.5),
+                      ),
                     ),
-                    const SizedBox(width: 10),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
                     Icon(Icons.location_on_rounded, size: 15, color: pal.muted),
-                    const SizedBox(width: 2),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         o.areaLine,
@@ -619,33 +631,37 @@ class OrderTile extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Icon(
-                            Icons.two_wheeler,
-                            size: 17,
-                            color: o.riderName == null
-                                ? pal.muted
-                                : Brand.blueDark,
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              o.riderName ??
-                                  (o.status.isActive ? 'No rider yet' : '—'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: o.riderName == null
-                                    ? FontWeight.w500
-                                    : FontWeight.w700,
-                                fontSize: 13,
-                                color: o.riderName == null ? pal.muted : null,
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.two_wheeler,
+                                size: 17,
+                                color: o.riderName == null
+                                    ? pal.muted
+                                    : Brand.blueDark,
                               ),
-                            ),
+                              const SizedBox(width: 4),
+                              Text(
+                                o.riderName ??
+                                    (o.status.isActive ? 'No rider yet' : '—'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: o.riderName == null
+                                      ? FontWeight.w500
+                                      : FontWeight.w700,
+                                  fontSize: 13,
+                                  color: o.riderName == null ? pal.muted : null,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ],

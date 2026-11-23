@@ -55,16 +55,11 @@ class AccountScreen extends StatelessWidget {
                   contentPadding: const EdgeInsets.all(12),
                   leading: CircleAvatar(
                     radius: 26,
-                    backgroundColor: Brand.blue,
-                    child: Text(
-                      (p?.name.isNotEmpty ?? false)
-                          ? p!.name[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 20,
-                      ),
+                    backgroundColor: Brand.blueDark,
+                    child: const Icon(
+                      Icons.person_rounded,
+                      color: Colors.white,
+                      size: 30,
                     ),
                   ),
                   title: Text(

@@ -1551,7 +1551,7 @@ class _PayStatus extends StatelessWidget {
         ? o.status == OrderStatus.delivered
               ? (
                   Icons.hourglass_bottom_rounded,
-                  const Color(0xFF8A6D00),
+                  const Color(0xFFB45309),
                   'Delivered. Alpha LPG will confirm your cash payment here.',
                 )
               : (
@@ -1574,13 +1574,13 @@ class _PayStatus extends StatelessWidget {
         : o.paymentRequest != null && o.paymentReference.isEmpty
         ? (
             Icons.account_balance_wallet_rounded,
-            const Color(0xFF8A6D00),
+            const Color(0xFFB45309),
             'Pay $total using the details above, then add your receipt.',
           )
         : o.paymentReference.isEmpty
         ? (
             Icons.account_balance_wallet_rounded,
-            const Color(0xFF8A6D00),
+            const Color(0xFFB45309),
             'Send $total, then add your transaction ID so we can match it.',
           )
         : (
