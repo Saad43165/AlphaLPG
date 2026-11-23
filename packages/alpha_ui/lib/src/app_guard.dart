@@ -105,6 +105,9 @@ abstract final class ErrorReporter {
   ) {
     void report(Object error, StackTrace? stack) {
       final message = '$error'.split('\n').first;
+      // A dropped connection (a map tile or a photo that did not download) is
+      // the phone's internet, not a bug in the app: do not fill the log.
+      if (isNetworkNoise('$error')) return;
       final key = message.length > 120 ? message.substring(0, 120) : message;
       if (_count >= _max || !_seen.add(key)) return;
       _count++;
@@ -129,6 +132,17 @@ abstract final class ErrorReporter {
       return false;
     };
   }
+
+  /// True for plain "the internet dropped" errors.
+  @visibleForTesting
+  static bool isNetworkNoise(String text) =>
+      text.contains('SocketException') ||
+      text.contains('HandshakeException') ||
+      text.contains('Connection reset') ||
+      text.contains('Connection failed') ||
+      text.contains('Failed host lookup') ||
+      text.contains('TimeoutException') ||
+      text.contains('Connection closed');
 
   @visibleForTesting
   static void reset() {

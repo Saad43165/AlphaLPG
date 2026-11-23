@@ -43,4 +43,14 @@ void main() {
       ErrorReporter.reset();
     },
   );
+
+  test('dropped connections are not reported as app errors', () {
+    expect(
+      ErrorReporter.isNetworkNoise(
+        'ClientException with SocketException: Connection reset by peer',
+      ),
+      isTrue,
+    );
+    expect(ErrorReporter.isNetworkNoise('Null check operator used'), isFalse);
+  });
 }
