@@ -349,10 +349,7 @@ Future<void> editCoupon(BuildContext context, Coupon? existing) async {
               if (error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    error!,
-                    style: const TextStyle(color: Brand.danger),
-                  ),
+                  child: Text(error!, style: TextStyle(color: context.pal.red)),
                 ),
             ],
           ),
@@ -365,10 +362,7 @@ Future<void> editCoupon(BuildContext context, Coupon? existing) async {
                 await s.deleteCoupon(existing);
                 nav.pop();
               },
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Brand.danger),
-              ),
+              child: Text('Delete', style: TextStyle(color: context.pal.red)),
             ),
           TextButton(
             onPressed: () => Navigator.pop(d),

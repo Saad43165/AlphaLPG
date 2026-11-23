@@ -320,10 +320,7 @@ class JobDetailScreen extends StatelessWidget {
                     const Divider(height: 20),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.autorenew_rounded,
-                          color: Brand.blueDark,
-                        ),
+                        Icon(Icons.autorenew_rounded, color: context.pal.blue),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -398,7 +395,7 @@ class JobDetailScreen extends StatelessWidget {
             if (mine && o.status == OrderStatus.assigned) ...[
               FilledButton.icon(
                 onPressed: () => startDeliveryFlow(context, s, o),
-                icon: const Icon(Icons.two_wheeler_rounded),
+                icon: const Icon(Icons.local_shipping_rounded),
                 label: const Text('Start delivery'),
               ),
               const SizedBox(height: 8),
@@ -468,9 +465,12 @@ class JobDetailScreen extends StatelessWidget {
                     border: Border.all(color: Brand.success, width: 2),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.check_circle_rounded, color: Brand.success),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: context.pal.green,
+                      ),
                       SizedBox(width: 10),
                       Text(
                         'Customer told you are at the door',

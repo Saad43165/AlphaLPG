@@ -58,7 +58,7 @@ class RidersScreen extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 22,
-                        color: live > 0 ? Brand.success : Brand.danger,
+                        color: live > 0 ? context.pal.green : context.pal.red,
                       ),
                     ),
                   ),
@@ -117,7 +117,7 @@ class RidersScreen extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.only(top: 40),
                 child: EmptyState(
-                  icon: Icons.two_wheeler,
+                  icon: Icons.local_shipping_rounded,
                   title: 'No riders yet',
                   message: 'Add a rider. They sign in to the Rider app with the email and password you set.',
                 ),
@@ -172,7 +172,7 @@ class _RiderCard extends StatelessWidget {
         ? (
             'On the road · seen ${timeAgo(r.lastSeen)}',
             context.pal.warn,
-            Icons.two_wheeler_rounded,
+            Icons.local_shipping_rounded,
           )
         : live
         ? (
@@ -213,8 +213,8 @@ class _RiderCard extends StatelessWidget {
                   radius: 22,
                   backgroundColor: context.pal.tint,
                   child: Icon(
-                    Icons.two_wheeler,
-                    color: live ? Brand.success : Colors.grey,
+                    Icons.local_shipping_rounded,
+                    color: live ? context.pal.green : Colors.grey,
                   ),
                 ),
               ),
@@ -542,8 +542,8 @@ class _EditRiderState extends State<_EditRider> {
               const SizedBox(height: 10),
               Text(
                 _error!,
-                style: const TextStyle(
-                  color: Brand.danger,
+                style: TextStyle(
+                  color: context.pal.red,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -682,8 +682,8 @@ class _AddRiderState extends State<_AddRider> {
               const SizedBox(height: 10),
               Text(
                 _error!,
-                style: const TextStyle(
-                  color: Brand.danger,
+                style: TextStyle(
+                  color: context.pal.red,
                   fontWeight: FontWeight.w600,
                 ),
               ),

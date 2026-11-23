@@ -264,7 +264,7 @@ class _CompleteSheetState extends State<_CompleteSheet> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    const Icon(Icons.autorenew_rounded, color: Brand.blueDark),
+                    Icon(Icons.autorenew_rounded, color: context.pal.blue),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(

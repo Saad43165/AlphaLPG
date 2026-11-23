@@ -214,8 +214,8 @@ class CheckoutBar extends StatelessWidget {
                   child: Text(
                     problem!,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Brand.danger,
+                    style: TextStyle(
+                      color: context.pal.red,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -328,7 +328,7 @@ class FreeDeliveryMeter extends StatelessWidget {
                 done
                     ? Icons.celebration_rounded
                     : Icons.local_shipping_outlined,
-                color: done ? Brand.success : Brand.blueDark,
+                color: done ? context.pal.green : context.pal.blue,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -463,11 +463,11 @@ class _CartLineTile extends StatelessWidget {
                     ],
                   ),
                   if (!product.inStock)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 4),
                       child: Text(
                         'Out of stock: will be removed at checkout',
-                        style: TextStyle(color: Brand.danger, fontSize: 12),
+                        style: TextStyle(color: context.pal.red, fontSize: 12),
                       ),
                     ),
                   const SizedBox(height: 8),
@@ -681,7 +681,7 @@ class _InfoBox extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Brand.warning, size: 20),
+        Icon(icon, color: context.pal.orange, size: 20),
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: const TextStyle(height: 1.35))),
       ],

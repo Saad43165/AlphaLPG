@@ -102,11 +102,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                 padding: const EdgeInsets.only(top: 8),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.autorenew,
-                      size: 18,
-                      color: Brand.blueDark,
-                    ),
+                    Icon(Icons.autorenew, size: 18, color: context.pal.blue),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(

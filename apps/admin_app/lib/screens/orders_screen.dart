@@ -225,7 +225,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     minimumSize: const Size.fromHeight(52),
                   ),
                   onPressed: () => _giveToRider(s),
-                  icon: const Icon(Icons.two_wheeler_rounded),
+                  icon: const Icon(Icons.local_shipping_rounded),
                   label: Text(
                     'Give ${_picked.length} order${_picked.length == 1 ? '' : 's'} to a rider',
                   ),
@@ -239,7 +239,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             if (!_searching) const _ShopBar(),
             if (!_searching && s.waitingForRider.isNotEmpty)
               _PayBanner(
-                icon: Icons.two_wheeler_rounded,
+                icon: Icons.local_shipping_rounded,
                 text: s.waitingForRider.length == 1
                     ? '1 order has waited ${AdminSession.waitingMinutes}+ min for a rider'
                     : '${s.waitingForRider.length} orders have waited ${AdminSession.waitingMinutes}+ min for a rider',
@@ -310,7 +310,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     _Stat(
                       'On the road',
                       '${s.ordersIn([OrderStatus.outForDelivery]).length}',
-                      Icons.two_wheeler,
+                      Icons.local_shipping_rounded,
                       const Color(0xFF6A3FC1),
                     ),
                     _Stat(
@@ -362,10 +362,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             if (s.error != null)
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(
-                  s.error!,
-                  style: const TextStyle(color: Brand.danger),
-                ),
+                child: Text(s.error!, style: TextStyle(color: context.pal.red)),
               ),
             Expanded(
               child: !s.ordersLoaded
@@ -647,7 +644,7 @@ class OrderTile extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.two_wheeler,
+                                Icons.local_shipping_rounded,
                                 size: 17,
                                 color: o.riderName == null
                                     ? pal.muted

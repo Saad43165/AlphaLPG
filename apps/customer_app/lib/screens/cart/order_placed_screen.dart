@@ -111,7 +111,7 @@ class _Content extends StatelessWidget {
               'We are finding a rider for you.',
             ),
             OrderStatus.assigned => (
-              Icons.two_wheeler_rounded,
+              Icons.local_shipping_rounded,
               Brand.blueDark,
               'Rider assigned',
               '${o.riderName ?? 'Your rider'} is getting your cylinders ready.',
@@ -561,7 +561,7 @@ class _InfoRow extends StatelessWidget {
           color: context.pal.tint,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: Brand.blueDark, size: 20),
+        child: Icon(icon, color: context.pal.blue, size: 20),
       ),
       const SizedBox(width: 12),
       Expanded(

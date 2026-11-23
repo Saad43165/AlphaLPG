@@ -51,7 +51,7 @@ class ProductImage extends StatelessWidget {
           ? Icons.soup_kitchen_rounded
           : Icons.propane_tank_rounded,
       size: height * 0.7,
-      color: product.isAccessory ? Brand.blueDark : Brand.cylinderRed,
+      color: product.isAccessory ? context.pal.blue : context.pal.red,
     );
     // 1) the owner's own photo, 2) a web link, 3) the closest bundled picture.
     if (product.hasUploadedImage) {
@@ -417,7 +417,7 @@ class EmptyState extends StatelessWidget {
           CircleAvatar(
             radius: 40,
             backgroundColor: context.pal.tint,
-            child: Icon(icon, size: 40, color: Brand.blueDark),
+            child: Icon(icon, size: 40, color: context.pal.blue),
           ),
           const SizedBox(height: 16),
           Text(

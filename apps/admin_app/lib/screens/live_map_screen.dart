@@ -177,7 +177,9 @@ class _LiveMapScreenState extends State<LiveMapScreen> {
               o.riderName == null ? 'No rider yet' : 'Rider: ${o.riderName}',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: o.riderName == null ? Brand.danger : Brand.success,
+                color: o.riderName == null
+                    ? context.pal.red
+                    : context.pal.green,
               ),
             ),
             const SizedBox(height: 14),
@@ -337,7 +339,7 @@ class _LiveMapScreenState extends State<LiveMapScreen> {
                                   ],
                                 ),
                                 child: const Icon(
-                                  Icons.two_wheeler_rounded,
+                                  Icons.local_shipping_rounded,
                                   color: Colors.white,
                                   size: 22,
                                 ),
@@ -385,7 +387,7 @@ class _LiveMapScreenState extends State<LiveMapScreen> {
               runSpacing: 6,
               children: [
                 _Toggle(
-                  icon: Icons.two_wheeler_rounded,
+                  icon: Icons.local_shipping_rounded,
                   label:
                       '${riders.length} rider${riders.length == 1 ? '' : 's'}',
                   on: _ridersOn,

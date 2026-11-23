@@ -375,7 +375,7 @@ class _SegmentFilter extends StatelessWidget {
               avatar: Icon(
                 icon,
                 size: 16,
-                color: value == s ? Colors.white : Brand.blueDark,
+                color: value == s ? Colors.white : context.pal.blue,
               ),
               label: Text(label),
               selected: value == s,
@@ -673,7 +673,10 @@ class _ShopStatus extends StatelessWidget {
     final (IconData icon, Color tone) = switch (status.state) {
       OrderingState.paused => (Icons.block_rounded, Brand.danger),
       OrderingState.closedHours => (Icons.nightlight_round, context.pal.warn),
-      OrderingState.noRiders => (Icons.two_wheeler_rounded, context.pal.warn),
+      OrderingState.noRiders => (
+        Icons.local_shipping_rounded,
+        context.pal.warn,
+      ),
       OrderingState.open => (Icons.check, Brand.success),
     };
     return Padding(
@@ -841,7 +844,7 @@ class _ReorderRow extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              const Icon(Icons.replay_rounded, color: Brand.blueDark),
+              Icon(Icons.replay_rounded, color: context.pal.blue),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -904,9 +907,9 @@ class _TrackingCard extends StatelessWidget {
                         color: context.pal.tint,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.local_shipping_rounded,
-                        color: Brand.blueDark,
+                        color: context.pal.blue,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -931,17 +934,14 @@ class _TrackingCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Text(
+                    Text(
                       'Track',
                       style: TextStyle(
-                        color: Brand.blueDark,
+                        color: context.pal.blue,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Brand.blueDark,
-                    ),
+                    Icon(Icons.chevron_right_rounded, color: context.pal.blue),
                   ],
                 ),
                 const SizedBox(height: 14),

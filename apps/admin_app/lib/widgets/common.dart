@@ -59,7 +59,7 @@ class EmptyState extends StatelessWidget {
           CircleAvatar(
             radius: 40,
             backgroundColor: context.pal.tint,
-            child: Icon(icon, size: 40, color: Brand.blueDark),
+            child: Icon(icon, size: 40, color: context.pal.blue),
           ),
           const SizedBox(height: 16),
           Text(

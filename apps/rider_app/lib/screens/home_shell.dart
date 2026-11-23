@@ -57,12 +57,12 @@ class _HomeShellState extends State<HomeShell> {
               icon: Badge.count(
                 count: s.jobs.length,
                 isLabelVisible: s.jobs.isNotEmpty,
-                child: const Icon(Icons.two_wheeler_outlined),
+                child: const Icon(Icons.local_shipping_outlined),
               ),
               selectedIcon: Badge.count(
                 count: s.jobs.length,
                 isLabelVisible: s.jobs.isNotEmpty,
-                child: const Icon(Icons.two_wheeler_rounded),
+                child: const Icon(Icons.local_shipping_rounded),
               ),
               label: 'My jobs',
             ),

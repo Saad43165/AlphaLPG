@@ -89,7 +89,7 @@ class JobsScreen extends StatelessWidget {
                   child: o.status == OrderStatus.assigned
                       ? FilledButton.icon(
                           onPressed: () => startDeliveryFlow(context, s, o),
-                          icon: const Icon(Icons.two_wheeler_rounded),
+                          icon: const Icon(Icons.local_shipping_rounded),
                           label: const Text('Start delivery'),
                         )
                       : FilledButton.icon(

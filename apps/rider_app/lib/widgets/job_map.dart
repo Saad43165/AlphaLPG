@@ -374,9 +374,9 @@ class _JobMapState extends State<JobMap> with WidgetsBindingObserver {
                             width: 46,
                             height: 56,
                             alignment: Alignment.topCenter,
-                            child: const Icon(
+                            child: Icon(
                               Icons.location_on_rounded,
-                              color: Brand.cylinderRed,
+                              color: context.pal.red,
                               size: 46,
                             ),
                           ),
@@ -402,7 +402,7 @@ class _JobMapState extends State<JobMap> with WidgetsBindingObserver {
                                   ],
                                 ),
                                 child: const Icon(
-                                  Icons.two_wheeler_rounded,
+                                  Icons.local_shipping_rounded,
                                   color: Colors.white,
                                   size: 22,
                                 ),

@@ -66,25 +66,28 @@ class _HomeShellState extends State<HomeShell> {
               label: Text('$badge'),
               child: const Icon(Icons.receipt_long_outlined),
             ),
-            selectedIcon: const Icon(
+            selectedIcon: Icon(
               Icons.receipt_long_rounded,
-              color: Brand.blueDark,
+              color: context.pal.blue,
             ),
             label: 'Orders',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.two_wheeler_outlined),
-            selectedIcon: Icon(Icons.two_wheeler, color: Brand.blueDark),
+          NavigationDestination(
+            icon: Icon(Icons.local_shipping_outlined),
+            selectedIcon: Icon(
+              Icons.local_shipping_rounded,
+              color: context.pal.blue,
+            ),
             label: 'Riders',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.propane_tank_outlined),
-            selectedIcon: Icon(Icons.propane_tank, color: Brand.blueDark),
+            selectedIcon: Icon(Icons.propane_tank, color: context.pal.blue),
             label: 'Shop',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.menu_rounded),
-            selectedIcon: Icon(Icons.menu_rounded, color: Brand.blueDark),
+            selectedIcon: Icon(Icons.menu_rounded, color: context.pal.blue),
             label: 'More',
           ),
         ],

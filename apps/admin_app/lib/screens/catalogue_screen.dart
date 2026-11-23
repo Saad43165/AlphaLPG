@@ -33,7 +33,9 @@ class CatalogueScreen extends StatelessWidget {
                     st.acceptingOrders
                         ? Icons.storefront_rounded
                         : Icons.pause_circle_rounded,
-                    color: st.acceptingOrders ? Brand.success : Brand.danger,
+                    color: st.acceptingOrders
+                        ? context.pal.green
+                        : context.pal.red,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -656,8 +658,8 @@ class _ProductEditorState extends State<_ProductEditor> {
             if (_error != null)
               Text(
                 _error!,
-                style: const TextStyle(
-                  color: Brand.danger,
+                style: TextStyle(
+                  color: context.pal.red,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1016,8 +1018,8 @@ class _SettingsEditorState extends State<SettingsEditor> {
             if (_error != null)
               Text(
                 _error!,
-                style: const TextStyle(
-                  color: Brand.danger,
+                style: TextStyle(
+                  color: context.pal.red,
                   fontWeight: FontWeight.w600,
                 ),
               ),

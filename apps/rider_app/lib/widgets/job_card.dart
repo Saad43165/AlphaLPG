@@ -117,10 +117,10 @@ class JobCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.location_on_rounded,
                       size: 20,
-                      color: Brand.blueDark,
+                      color: context.pal.blue,
                     ),
                     const SizedBox(width: 8),
                     Expanded(

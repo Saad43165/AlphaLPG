@@ -104,7 +104,7 @@ class _Body extends StatelessWidget {
                 child: Text(
                   paid ? 'PAID' : (receipt ? 'CHECKING' : 'UNPAID'),
                   style: TextStyle(
-                    color: paid ? Brand.success : Brand.navy,
+                    color: paid ? context.pal.green : Brand.navy,
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
                   ),
@@ -162,10 +162,10 @@ class _Body extends StatelessWidget {
               ? _S.active
               : _S.waiting,
           child: paid
-              ? const Text(
+              ? Text(
                   'Payment confirmed. Thank you! Your order will be delivered.',
                   style: TextStyle(
-                    color: Brand.success,
+                    color: context.pal.green,
                     fontWeight: FontWeight.w700,
                   ),
                 )

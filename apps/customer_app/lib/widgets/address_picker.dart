@@ -99,7 +99,7 @@ class _AddressOption extends StatelessWidget {
           children: [
             Icon(
               selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? Brand.blueDark : context.pal.muted,
+              color: selected ? context.pal.blue : context.pal.muted,
             ),
             const SizedBox(width: 12),
             Expanded(

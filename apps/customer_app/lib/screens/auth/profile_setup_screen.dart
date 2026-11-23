@@ -223,12 +223,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (!context.read<Backend>().auth.isQuick)
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsetsDirectional.only(end: 6),
                                 child: Icon(
                                   Icons.verified_rounded,
                                   size: 18,
-                                  color: Brand.success,
+                                  color: context.pal.green,
                                 ),
                               ),
                             Flexible(

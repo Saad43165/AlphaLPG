@@ -152,9 +152,9 @@ class HelpScreen extends StatelessWidget {
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: () => context.push('/safety'),
-              icon: const Icon(
+              icon: Icon(
                 Icons.health_and_safety_rounded,
-                color: Brand.cylinderRed,
+                color: context.pal.red,
               ),
               label: const Text('Read the LPG safety guide'),
             ),

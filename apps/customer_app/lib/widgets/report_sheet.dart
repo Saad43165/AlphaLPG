@@ -147,15 +147,15 @@ class _ReportSheetState extends State<_ReportSheet> {
                   ),
                   child: ListTile(
                     dense: true,
-                    leading: Icon(icon, color: Brand.blueDark),
+                    leading: Icon(icon, color: context.pal.blue),
                     title: Text(
                       label,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     trailing: _reason == label
-                        ? const Icon(
+                        ? Icon(
                             Icons.check_circle_rounded,
-                            color: Brand.blueDark,
+                            color: context.pal.blue,
                           )
                         : null,
                     onTap: () => setState(() => _reason = label),
@@ -176,10 +176,7 @@ class _ReportSheetState extends State<_ReportSheet> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Brand.danger),
-                ),
+                child: Text(_error!, style: TextStyle(color: context.pal.red)),
               ),
             FilledButton.icon(
               onPressed: _reason == null || _busy ? null : _send,

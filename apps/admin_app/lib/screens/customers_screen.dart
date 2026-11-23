@@ -406,7 +406,7 @@ class CustomerDetailScreen extends StatelessWidget {
                         border: Border.all(color: Brand.blueDark, width: 2),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(icon, color: Brand.blueDark, size: 21),
+                      child: Icon(icon, color: context.pal.blue, size: 21),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -524,7 +524,7 @@ class CustomerDetailScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.block_rounded, color: Brand.danger),
+                    Icon(Icons.block_rounded, color: context.pal.red),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(

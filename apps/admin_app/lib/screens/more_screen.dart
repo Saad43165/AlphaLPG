@@ -227,7 +227,7 @@ class _Quick extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 24,
                     backgroundColor: context.pal.tint,
-                    child: Icon(icon, color: Brand.blueDark, size: 26),
+                    child: Icon(icon, color: context.pal.blue, size: 26),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -314,7 +314,7 @@ class _Item extends StatelessWidget {
       backgroundColor: Brand.cylinderRed,
       child: CircleAvatar(
         backgroundColor: context.pal.tint,
-        child: Icon(icon, color: Brand.blueDark),
+        child: Icon(icon, color: context.pal.blue),
       ),
     ),
     title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),

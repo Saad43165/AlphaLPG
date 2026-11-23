@@ -125,7 +125,7 @@ class JobSchedule extends StatelessWidget {
       decoration: panel(context),
       child: Row(
         children: [
-          const Icon(Icons.event_rounded, color: Brand.blueDark),
+          Icon(Icons.event_rounded, color: context.pal.blue),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -294,15 +294,15 @@ class _ProblemSheetState extends State<_ProblemSheet> {
                   ),
                   child: ListTile(
                     dense: true,
-                    leading: Icon(icon, color: Brand.blueDark),
+                    leading: Icon(icon, color: context.pal.blue),
                     title: Text(
                       label,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     trailing: _reason == label
-                        ? const Icon(
+                        ? Icon(
                             Icons.check_circle_rounded,
-                            color: Brand.blueDark,
+                            color: context.pal.blue,
                           )
                         : null,
                     onTap: () => setState(() => _reason = label),

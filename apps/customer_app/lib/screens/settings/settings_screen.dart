@@ -234,7 +234,7 @@ class _ThemeTile extends StatelessWidget {
                 Icon(
                   icon,
                   size: 16,
-                  color: selected ? Brand.blueDark : pal.muted,
+                  color: selected ? context.pal.blue : pal.muted,
                 ),
                 const SizedBox(width: 5),
                 Flexible(
@@ -244,7 +244,7 @@ class _ThemeTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: selected ? Brand.blueDark : pal.ink,
+                      color: selected ? context.pal.blue : pal.ink,
                     ),
                   ),
                 ),

@@ -142,9 +142,13 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
               border: Border.all(color: Brand.success, width: 2),
               borderRadius: BorderRadius.circular(Brand.radius),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.pin_drop_rounded, color: Brand.success, size: 28),
+                Icon(
+                  Icons.pin_drop_rounded,
+                  color: context.pal.green,
+                  size: 28,
+                ),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -197,7 +201,7 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                         color: pal.tint,
                         alignment: Alignment.center,
                         child: Icon(
-                          Icons.two_wheeler_rounded,
+                          Icons.local_shipping_rounded,
                           size: 48,
                           color: pal.muted,
                         ),
@@ -300,9 +304,9 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                                             ),
                                           ),
                                         ),
-                                        const Icon(
+                                        Icon(
                                           Icons.location_on_rounded,
-                                          color: Brand.cylinderRed,
+                                          color: context.pal.red,
                                           size: 44,
                                         ),
                                       ],
@@ -329,7 +333,7 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                                         ],
                                       ),
                                       child: const Icon(
-                                        Icons.two_wheeler_rounded,
+                                        Icons.local_shipping_rounded,
                                         color: Colors.white,
                                         size: 24,
                                       ),
@@ -368,7 +372,7 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(
-                                      Icons.two_wheeler_rounded,
+                                      Icons.local_shipping_rounded,
                                       color: Brand.flame,
                                       size: 18,
                                     ),
@@ -422,10 +426,7 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
                   children: [
                     Row(
                       children: [
-                        const Icon(
-                          Icons.near_me_rounded,
-                          color: Brand.blueDark,
-                        ),
+                        Icon(Icons.near_me_rounded, color: context.pal.blue),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -573,9 +574,9 @@ class _WaitingMap extends StatelessWidget {
                         width: 44,
                         height: 54,
                         alignment: Alignment.topCenter,
-                        child: const Icon(
+                        child: Icon(
                           Icons.location_on_rounded,
-                          color: Brand.cylinderRed,
+                          color: context.pal.red,
                           size: 44,
                         ),
                       ),
@@ -596,8 +597,8 @@ class _WaitingMap extends StatelessWidget {
                 Icon(
                   paused
                       ? Icons.location_searching_rounded
-                      : Icons.two_wheeler_rounded,
-                  color: Brand.blueDark,
+                      : Icons.local_shipping_rounded,
+                  color: context.pal.blue,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

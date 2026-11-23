@@ -156,7 +156,7 @@ class ReceiptSection extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.error_outline_rounded, color: Brand.danger),
+                Icon(Icons.error_outline_rounded, color: context.pal.red),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -465,10 +465,7 @@ class _PaySheetState extends State<_PaySheet> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 10),
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Brand.danger),
-                ),
+                child: Text(_error!, style: TextStyle(color: context.pal.red)),
               ),
             const SizedBox(height: 14),
             FilledButton.icon(

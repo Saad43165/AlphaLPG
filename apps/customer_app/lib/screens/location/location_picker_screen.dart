@@ -502,7 +502,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.location_off_rounded, color: Brand.warning),
+          Icon(Icons.location_off_rounded, color: context.pal.orange),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -529,15 +529,15 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       borderRadius: BorderRadius.circular(14),
       border: Border.all(color: Brand.danger, width: 2),
     ),
-    child: const Row(
+    child: Row(
       children: [
-        Icon(Icons.info_outline_rounded, color: Brand.danger),
+        Icon(Icons.info_outline_rounded, color: context.pal.red),
         SizedBox(width: 10),
         Expanded(
           child: Text(
             'We deliver within Lahore only. Move the pin inside the city.',
             style: TextStyle(
-              color: Color(0xFF7A1F1F),
+              color: context.pal.ink,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -598,9 +598,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                   color: pal.tint,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.location_on_rounded,
-                                  color: Brand.blueDark,
+                                  color: context.pal.blue,
                                 ),
                               ),
                               const SizedBox(width: 12),

@@ -300,7 +300,7 @@ class _Line extends StatelessWidget {
           v,
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: warn ? Brand.warning : null,
+            color: warn ? context.pal.orange : null,
           ),
         ),
       ],

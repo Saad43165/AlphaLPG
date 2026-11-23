@@ -200,7 +200,7 @@ class ReportCard extends StatelessWidget {
             children: [
               Pill(
                 r.fromRider
-                    ? Icons.two_wheeler_rounded
+                    ? Icons.local_shipping_rounded
                     : r.aboutRider
                     ? Icons.person_off_rounded
                     : Icons.flag_rounded,

@@ -552,7 +552,7 @@ class _StepTracker extends StatelessWidget {
     OrderStatus.placed: Icons.receipt_long_rounded,
     OrderStatus.confirmed: Icons.thumb_up_alt_rounded,
     OrderStatus.assigned: Icons.person_pin_circle_rounded,
-    OrderStatus.outForDelivery: Icons.two_wheeler_rounded,
+    OrderStatus.outForDelivery: Icons.local_shipping_rounded,
     OrderStatus.delivered: Icons.home_rounded,
   };
 
@@ -756,9 +756,9 @@ class _RiderCard extends StatelessWidget {
                     color: context.pal.card,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.verified_rounded,
-                    color: Brand.blueDark,
+                    color: context.pal.blue,
                     size: 16,
                   ),
                 ),
@@ -843,12 +843,12 @@ class _RiderCard extends StatelessWidget {
             tooltip: tr('More'),
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (_) => openReport(context, o, aboutRider: true),
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'report',
                 child: Row(
                   children: [
-                    Icon(Icons.flag_outlined, color: Brand.danger),
+                    Icon(Icons.flag_outlined, color: context.pal.red),
                     SizedBox(width: 10),
                     Text('Report the rider'),
                   ],
@@ -919,9 +919,9 @@ class _ItemsCard extends StatelessWidget {
                     ),
                     child: switch (state.productById(i.productId)) {
                       final p? => ProductImage(p, height: 46),
-                      null => const Icon(
+                      null => Icon(
                         Icons.propane_tank_rounded,
-                        color: Brand.cylinderRed,
+                        color: context.pal.red,
                       ),
                     },
                   ),
@@ -1189,7 +1189,7 @@ class _RatedCard extends StatelessWidget {
         for (var i = 1; i <= 5; i++)
           Icon(
             i <= o.rating! ? Icons.star_rounded : Icons.star_outline_rounded,
-            color: Brand.warning,
+            color: context.pal.orange,
             size: 22,
           ),
         const SizedBox(width: 10),
@@ -1417,7 +1417,7 @@ class _StageBar extends StatelessWidget {
     const labels = ['Preparing', 'On the way', 'Delivered'];
     const icons = [
       Icons.inventory_2_rounded,
-      Icons.two_wheeler_rounded,
+      Icons.local_shipping_rounded,
       Icons.home_rounded,
     ];
     final stage = _stage;

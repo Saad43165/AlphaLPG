@@ -463,13 +463,16 @@ class OrderDetailScreen extends StatelessWidget {
             if (o.riderName != null)
               _Section(
                 title: 'Rider',
-                icon: Icons.two_wheeler_rounded,
+                icon: Icons.local_shipping_rounded,
                 children: [
                   Row(
                     children: [
                       const CircleAvatar(
                         backgroundColor: Brand.blueDark,
-                        child: Icon(Icons.two_wheeler, color: Colors.white),
+                        child: Icon(
+                          Icons.local_shipping_rounded,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -565,10 +568,10 @@ class OrderDetailScreen extends StatelessWidget {
                         border: Border.all(color: Brand.blueDark, width: 2),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.timeline_rounded,
                         size: 18,
-                        color: Brand.blueDark,
+                        color: context.pal.blue,
                       ),
                     ),
                     title: const Text(
@@ -639,7 +642,7 @@ class _NextStep extends StatelessWidget {
                 'Nothing to do for the rider yet. It becomes a normal job ${LpgOrder.scheduleLead.inHours} hours before the window.$payNote',
               )
             : (
-                Icons.two_wheeler_rounded,
+                Icons.local_shipping_rounded,
                 context.pal.warn,
                 'Give it to a rider',
                 'Choose a rider who is on shift.$payNote',
@@ -821,7 +824,7 @@ class _Section extends StatelessWidget {
                     border: Border.all(color: Brand.blueDark, width: 2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, size: 18, color: Brand.blueDark),
+                  child: Icon(icon, size: 18, color: context.pal.blue),
                 ),
                 const SizedBox(width: 10),
               ],
@@ -906,7 +909,7 @@ class _Mini extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(icon, size: 20, color: Brand.blueDark),
+          Icon(icon, size: 20, color: context.pal.blue),
           const SizedBox(height: 4),
           Text(
             text,
@@ -956,7 +959,7 @@ class _Note extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.info_outline_rounded, size: 18, color: Brand.warning),
+        Icon(Icons.info_outline_rounded, size: 18, color: context.pal.orange),
         const SizedBox(width: 8),
         Expanded(child: Text(text, style: const TextStyle(height: 1.35))),
       ],
@@ -1049,7 +1052,9 @@ class _LiveRider extends StatelessWidget {
                               ? Icons.my_location_rounded
                               : Icons.location_off_rounded,
                           size: 18,
-                          color: l.isFresh() ? Brand.success : Brand.danger,
+                          color: l.isFresh()
+                              ? context.pal.green
+                              : context.pal.red,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -1058,7 +1063,9 @@ class _LiveRider extends StatelessWidget {
                                 ? 'Live · ${l.speedKmh.round()} km/h · ${timeAgo(l.updatedAt)}'
                                 : 'Last seen ${timeAgo(l.updatedAt)}',
                             style: TextStyle(
-                              color: l.isFresh() ? Brand.success : Brand.danger,
+                              color: l.isFresh()
+                                  ? context.pal.green
+                                  : context.pal.red,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1201,7 +1208,7 @@ class _ActionsState extends State<_Actions> {
       buttons.add(
         FilledButton.tonalIcon(
           onPressed: _busy ? null : _assign,
-          icon: const Icon(Icons.two_wheeler),
+          icon: const Icon(Icons.local_shipping_rounded),
           label: Text(o.riderId == null ? 'Assign rider' : 'Change rider'),
         ),
       );
@@ -1425,11 +1432,11 @@ class RiderPicker extends StatelessWidget {
                     ),
                   ),
                   if (!list.any((r) => r.isLive()))
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
                       child: Text(
                         'No rider is on shift right now. A rider must be online in the Rider app before you can give them an order.',
-                        style: TextStyle(color: Brand.danger, height: 1.35),
+                        style: TextStyle(color: context.pal.red, height: 1.35),
                       ),
                     ),
                   for (final r in list)
@@ -1437,8 +1444,8 @@ class RiderPicker extends StatelessWidget {
                       leading: CircleAvatar(
                         backgroundColor: context.pal.tint,
                         child: Icon(
-                          Icons.two_wheeler,
-                          color: r.online ? Brand.success : Colors.grey,
+                          Icons.local_shipping_rounded,
+                          color: r.online ? context.pal.green : Colors.grey,
                         ),
                       ),
                       title: Row(

@@ -214,7 +214,7 @@ class _SlideView extends StatelessWidget {
                   color: context.pal.tint,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: Brand.blueDark),
+                child: Icon(icon, color: context.pal.blue),
               ),
               const SizedBox(height: 14),
               Text(

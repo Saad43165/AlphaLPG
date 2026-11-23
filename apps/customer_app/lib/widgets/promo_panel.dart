@@ -66,7 +66,7 @@ class _PromoPanelState extends State<PromoPanel> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.local_offer_rounded, color: Brand.success),
+                Icon(Icons.local_offer_rounded, color: context.pal.green),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(

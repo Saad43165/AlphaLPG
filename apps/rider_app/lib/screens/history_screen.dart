@@ -73,7 +73,9 @@ class HistoryScreen extends StatelessWidget {
                       pending > 0
                           ? Icons.account_balance_wallet_rounded
                           : Icons.verified_rounded,
-                      color: pending > 0 ? Brand.warning : Brand.success,
+                      color: pending > 0
+                          ? context.pal.orange
+                          : context.pal.green,
                       size: 30,
                     ),
                     const SizedBox(width: 14),
@@ -98,10 +100,10 @@ class HistoryScreen extends StatelessWidget {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 formatRupees(pending),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 26,
-                                  color: Color(0xFF5C4600),
+                                  color: context.pal.ink,
                                 ),
                               ),
                             ),

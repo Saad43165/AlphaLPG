@@ -114,9 +114,9 @@ class PaymentPanel extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: Brand.danger),
+                      Icon(Icons.warning_amber_rounded, color: context.pal.red),
                       SizedBox(width: 8),
                       Text(
                         'Check before marking paid',

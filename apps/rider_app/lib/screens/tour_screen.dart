@@ -72,7 +72,7 @@ class RiderTour extends StatelessWidget {
           urdu: u,
           steps: const [
             TourStep(
-              Icons.two_wheeler_rounded,
+              Icons.local_shipping_rounded,
               Bi('Pick up the full cylinders', 'بھرے ہوئے سلنڈر اٹھائیں'),
               Bi('On my way', 'میں روانہ ہوں'),
             ),

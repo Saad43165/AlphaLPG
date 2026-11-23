@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: Color(0xFFB3261E))),
+              Text(_error!, style: TextStyle(color: context.pal.red)),
             ],
             const SizedBox(height: 24),
             FilledButton(

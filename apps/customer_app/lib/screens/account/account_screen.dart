@@ -259,10 +259,10 @@ class AccountScreen extends StatelessWidget {
             const SizedBox(height: 20),
             const Center(child: BrandLogo(height: 36)),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Reliable LPG for homes and businesses across Lahore.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+              style: TextStyle(fontSize: 12, color: context.pal.muted),
             ),
           ],
         ),
@@ -321,7 +321,7 @@ class AccountScreen extends StatelessWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: context.pal.tint,
-                child: Icon(icon, color: Brand.blueDark, size: 26),
+                child: Icon(icon, color: context.pal.blue, size: 26),
               ),
               const SizedBox(height: 10),
               Text(

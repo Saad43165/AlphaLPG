@@ -86,7 +86,7 @@ class AdminTour extends StatelessWidget {
         ),
       ),
       TourSlide(
-        icon: Icons.two_wheeler_rounded,
+        icon: Icons.local_shipping_rounded,
         title: const Bi('Send it with a rider', 'رائیڈر کے ساتھ بھیجیں'),
         body: const Bi(
           'Three taps from a new order to a rider on the way.',

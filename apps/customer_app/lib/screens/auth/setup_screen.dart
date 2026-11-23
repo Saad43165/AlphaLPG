@@ -219,9 +219,9 @@ class _SetupScreenState extends State<SetupScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.verified_rounded,
-                                color: Brand.success,
+                                color: context.pal.green,
                               ),
                               const SizedBox(width: 10),
                               Text(
@@ -431,7 +431,7 @@ class _TypeOption extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                color: selected ? Colors.white : Brand.blueDark,
+                color: selected ? Colors.white : context.pal.blue,
               ),
             ),
             const SizedBox(width: 14),
@@ -458,7 +458,7 @@ class _TypeOption extends StatelessWidget {
               selected
                   ? Icons.check_circle_rounded
                   : Icons.radio_button_unchecked_rounded,
-              color: selected ? Brand.blueDark : context.pal.line,
+              color: selected ? context.pal.blue : context.pal.line,
             ),
           ],
         ),
@@ -487,9 +487,9 @@ class _LocationStep extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               backgroundColor: Color(0x1F1E9E5A),
-              child: Icon(Icons.check_rounded, color: Brand.success),
+              child: Icon(Icons.check_rounded, color: context.pal.green),
             ),
             const SizedBox(width: 12),
             Expanded(

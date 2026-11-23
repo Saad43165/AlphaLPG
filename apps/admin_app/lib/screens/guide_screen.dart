@@ -80,7 +80,7 @@ class GuideScreen extends StatelessWidget {
         ],
       ),
       GuideSection(
-        icon: Icons.two_wheeler_rounded,
+        icon: Icons.local_shipping_rounded,
         title: Bi('4. Give orders to riders', '4۔ آرڈر رائیڈرز کو دیں'),
         steps: [
           Bi(

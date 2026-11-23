@@ -218,7 +218,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         backgroundColor: context.pal.tint,
                         child: Icon(
                           Icons.add_location_alt_rounded,
-                          color: Brand.blueDark,
+                          color: context.pal.blue,
                         ),
                       ),
                       title: const Text(
@@ -386,9 +386,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.event_available_rounded,
-                                        color: Brand.blueDark,
+                                        color: context.pal.blue,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 10),
@@ -472,9 +472,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: ExpansionTile(
                   shape: const Border(),
                   collapsedShape: const Border(),
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.receipt_long_rounded,
-                    color: Brand.blueDark,
+                    color: context.pal.blue,
                   ),
                   title: Text(
                     'Order summary · ${price.countLabel}',
@@ -650,7 +650,7 @@ class _WhenTile extends StatelessWidget {
                           ? Icons.check_circle_rounded
                           : Icons.circle_outlined,
                       size: 22,
-                      color: selected ? Brand.blueDark : pal.line,
+                      color: selected ? context.pal.blue : pal.line,
                     ),
                   ],
                 ),
@@ -850,8 +850,8 @@ class _SlideBar extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Text(
                     problem!,
-                    style: const TextStyle(
-                      color: Brand.danger,
+                    style: TextStyle(
+                      color: context.pal.red,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

@@ -89,7 +89,7 @@ class GuideScreen extends StatelessWidget {
         ],
       ),
       GuideSection(
-        icon: Icons.two_wheeler_rounded,
+        icon: Icons.local_shipping_rounded,
         title: Bi('Start a delivery', 'ڈیلیوری شروع کریں'),
         steps: [
           Bi(

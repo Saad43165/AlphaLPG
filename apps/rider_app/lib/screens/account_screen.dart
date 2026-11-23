@@ -80,9 +80,9 @@ class AccountScreen extends StatelessWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.bar_chart_rounded,
-                      color: Brand.blueDark,
+                      color: context.pal.blue,
                     ),
                     title: const Text(
                       'My earnings and cash',
@@ -103,9 +103,9 @@ class AccountScreen extends StatelessWidget {
                   ),
                   Divider(height: 1, indent: 66, color: pal.line),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.menu_book_rounded,
-                      color: Brand.blueDark,
+                      color: context.pal.blue,
                     ),
                     title: const Text(
                       'How the app works',
@@ -121,9 +121,9 @@ class AccountScreen extends StatelessWidget {
                   ),
                   Divider(height: 1, indent: 66, color: pal.line),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.battery_charging_full_rounded,
-                      color: Brand.blueDark,
+                      color: context.pal.blue,
                     ),
                     title: const Text(
                       'Keep the app running',

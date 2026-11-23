@@ -55,7 +55,7 @@ class _AddressCard extends StatelessWidget {
       contentPadding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
       leading: Icon(
         a.hasLocation ? Icons.location_on : Icons.location_on_outlined,
-        color: a.hasLocation ? Brand.success : Brand.blueDark,
+        color: a.hasLocation ? context.pal.green : context.pal.blue,
       ),
       title: Text(a.label, style: const TextStyle(fontWeight: FontWeight.w700)),
       subtitle: Text(a.oneLine),

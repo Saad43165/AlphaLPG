@@ -271,13 +271,13 @@ class _Hero extends StatelessWidget {
           bottom: -14,
           child: Image.asset('assets/products/11_8kg.png', height: 190),
         ),
-        const Positioned(
+        Positioned(
           right: 92,
           top: 18,
           child: CircleAvatar(
             radius: 18,
             backgroundColor: Colors.white,
-            child: Icon(Icons.check_rounded, color: Brand.success),
+            child: Icon(Icons.check_rounded, color: context.pal.green),
           ),
         ),
         const Padding(
@@ -392,13 +392,13 @@ class _EmergencyCard extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'IN AN EMERGENCY',
           style: TextStyle(
             fontSize: 12,
             letterSpacing: 2,
             fontWeight: FontWeight.w700,
-            color: Brand.cylinderRed,
+            color: context.pal.red,
           ),
         ),
         const SizedBox(height: 4),
@@ -432,7 +432,7 @@ class _EmergencyCard extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color: i == 4 ? Brand.blueDark : Brand.cylinderRed,
+                    color: i == 4 ? context.pal.blue : context.pal.red,
                     size: 22,
                   ),
                 ),

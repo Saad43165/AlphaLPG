@@ -225,7 +225,7 @@ class _StopsMapScreenState extends State<StopsMapScreen> {
                           border: Border.all(color: Colors.white, width: 3),
                         ),
                         child: const Icon(
-                          Icons.two_wheeler_rounded,
+                          Icons.local_shipping_rounded,
                           color: Colors.white,
                           size: 22,
                         ),
@@ -282,13 +282,13 @@ class _StopsMapScreenState extends State<StopsMapScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'NEXT STOP',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.2,
-                              color: Brand.cylinderRed,
+                              color: context.pal.red,
                             ),
                           ),
                           Text(

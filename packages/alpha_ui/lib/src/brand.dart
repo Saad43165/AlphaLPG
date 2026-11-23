@@ -118,10 +118,10 @@ abstract final class Brand {
           backgroundColor: blueDark,
           foregroundColor: Colors.white,
           disabledBackgroundColor: dark
-              ? const Color(0xFF28425A)
+              ? const Color(0xFF2F3238)
               : const Color(0xFFC9D6E2),
           disabledForegroundColor: dark
-              ? const Color(0xFF6B8399)
+              ? const Color(0xFF7C828B)
               : Colors.white,
           minimumSize: const Size.fromHeight(54),
           shape: RoundedRectangleBorder(
@@ -212,7 +212,7 @@ abstract final class Brand {
         elevation: dark ? 0 : 8,
         height: 68,
         indicatorColor: dark
-            ? const Color(0xFF1F5C99)
+            ? const Color(0xFF2F3238)
             : const Color(0xFFBFDDF5),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (s) => TextStyle(
@@ -257,7 +257,7 @@ abstract final class Brand {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: dark ? const Color(0xFF223A4F) : navy,
+        backgroundColor: dark ? const Color(0xFF2A2D33) : navy,
         contentTextStyle: const TextStyle(
           color: Colors.white,
           fontFamily: 'Inter',
@@ -291,6 +291,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.tint,
     required this.warn,
     required this.warnBg,
+    required this.blue,
+    required this.red,
+    required this.green,
+    required this.orange,
     required this.shadow,
   });
 
@@ -317,6 +321,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   /// Solid pale amber behind warnings (light) / deep amber (dark).
   final Color warnBg;
+
+  /// Text and icon colours that stay readable on this theme's surfaces
+  /// (the same as the brand colours in light mode, brighter in dark mode).
+  final Color blue, red, green, orange;
   final List<BoxShadow> shadow;
 
   static final light = AppPalette(
@@ -329,6 +337,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
     tint: const Color(0xFFD9ECFA),
     warn: const Color(0xFFB45309),
     warnBg: const Color(0xFFFFE9B8),
+    blue: Brand.blueDark,
+    red: Brand.danger,
+    green: Brand.success,
+    orange: Brand.warning,
     shadow: [
       BoxShadow(
         color: Brand.navy.withValues(alpha: 0.28),
@@ -340,14 +352,18 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   static const night = AppPalette(
     isDark: true,
-    surface: Color(0xFF0B1520),
-    card: Color(0xFF16293B),
-    line: Color(0xFF2C4862),
-    ink: Color(0xFFF1F6FB),
-    muted: Color(0xFFA6BACC),
-    tint: Color(0xFF1B4163),
+    surface: Color(0xFF0D0E10),
+    card: Color(0xFF1A1C20),
+    line: Color(0xFF2F3238),
+    ink: Color(0xFFF6F7F8),
+    muted: Color(0xFFA3A8B0),
+    tint: Color(0xFF262A31),
     warn: Color(0xFFF6C23E),
-    warnBg: Color(0xFF4A3708),
+    warnBg: Color(0xFF3A3220),
+    blue: Color(0xFF4DB3F0),
+    red: Color(0xFFFF6B6B),
+    green: Color(0xFF3DD68C),
+    orange: Color(0xFFFF8A4C),
     shadow: [],
   );
 
@@ -368,6 +384,8 @@ extension PaletteContext on BuildContext {
 abstract final class Tone {
   /// A deep, fully opaque version of [hue] that white text can sit on.
   static Color fill(Color hue) {
+    // Bright colours (amber) keep their colour and take navy text.
+    if (_contrast(hue, Brand.navy) >= 6.5) return hue;
     var c = hue;
     for (var i = 0; i < 12 && _contrast(c, Colors.white) < 4.5; i++) {
       c = Color.lerp(c, Colors.black, 0.1)!;

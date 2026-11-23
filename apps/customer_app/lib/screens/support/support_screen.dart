@@ -90,7 +90,7 @@ class SupportScreen extends StatelessWidget {
           child: Material(
             type: MaterialType.transparency,
             child: ListTile(
-              leading: Icon(icon, color: Brand.blueDark),
+              leading: Icon(icon, color: context.pal.blue),
               title: Text(
                 title,
                 style: const TextStyle(fontWeight: FontWeight.w700),
