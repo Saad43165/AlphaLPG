@@ -11,6 +11,7 @@ import '../../state/promo_state.dart';
 import '../../theme/brand.dart';
 import '../../utils/format.dart';
 import '../../widgets/common.dart';
+import '../../widgets/skeleton.dart';
 
 /// "Same again every month": a repeat order the customer sets up once. The
 /// phone reminds them when it is due and the order is one tap away.
@@ -64,11 +65,12 @@ class _PlanScreenState extends State<PlanScreen> {
         RefillPlan(
           lines: [
             for (final i in from.items)
-              {
-                'productId': i.productId,
-                'type': i.type.name,
-                'quantity': i.quantity,
-              },
+              if (!i.isAccessory)
+                {
+                  'productId': i.productId,
+                  'type': i.type.name,
+                  'quantity': i.quantity,
+                },
           ],
           everyDays: _every,
           paymentMethod: from.paymentMethod.name,
@@ -199,7 +201,7 @@ class _PlanScreenState extends State<PlanScreen> {
                 ),
               ),
             ] else if (!_loaded)
-              const Center(child: CircularProgressIndicator())
+              const LinesSkeleton(lines: 4)
             else if (_last == null)
               const EmptyState(
                 icon: Icons.event_repeat_rounded,
@@ -224,7 +226,7 @@ class _PlanScreenState extends State<PlanScreen> {
                     Text(
                       [
                         for (final i in _last!.items)
-                          '${i.quantity} × ${i.name} (${i.type.label.toLowerCase()})',
+                          '${i.quantity} × ${i.name} (${i.typeLabel.toLowerCase()})',
                       ].join(', '),
                     ),
                     const SizedBox(height: 14),

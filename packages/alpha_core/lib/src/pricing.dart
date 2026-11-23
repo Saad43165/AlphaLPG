@@ -10,6 +10,7 @@ class PriceBreakdown {
     required this.subtotal,
     required this.deliveryFee,
     required this.cylinders,
+    this.accessories = 0,
     this.lines = 0,
     this.couponDiscount = 0,
     this.pointsUsed = 0,
@@ -19,6 +20,16 @@ class PriceBreakdown {
   final int subtotal;
   final int deliveryFee;
   final int cylinders;
+
+  /// Stoves, regulators and other non-gas items.
+  final int accessories;
+
+  /// "3 items" / "2 cylinders" for captions.
+  String get countLabel {
+    final n = cylinders + accessories;
+    final noun = accessories == 0 ? 'cylinder' : 'item';
+    return '$n $noun${n == 1 ? '' : 's'}';
+  }
 
   /// Different items (product × refill/new) in the order.
   final int lines;
@@ -42,7 +53,9 @@ class PriceBreakdown {
     String area = '',
   }) {
     final subtotal = items.fold(0, (sum, i) => sum + i.lineTotal);
-    final cylinders = items.fold(0, (n, i) => n + i.quantity);
+    final cylinders = items
+        .where((i) => !i.isAccessory)
+        .fold(0, (n, i) => n + i.quantity);
     final free =
         subtotal == 0 ||
         (s.freeDeliveryFrom > 0 && subtotal >= s.freeDeliveryFrom);
@@ -50,6 +63,9 @@ class PriceBreakdown {
       subtotal: subtotal,
       deliveryFee: free ? 0 : s.feeForArea(area),
       cylinders: cylinders,
+      accessories: items
+          .where((i) => i.isAccessory)
+          .fold(0, (n, i) => n + i.quantity),
       lines: items.length,
     );
   }
@@ -63,6 +79,7 @@ class PriceBreakdown {
     subtotal: subtotal,
     deliveryFee: deliveryFee,
     cylinders: cylinders,
+    accessories: accessories,
     lines: lines,
     couponDiscount: couponDiscount,
     pointsUsed: pointsUsed,
@@ -92,7 +109,7 @@ class PriceBreakdown {
           ? s.closedMessage
           : 'We are not taking online orders right now. Please call us.';
     }
-    if (cylinders == 0) return 'Your cart is empty.';
+    if (lines == 0) return 'Your cart is empty.';
     if (lines > maxLines) {
       return 'One order can have up to $maxLines different items. Please place the rest as a second order.';
     }

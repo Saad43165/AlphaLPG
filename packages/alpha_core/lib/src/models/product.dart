@@ -37,6 +37,10 @@ class Product {
   /// has no file storage. Empty means "use the automatic picture".
   final String imageData;
 
+  /// A stove, regulator or other non-gas item: one price, no refill/new
+  /// choice, no empty to swap. Recorded with size 0.
+  bool get isAccessory => sizeKg <= 0;
+
   bool get hasUploadedImage => imageData.isNotEmpty;
 
   /// The bundled cylinder picture closest in size, used when no photo has
@@ -70,10 +74,11 @@ class Product {
   int? get lowStock =>
       (stock != null && stock! > 0 && stock! <= 5) ? stock : null;
 
-  String get sizeLabel =>
-      '${sizeKg == sizeKg.roundToDouble() ? sizeKg.toInt() : sizeKg} KG';
+  String get sizeLabel => isAccessory
+      ? ''
+      : '${sizeKg == sizeKg.roundToDouble() ? sizeKg.toInt() : sizeKg} KG';
 
-  bool get sellsNewCylinder => newCylinderPrice != null;
+  bool get sellsNewCylinder => !isAccessory && newCylinderPrice != null;
 
   int priceFor(PurchaseType type) => switch (type) {
     PurchaseType.refill => refillPrice,

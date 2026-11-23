@@ -288,7 +288,7 @@ class _Content extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          '${i.name} (${tr(i.type.label.toLowerCase())})',
+                          '${i.name} (${tr(i.typeLabel.toLowerCase())})',
                         ),
                       ),
                       Text(

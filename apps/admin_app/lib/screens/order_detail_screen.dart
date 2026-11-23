@@ -155,10 +155,7 @@ class OrderDetailScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    _Mini(
-                      Icons.propane_tank_rounded,
-                      '${o.cylinderCount} cylinder${o.cylinderCount == 1 ? '' : 's'}',
-                    ),
+                    _Mini(Icons.propane_tank_rounded, o.itemsCountLabel),
                     const SizedBox(width: 8),
                     _Mini(Icons.payments_rounded, o.paymentMethod.label),
                     const SizedBox(width: 8),
@@ -350,7 +347,7 @@ class OrderDetailScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '${i.type.label} · ${rs(i.unitPrice)} each',
+                                '${i.typeLabel} · ${rs(i.unitPrice)} each',
                                 style: TextStyle(
                                   color: pal.muted,
                                   fontSize: 12.5,

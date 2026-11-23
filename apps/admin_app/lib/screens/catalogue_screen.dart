@@ -71,7 +71,7 @@ class CatalogueScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Heading('Cylinders and prices'),
+            const Heading('Cylinders, stoves and prices'),
             if (!s.storeReady) _Defaults(session: s),
             ReorderableListView(
               shrinkWrap: true,
@@ -123,8 +123,10 @@ class CatalogueScreen extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        'Refill ${rs(p.refillPrice)}'
-                                        '${p.newCylinderPrice != null ? '  ·  New ${rs(p.newCylinderPrice!)}' : ''}',
+                                        p.isAccessory
+                                            ? 'Accessory  ·  ${rs(p.refillPrice)}'
+                                            : 'Refill ${rs(p.refillPrice)}'
+                                                  '${p.newCylinderPrice != null ? '  ·  New ${rs(p.newCylinderPrice!)}' : ''}',
                                         style: TextStyle(
                                           color: context.pal.muted,
                                           fontSize: 13,
@@ -195,10 +197,12 @@ class CatalogueScreen extends StatelessWidget {
                   style: TextStyle(color: context.pal.muted, fontSize: 12.5),
                 ),
               ),
+            if (s.storeReady && !s.products.any((p) => p.isAccessory))
+              _SampleAccessories(session: s),
             OutlinedButton.icon(
               onPressed: () => _editProduct(context, null),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Add a cylinder size'),
+              label: const Text('Add a cylinder, stove or accessory'),
             ),
             const Heading('Delivery, hours and payments'),
             FilledButton.tonalIcon(
@@ -294,6 +298,79 @@ class _DefaultsState extends State<_Defaults> {
   );
 }
 
+/// One tap adds the sample stoves and regulator (test prices) to the shop.
+class _SampleAccessories extends StatefulWidget {
+  const _SampleAccessories({required this.session});
+  final AdminSession session;
+
+  @override
+  State<_SampleAccessories> createState() => _SampleAccessoriesState();
+}
+
+class _SampleAccessoriesState extends State<_SampleAccessories> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(14),
+    decoration: panel(context),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Sell stoves and regulators too?',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Adds 3 sample items (2-burner glass stove, single burner stove, regulator) with TEST prices. Check every price after adding.',
+          style: TextStyle(
+            color: context.pal.muted,
+            fontSize: 13,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 10),
+        FilledButton.tonal(
+          onPressed: _busy
+              ? null
+              : () async {
+                  setState(() => _busy = true);
+                  final base = widget.session.products.length;
+                  String? err;
+                  var n = 0;
+                  for (final p in SeedData.products.where(
+                    (p) => p.isAccessory,
+                  )) {
+                    err = await widget.session.saveProduct(
+                      Product(
+                        id: p.id,
+                        name: p.name,
+                        sizeKg: 0,
+                        refillPrice: p.refillPrice,
+                        description: p.description,
+                        segment: p.segment,
+                        sortOrder: base + (++n),
+                      ),
+                    );
+                    if (err != null) break;
+                  }
+                  if (!context.mounted) return;
+                  setState(() => _busy = false);
+                  showMessage(
+                    context,
+                    err ?? 'Added. Now check each price and add photos.',
+                    error: err != null,
+                  );
+                },
+          child: Text(_busy ? 'Adding…' : 'Add sample items'),
+        ),
+      ],
+    ),
+  );
+}
+
 class _ProductEditor extends StatefulWidget {
   const _ProductEditor({this.product});
   final Product? product;
@@ -322,6 +399,7 @@ class _ProductEditorState extends State<_ProductEditor> {
     text: widget.product?.description ?? '',
   );
   late final _badge = TextEditingController(text: widget.product?.badge ?? '');
+  late bool _accessory = widget.product?.isAccessory ?? false;
   late bool _active = widget.product?.active ?? true;
   late bool _inStock = widget.product?.inStock ?? true;
   int? get _stockCount => int.tryParse(_stock.text.trim());
@@ -382,14 +460,18 @@ class _ProductEditorState extends State<_ProductEditor> {
     if (!_form.currentState!.validate()) return;
     final s = context.read<AdminSession>();
     final old = widget.product;
-    final kg = double.parse(_size.text.trim());
-    final id = old?.id ?? 'cyl-${_size.text.trim().replaceAll('.', '-')}kg';
+    final kg = _accessory ? 0.0 : double.parse(_size.text.trim());
+    final id =
+        old?.id ??
+        (_accessory
+            ? 'acc-${DateTime.now().millisecondsSinceEpoch}'
+            : 'cyl-${_size.text.trim().replaceAll('.', '-')}kg');
     final next = Product(
       id: id,
       name: _name.text.trim(),
       sizeKg: kg,
       refillPrice: int.parse(_refill.text.trim()),
-      newCylinderPrice: _newPrice.text.trim().isEmpty
+      newCylinderPrice: _accessory || _newPrice.text.trim().isEmpty
           ? null
           : int.parse(_newPrice.text.trim()),
       description: _desc.text.trim(),
@@ -445,46 +527,63 @@ class _ProductEditorState extends State<_ProductEditor> {
             const SizedBox(height: 8),
             _PhotoPicker(
               product: widget.product,
-              size: double.tryParse(_size.text.trim()),
+              size: _accessory ? 0 : double.tryParse(_size.text.trim()),
               photo: _photo,
               busy: _photoBusy,
               onPick: _pickPhoto,
               onAuto: () => setState(() => _photo = ''),
             ),
+            if (widget.product == null)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('This is a stove or accessory'),
+                subtitle: const Text(
+                  'Not a gas cylinder: one price, no empty cylinder to collect.',
+                ),
+                value: _accessory,
+                onChanged: (v) => setState(() => _accessory = v),
+              ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Name',
-                hintText: '11.8kg Gas Cylinder',
+                hintText: _accessory
+                    ? 'Single burner stove'
+                    : '11.8kg Gas Cylinder',
               ),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _size,
-                    enabled: widget.product == null,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+                if (!_accessory)
+                  Expanded(
+                    child: TextFormField(
+                      controller: _size,
+                      enabled: widget.product == null,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(labelText: 'Size (kg)'),
+                      validator: (v) {
+                        final n = double.tryParse((v ?? '').trim());
+                        return n == null || n <= 0 || n > 100
+                            ? 'Enter kg'
+                            : null;
+                      },
                     ),
-                    decoration: const InputDecoration(labelText: 'Size (kg)'),
-                    validator: (v) {
-                      final n = double.tryParse((v ?? '').trim());
-                      return n == null || n <= 0 || n > 100 ? 'Enter kg' : null;
-                    },
                   ),
-                ),
-                const SizedBox(width: 12),
+                if (!_accessory) const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
                     controller: _refill,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(
-                      labelText: 'Refill price (Rs)',
+                    decoration: InputDecoration(
+                      labelText: _accessory
+                          ? 'Price (Rs)'
+                          : 'Refill price (Rs)',
                     ),
                     validator: _money,
                   ),
@@ -492,17 +591,18 @@ class _ProductEditorState extends State<_ProductEditor> {
               ],
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _newPrice,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Price with a new cylinder (Rs)',
-                helperText:
-                    'Leave empty if you do not sell new cylinders online',
+            if (!_accessory)
+              TextFormField(
+                controller: _newPrice,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: 'Price with a new cylinder (Rs)',
+                  helperText:
+                      'Leave empty if you do not sell new cylinders online',
+                ),
+                validator: (v) => _money(v, optional: true),
               ),
-              validator: (v) => _money(v, optional: true),
-            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _desc,
@@ -538,8 +638,10 @@ class _ProductEditorState extends State<_ProductEditor> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: 'Cylinders in the shop (optional)',
+              decoration: InputDecoration(
+                labelText: _accessory
+                    ? 'Pieces in the shop (optional)'
+                    : 'Cylinders in the shop (optional)',
                 helperText: 'Leave empty to not count. When counted, confirmed orders take from it and 0 shows "out of stock".',
               ),
             ),

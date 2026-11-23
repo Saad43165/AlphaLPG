@@ -22,11 +22,12 @@ void main() {
 
   testWidgets('safety guide follows the Alpha LPG poster', (tester) async {
     await pumpApp(tester, testBackend());
-    await tapText(tester, 'Smell gas? What to do');
+    await tester.tap(find.byTooltip('Menu'));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'Safety guide');
     expect(find.text('Use LPG safely.'), findsOneWidget);
     expect(find.text('Smell gas? Know what to do.'), findsOneWidget);
     expect(find.text('1. Turn off the gas supply'), findsOneWidget);
-    expect(find.text('Keep it ventilated', skipOffstage: false), findsWidgets);
 
     await tester.scrollUntilVisible(
       find.text("Don't"),

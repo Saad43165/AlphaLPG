@@ -23,6 +23,13 @@ class OrderItem {
 
   int get lineTotal => unitPrice * quantity;
 
+  /// A stove, regulator or other non-gas item (sold at one price, no empty
+  /// cylinder to swap). Accessories are recorded with size 0.
+  bool get isAccessory => sizeKg <= 0;
+
+  /// "Refill" / "New cylinder" / "Accessory".
+  String get typeLabel => isAccessory ? 'Accessory' : type.label;
+
   factory OrderItem.fromMap(Map<String, dynamic> m) => OrderItem(
     productId: m['productId'] as String? ?? '',
     name: m['name'] as String? ?? '',
@@ -217,11 +224,26 @@ class LpgOrder {
 
   bool get canBeRated => status == OrderStatus.delivered && rating == null;
 
-  int get cylinderCount => items.fold(0, (n, i) => n + i.quantity);
+  int get cylinderCount =>
+      items.where((i) => !i.isAccessory).fold(0, (n, i) => n + i.quantity);
+
+  /// "2 cylinders", "1 cylinder + 1 accessory", "1 accessory".
+  String get itemsCountLabel {
+    final c = cylinderCount, a = accessoryCount;
+    String n(int v, String w) => '$v $w${v == 1 ? '' : 's'}';
+    if (a == 0) return n(c, 'cylinder');
+    if (c == 0)
+      return n(a, 'accessory').replaceAll('accessorys', 'accessories');
+    return '${n(c, 'cylinder')} + ${n(a, 'accessory').replaceAll('accessorys', 'accessories')}';
+  }
+
+  /// Stoves, regulators and other accessories in the order.
+  int get accessoryCount =>
+      items.where((i) => i.isAccessory).fold(0, (n, i) => n + i.quantity);
 
   /// Empties the rider should collect (one per refill cylinder).
   int get emptiesToCollect => items
-      .where((i) => i.type == PurchaseType.refill)
+      .where((i) => i.type == PurchaseType.refill && !i.isAccessory)
       .fold(0, (n, i) => n + i.quantity);
 
   String get displayNumber => orderNumber.isNotEmpty

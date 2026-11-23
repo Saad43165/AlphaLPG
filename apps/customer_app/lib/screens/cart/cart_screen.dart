@@ -144,8 +144,7 @@ class CartScreen extends StatelessWidget {
           ? null
           : CheckoutBar(
               total: price.total,
-              caption:
-                  '${price.cylinders} cylinder${price.cylinders == 1 ? '' : 's'}',
+              caption: price.countLabel,
               label: 'Checkout',
               problem: problem,
               bulk: price.cylinders > state.settings.maxCylindersPerOrder,
@@ -158,7 +157,7 @@ class CartScreen extends StatelessWidget {
 extension EmptiesHint on PriceBreakdown {
   String? emptiesHint(List<OrderItem> items) {
     final empties = items
-        .where((i) => i.type == PurchaseType.refill)
+        .where((i) => i.type == PurchaseType.refill && !i.isAccessory)
         .fold(0, (n, i) => n + i.quantity);
     if (empties == 0) return null;
     return 'Refill price: please keep $empties empty cylinder${empties == 1 ? '' : 's'} '
@@ -449,7 +448,7 @@ class _CartLineTile extends StatelessWidget {
                     runSpacing: 2,
                     children: [
                       Tag(
-                        line.type.label,
+                        product.isAccessory ? 'Accessory' : line.type.label,
                         color: context.pal.tint,
                         dark: !context.pal.isDark,
                       ),
@@ -539,7 +538,9 @@ class _SuggestionCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                p.sizeLabel,
+                p.isAccessory ? p.name : p.sizeLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               Text(
@@ -589,7 +590,9 @@ class PriceSummary extends StatelessWidget {
       children: [
         _row(
           context,
-          'Cylinders (${price.cylinders})',
+          price.accessories > 0
+              ? 'Items (${price.cylinders + price.accessories})'
+              : 'Cylinders (${price.cylinders})',
           formatRupees(price.subtotal),
         ),
         const SizedBox(height: 8),

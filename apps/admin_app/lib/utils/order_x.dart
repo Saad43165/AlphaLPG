@@ -11,8 +11,9 @@ extension AdminOrderX on LpgOrder {
   /// "2× 11.8kg, 1× 6kg"
   String get itemsLine => items
       .map(
-        (i) =>
-            '${i.quantity}× ${i.sizeKg == i.sizeKg.roundToDouble() ? i.sizeKg.toInt() : i.sizeKg}kg',
+        (i) => i.isAccessory
+            ? '${i.quantity}× ${i.name}'
+            : '${i.quantity}× ${i.sizeKg == i.sizeKg.roundToDouble() ? i.sizeKg.toInt() : i.sizeKg}kg',
       )
       .join(', ');
 

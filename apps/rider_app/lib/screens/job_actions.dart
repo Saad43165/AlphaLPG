@@ -154,7 +154,7 @@ class _CompleteSheetState extends State<_CompleteSheet> {
   /// One line per empty cylinder the customer should hand back.
   late final List<String> _slots = [
     for (final i in widget.order.items)
-      if (i.type == PurchaseType.refill)
+      if (i.type == PurchaseType.refill && !i.isAccessory)
         for (var n = 1; n <= i.quantity; n++)
           i.quantity == 1
               ? '${i.name} (empty)'

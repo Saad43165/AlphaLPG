@@ -48,9 +48,13 @@ class ProductPicture extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = Icon(
-      Icons.propane_tank_rounded,
+      product.isAccessory
+          ? Icons.soup_kitchen_rounded
+          : Icons.propane_tank_rounded,
       size: height * 0.7,
-      color: const Color(0xFFE53424),
+      color: product.isAccessory
+          ? const Color(0xFF1F5C99)
+          : const Color(0xFFE53424),
     );
     final d = data ?? product.imageData;
     if (d.isNotEmpty) {
@@ -72,6 +76,7 @@ class ProductPicture extends StatelessWidget {
         errorBuilder: (_, _, _) => fallback,
       );
     }
+    if (product.isAccessory) return fallback;
     return Image.asset(
       product.automaticImageAsset,
       height: height,

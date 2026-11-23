@@ -15,6 +15,7 @@ import '../../state/app_state.dart';
 import '../../theme/brand.dart';
 import '../../utils/format.dart';
 import '../../widgets/common.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/live.dart';
 
 class OrdersScreen extends StatelessWidget {
@@ -50,7 +51,7 @@ class OrdersScreen extends StatelessWidget {
                   );
                 }
                 if (!snap.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const OrderListSkeleton();
                 }
                 final orders = snap.data!;
                 if (orders.isEmpty) {
@@ -470,7 +471,7 @@ class OrderTile extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '${i.name} (${tr(i.type.label.toLowerCase())})',
+                              '${i.name} (${tr(i.typeLabel.toLowerCase())})',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

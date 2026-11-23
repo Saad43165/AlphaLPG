@@ -487,7 +487,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                '${i.quantity} × ${i.name} (${i.type.label})',
+                                '${i.quantity} × ${i.name} (${i.typeLabel})',
                               ),
                             ),
                             Text(formatRupees(i.lineTotal)),

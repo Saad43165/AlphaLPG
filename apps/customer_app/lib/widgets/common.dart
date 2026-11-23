@@ -47,9 +47,11 @@ class ProductImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = Icon(
-      Icons.propane_tank_rounded,
+      product.isAccessory
+          ? Icons.soup_kitchen_rounded
+          : Icons.propane_tank_rounded,
       size: height * 0.7,
-      color: Brand.cylinderRed,
+      color: product.isAccessory ? Brand.blueDark : Brand.cylinderRed,
     );
     // 1) the owner's own photo, 2) a web link, 3) the closest bundled picture.
     if (product.hasUploadedImage) {
@@ -75,6 +77,7 @@ class ProductImage extends StatelessWidget {
         errorBuilder: (_, _, _) => fallback,
       );
     }
+    if (product.isAccessory) return fallback;
     return Image.asset(
       product.automaticImageAsset,
       semanticLabel: product.name,

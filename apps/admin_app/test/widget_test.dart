@@ -437,7 +437,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       (await tester.runAsync(() => b.catalog.watchAllProducts().first))!.length,
-      4,
+      7,
     );
     expect(find.text('11.8kg Gas Cylinder'), findsOneWidget);
   });

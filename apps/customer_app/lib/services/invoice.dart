@@ -376,7 +376,7 @@ Future<Uint8List> buildInvoicePdf(
                             crossAxisAlignment: pw.CrossAxisAlignment.start,
                             children: [
                               strong(o.items[n].name),
-                              small(o.items[n].type.label),
+                              small(o.items[n].typeLabel),
                             ],
                           ),
                         ),

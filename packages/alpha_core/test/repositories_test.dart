@@ -75,7 +75,7 @@ void _suite(Repos Function() make) {
     await repo.saveProduct(SeedData.products.first.copyWithPrice(1700));
     final products = await repo.watchProducts().first;
     expect(products.first.refillPrice, 1700);
-    expect(products.map((p) => p.sortOrder), [1, 2, 3, 4]);
+    expect(products.map((p) => p.sortOrder), [1, 2, 3, 4, 5, 6, 7]);
   });
 
   test('order lifecycle: place → assign → deliver; history kept', () async {

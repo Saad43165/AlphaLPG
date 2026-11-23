@@ -61,8 +61,10 @@ class _ProductSheetState extends State<_ProductSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizeBadge(p.sizeLabel),
-                      const SizedBox(height: 8),
+                      if (!p.isAccessory) ...[
+                        SizeBadge(p.sizeLabel),
+                        const SizedBox(height: 8),
+                      ],
                       Text(
                         p.name,
                         style: text.titleLarge?.copyWith(
@@ -87,7 +89,7 @@ class _ProductSheetState extends State<_ProductSheet> {
               Text(p.description),
             ],
             const SizedBox(height: 16),
-            if (p.sellsNewCylinder)
+            if (!p.isAccessory && p.sellsNewCylinder)
               SegmentedButton<PurchaseType>(
                 showSelectedIcon: false,
                 segments: [
@@ -97,23 +99,28 @@ class _ProductSheetState extends State<_ProductSheet> {
                 selected: {_type},
                 onSelectionChanged: (s) => setState(() => _type = s.first),
               ),
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.autorenew, size: 18, color: Brand.blueDark),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      _type == PurchaseType.refill
-                          ? 'Refill price — our rider collects your empty ${p.sizeLabel} cylinder.'
-                          : PurchaseType.newCylinder.hint,
-                      style: text.bodySmall,
+            if (!p.isAccessory)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.autorenew,
+                      size: 18,
+                      color: Brand.blueDark,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _type == PurchaseType.refill
+                            ? 'Refill price — our rider collects your empty ${p.sizeLabel} cylinder.'
+                            : PurchaseType.newCylinder.hint,
+                        style: text.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
             const SizedBox(height: 20),
             Row(
               children: [

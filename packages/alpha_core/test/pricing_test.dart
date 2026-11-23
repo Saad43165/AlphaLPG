@@ -87,7 +87,10 @@ void main() {
 
   test('seed catalogue matches alphalpg.pk prices', () {
     expect(
-      {for (final p in SeedData.products) p.sizeLabel: p.refillPrice},
+      {
+        for (final p in SeedData.products.where((p) => !p.isAccessory))
+          p.sizeLabel: p.refillPrice,
+      },
       {'6 KG': 1676, '10 KG': 2793, '11.8 KG': 3296, '45.4 KG': 12682},
     );
   });

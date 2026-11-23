@@ -19,6 +19,7 @@ import '../../theme/brand.dart';
 import '../../utils/format.dart';
 import '../../utils/launch.dart';
 import '../../widgets/common.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/live.dart';
 import '../../widgets/live_rider_map.dart';
 import '../../widgets/cancel_order.dart';
@@ -55,7 +56,7 @@ class OrderDetailScreen extends StatelessWidget {
           return Scaffold(
             appBar: AppBar(leading: const ScreenBack()),
             body: snap.connectionState == ConnectionState.waiting
-                ? const Center(child: CircularProgressIndicator())
+                ? const DetailSkeleton()
                 : const EmptyState(
                     icon: Icons.search_off,
                     title: 'Order not found',
@@ -890,7 +891,7 @@ class _ItemsCard extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         Text(
-                          '${i.type.label} · ${formatRupees(i.unitPrice)} each',
+                          '${i.typeLabel} · ${formatRupees(i.unitPrice)} each',
                           style: TextStyle(
                             color: context.pal.muted,
                             fontSize: 12,
@@ -1283,10 +1284,7 @@ class _FactChips extends StatelessWidget {
       runSpacing: 8,
       children: [
         if (o.etaLine != null) chip(Icons.schedule_rounded, o.etaLine!),
-        chip(
-          Icons.propane_tank_rounded,
-          '${o.cylinderCount} cylinder${o.cylinderCount == 1 ? '' : 's'}',
-        ),
+        chip(Icons.propane_tank_rounded, o.itemsCountLabel),
         chip(Icons.payments_rounded, formatRupees(o.total)),
         chip(
           paid ? Icons.verified_rounded : Icons.hourglass_bottom_rounded,

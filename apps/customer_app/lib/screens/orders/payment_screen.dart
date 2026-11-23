@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../services/backend.dart';
 import '../../theme/brand.dart';
 import '../../widgets/common.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/payment.dart';
 import '../../widgets/payment_request_card.dart';
 
@@ -27,9 +28,7 @@ class PaymentScreen extends StatelessWidget {
           leading: const ScreenBack(),
           title: const Text('Payment'),
         ),
-        body: o == null
-            ? const Center(child: CircularProgressIndicator())
-            : Constrained(child: _Body(o)),
+        body: o == null ? const DetailSkeleton() : Constrained(child: _Body(o)),
       );
     },
   );

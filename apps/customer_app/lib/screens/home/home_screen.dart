@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import '../../widgets/skeleton.dart';
+
 import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 
 import '../../l10n/lang.dart';
@@ -22,7 +26,6 @@ import '../../widgets/address_picker.dart';
 import '../../widgets/push_drawer.dart';
 import '../../widgets/common.dart';
 import '../../widgets/live.dart';
-import '../info/safety_screen.dart';
 import 'product_sheet.dart';
 import '../../utils/haptics.dart';
 
@@ -34,17 +37,44 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  CustomerSegment _filter = CustomerSegment.both;
+  _Cat _filter = _Cat.all;
+
+  /// If the catalogue has not arrived after a few seconds (weak internet),
+  /// show the built-in list instead of placeholders forever.
+  bool _waited = false;
+  Timer? _wait;
+
+  @override
+  void initState() {
+    super.initState();
+    _wait = Timer(const Duration(seconds: 6), () {
+      if (mounted) setState(() => _waited = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _wait?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final products = state.products
         .where(
-          (p) =>
-              _filter == CustomerSegment.both ||
-              p.segment == _filter ||
-              p.segment == CustomerSegment.both,
+          (p) => switch (_filter) {
+            _Cat.all => true,
+            _Cat.accessories => p.isAccessory,
+            _Cat.home =>
+              !p.isAccessory &&
+                  (p.segment == CustomerSegment.home ||
+                      p.segment == CustomerSegment.both),
+            _Cat.commercial =>
+              !p.isAccessory &&
+                  (p.segment == CustomerSegment.business ||
+                      p.segment == CustomerSegment.both),
+          },
         )
         .toList();
     final width = MediaQuery.sizeOf(context).width;
@@ -68,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _ShopStatus(state.ordering),
                       if (state.signedIn) const _OrderStrip(),
                       Text(
-                        'Choose your cylinder',
+                        'What do you need?',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 10),
@@ -87,19 +117,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 maxWidth: 980,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    itemCount: products.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: columns,
-                      mainAxisSpacing: 14,
-                      crossAxisSpacing: 14,
-                      mainAxisExtent: 282,
-                    ),
-                    itemBuilder: (_, i) => _ProductCard(products[i]),
-                  ),
+                  child: !state.productsLoaded && !_waited
+                      ? ProductGridSkeleton(columns: columns)
+                      : GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: products.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                mainAxisSpacing: 14,
+                                crossAxisSpacing: 14,
+                                mainAxisExtent: 282,
+                              ),
+                          itemBuilder: (_, i) => _ProductCard(products[i]),
+                        ),
                 ),
               ),
             ),
@@ -111,13 +144,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const _SafetyStrip(),
-                      const SizedBox(height: 24),
                       _BusinessCard(
                         isBusiness: state.profile?.isBusiness ?? false,
                       ),
-                      const SizedBox(height: 14),
-                      const _AboutBanner(),
                       const SizedBox(height: 14),
                       _HelpCard(settings: state.settings),
                     ],
@@ -317,10 +346,12 @@ class _DeliverToPill extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 
+enum _Cat { all, home, commercial, accessories }
+
 class _SegmentFilter extends StatelessWidget {
   const _SegmentFilter({required this.value, required this.onChanged});
-  final CustomerSegment value;
-  final ValueChanged<CustomerSegment> onChanged;
+  final _Cat value;
+  final ValueChanged<_Cat> onChanged;
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
@@ -329,9 +360,14 @@ class _SegmentFilter extends StatelessWidget {
     child: Row(
       children: [
         for (final (s, label, icon) in [
-          (CustomerSegment.both, 'All', Icons.apps_rounded),
-          (CustomerSegment.home, 'Home', Icons.home_rounded),
-          (CustomerSegment.business, 'Commercial', Icons.storefront_rounded),
+          (_Cat.all, 'All', Icons.apps_rounded),
+          (_Cat.home, 'Home', Icons.home_rounded),
+          (_Cat.commercial, 'Commercial', Icons.storefront_rounded),
+          (
+            _Cat.accessories,
+            'Stoves & accessories',
+            Icons.soup_kitchen_rounded,
+          ),
         ])
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -396,7 +432,9 @@ class _ProductCard extends StatelessWidget {
                         Positioned(
                           left: 8,
                           top: 8,
-                          child: SizeBadge(product.sizeLabel),
+                          child: product.isAccessory
+                              ? const SizedBox.shrink()
+                              : SizeBadge(product.sizeLabel),
                         ),
                         if (product.badge.isNotEmpty)
                           Positioned(
@@ -447,6 +485,8 @@ class _ProductCard extends StatelessWidget {
                                   ? 'Out of stock'
                                   : product.lowStock != null
                                   ? 'Only ${product.lowStock} left'
+                                  : product.isAccessory
+                                  ? 'Accessory'
                                   : 'Refill',
                               style: TextStyle(
                                 fontSize: 11,
@@ -1107,178 +1147,6 @@ class _LinkRow extends StatelessWidget {
         ),
         Icon(Icons.chevron_right_rounded, color: context.pal.muted),
       ],
-    ),
-  );
-}
-
-/// Horizontal carousel of the four safety essentials from the poster.
-class _SafetyStrip extends StatelessWidget {
-  const _SafetyStrip();
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Use LPG safely',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
-          TextButton(
-            onPressed: () => context.push('/safety'),
-            child: const Text('See guide'),
-          ),
-        ],
-      ),
-      const SizedBox(height: 6),
-      SizedBox(
-        height: 136,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          clipBehavior: Clip.none,
-          itemCount: safetyEssentials.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 12),
-          itemBuilder: (context, i) {
-            final (icon, title, _) = safetyEssentials[i];
-            return GestureDetector(
-              onTap: () => context.push('/safety'),
-              child: Container(
-                width: 148,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: context.pal.card,
-                  borderRadius: BorderRadius.circular(Brand.radius),
-                  boxShadow: context.pal.shadow,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: context.pal.tint,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Icon(icon, color: Brand.blueDark),
-                        ),
-                        const Spacer(),
-                        _NumberBadge(i + 1),
-                      ],
-                    ),
-                    const Spacer(),
-                    Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    ],
-  );
-}
-
-/// Photo banner of the Alpha LPG depot linking to the About page.
-class _AboutBanner extends StatelessWidget {
-  const _AboutBanner();
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: () => context.push('/about'),
-    child: Container(
-      height: 170,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: context.pal.shadow,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/brand/photo_depot.jpg',
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-          ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0x000F2A3F), Color(0xE60F2A3F)],
-                stops: [0.3, 1],
-              ),
-            ),
-          ),
-          const Positioned(
-            left: 16,
-            right: 16,
-            bottom: 14,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'TRUSTED ACROSS LAHORE',
-                        style: TextStyle(
-                          color: Brand.flame,
-                          fontSize: 11,
-                          letterSpacing: 1.5,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'From our depot to your door',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_rounded, color: Colors.white),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _NumberBadge extends StatelessWidget {
-  const _NumberBadge(this.n);
-  final int n;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(
-      color: Brand.blueDark,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      n.toString().padLeft(2, '0'),
-      style: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.w800,
-        fontSize: 13,
-      ),
     ),
   );
 }

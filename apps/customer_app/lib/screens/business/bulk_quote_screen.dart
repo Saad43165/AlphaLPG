@@ -159,7 +159,7 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
     final pal = context.pal;
     final products = [
       for (final p in state.products)
-        if (p.active) p,
+        if (p.active && !p.isAccessory) p,
     ];
     if (_sentRequest != null)
       return _Sent(request: _sentRequest!, phone: settings.phone);

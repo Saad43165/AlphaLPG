@@ -304,7 +304,7 @@ class JobDetailScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  i.type.label,
+                                  i.typeLabel,
                                   style: TextStyle(
                                     color: pal.muted,
                                     fontSize: 12,

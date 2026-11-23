@@ -51,6 +51,36 @@ abstract final class SeedData {
       segment: CustomerSegment.business,
       sortOrder: 4,
     ),
+    // Accessories (size 0 = not a cylinder). Prices are TEST prices from the
+    // Pakistani market range; the owner confirms them in the admin app.
+    Product(
+      id: 'acc-indus-2burner-glass',
+      name: 'Indus 2-Burner Glass Top Stove',
+      sizeKg: 0,
+      refillPrice: 14500,
+      description: 'Toughened glass top, stainless steel body, brass burners and auto ignition.',
+      segment: CustomerSegment.home,
+      sortOrder: 5,
+    ),
+    Product(
+      id: 'acc-germania-1burner',
+      name: 'Germania Single Burner Stove',
+      sizeKg: 0,
+      refillPrice: 3800,
+      description:
+          'Stainless steel single burner LPG stove. Compact and easy to clean.',
+      segment: CustomerSegment.home,
+      sortOrder: 6,
+    ),
+    Product(
+      id: 'acc-eurogas-regulator-22mm',
+      name: 'Eurogas LPG Regulator 22mm',
+      sizeKg: 0,
+      refillPrice: 1100,
+      description: 'Low pressure regulator, 22mm, MS 1165:2008 certified. Fits domestic cylinders.',
+      segment: CustomerSegment.home,
+      sortOrder: 7,
+    ),
   ];
 
   static const settings = AppSettings(
