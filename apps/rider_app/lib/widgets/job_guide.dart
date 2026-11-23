@@ -43,7 +43,7 @@ class JobNextStep extends StatelessWidget {
                   : waiting
                   ? (
                       Icons.hourglass_top_rounded,
-                      Brand.flame,
+                      context.pal.warn,
                       'Wait: payment not confirmed',
                       'The customer pays ${o.paymentMethod.label} and Alpha LPG must confirm it first. Do not take cash. Ask the shop if it takes long.',
                     )
@@ -77,7 +77,7 @@ class JobNextStep extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(Brand.radius),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
@@ -204,7 +204,7 @@ class JobProblem extends StatelessWidget {
                     margin: const EdgeInsets.only(top: 10),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: (r.isOpen ? Brand.flame : Brand.success)
+                      color: (r.isOpen ? context.pal.warn : Brand.success)
                           .withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -283,7 +283,7 @@ class _ProblemSheetState extends State<_ProblemSheet> {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Material(
                   color: _reason == label
-                      ? Brand.blueDark.withValues(alpha: 0.12)
+                      ? Brand.blueDark.withValues(alpha: 0.22)
                       : pal.card,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

@@ -257,7 +257,7 @@ class _JobMapState extends State<JobMap> with WidgetsBindingObserver {
         Container(
           padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.14),
+            color: color.withValues(alpha: 0.22),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(

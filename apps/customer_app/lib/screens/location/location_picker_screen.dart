@@ -757,9 +757,9 @@ class _Pin extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.local_fire_department_rounded,
-                  color: Brand.flame,
+                  color: context.pal.warn,
                   size: 28,
                 ),
               ),

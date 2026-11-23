@@ -325,7 +325,7 @@ class AccountScreen extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: Brand.blue.withValues(alpha: 0.13),
+                backgroundColor: Brand.blue.withValues(alpha: 0.22),
                 child: Icon(icon, color: Brand.blueDark, size: 26),
               ),
               const SizedBox(height: 10),

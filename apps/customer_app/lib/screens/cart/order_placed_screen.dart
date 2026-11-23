@@ -238,12 +238,11 @@ class _Content extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: (todoIsPayment ? Brand.flame : Brand.blueDark).withValues(
-                alpha: 0.13,
-              ),
+              color: (todoIsPayment ? context.pal.warn : Brand.blueDark)
+                  .withValues(alpha: 0.13),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: (todoIsPayment ? Brand.flame : Brand.blueDark)
+                color: (todoIsPayment ? context.pal.warn : Brand.blueDark)
                     .withValues(alpha: 0.4),
               ),
             ),

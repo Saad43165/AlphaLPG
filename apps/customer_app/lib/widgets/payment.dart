@@ -205,7 +205,7 @@ class PaymentMethodPicker extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: value.color.withValues(alpha: 0.10),
+                        color: value.color.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: value.color.withValues(alpha: 0.4),
@@ -318,7 +318,7 @@ class _MethodTile extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: selected
                                     ? Colors.white.withValues(alpha: 0.25)
-                                    : brand.withValues(alpha: 0.14),
+                                    : brand.withValues(alpha: 0.22),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(

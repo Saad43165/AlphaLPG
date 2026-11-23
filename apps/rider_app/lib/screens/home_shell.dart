@@ -271,7 +271,7 @@ class _LocationBanner extends StatelessWidget {
             );
       return Container(
         width: double.infinity,
-        color: color.withValues(alpha: 0.14),
+        color: color.withValues(alpha: 0.22),
         padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
         child: Row(
           children: [
@@ -317,7 +317,7 @@ class _Notices extends StatelessWidget {
       VoidCallback? onClose,
     }) => Container(
       width: double.infinity,
-      color: color.withValues(alpha: 0.14),
+      color: color.withValues(alpha: 0.22),
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
       child: Row(
         children: [

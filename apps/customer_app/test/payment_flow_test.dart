@@ -71,7 +71,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       // The order page only points to the payment screen.
-      expect(find.text('Payment details are ready'), findsOneWidget);
+      expect(find.textContaining('Payment details are ready'), findsOneWidget);
       expect(find.text('Alpha LPG sent you payment details'), findsNothing);
       await tapText(tester, 'Pay now');
       expect(find.text('Payment'), findsWidgets);

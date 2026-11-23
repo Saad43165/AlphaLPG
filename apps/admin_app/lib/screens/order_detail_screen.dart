@@ -72,7 +72,7 @@ class OrderDetailScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Brand.blueDark.withValues(alpha: 0.10),
+                  color: Brand.blueDark.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(Brand.radius),
                 ),
                 child: Column(
@@ -519,7 +519,7 @@ class OrderDetailScreen extends StatelessWidget {
                           i <= o.rating!
                               ? Icons.star_rounded
                               : Icons.star_border_rounded,
-                          color: Brand.flame,
+                          color: context.pal.warn,
                           size: 26,
                         ),
                     ],
@@ -547,7 +547,7 @@ class OrderDetailScreen extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: Brand.blueDark.withValues(alpha: 0.12),
+                        color: Brand.blueDark.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
@@ -625,7 +625,7 @@ class _NextStep extends StatelessWidget {
               )
             : (
                 Icons.two_wheeler_rounded,
-                Brand.flame,
+                context.pal.warn,
                 'Give it to a rider',
                 'Choose a rider who is on shift.$payNote',
               ),
@@ -659,7 +659,7 @@ class _NextStep extends StatelessWidget {
               )
             : (
                 Icons.payments_rounded,
-                Brand.flame,
+                context.pal.warn,
                 'Delivered: payment not confirmed',
                 'Check the money, then tap Mark paid.$payNote',
               ),
@@ -674,7 +674,7 @@ class _NextStep extends StatelessWidget {
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(Brand.radius),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
@@ -802,7 +802,7 @@ class _Section extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: Brand.blueDark.withValues(alpha: 0.12),
+                    color: Brand.blueDark.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, size: 18, color: Brand.blueDark),

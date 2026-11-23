@@ -464,7 +464,7 @@ class JobDetailScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Brand.success.withValues(alpha: 0.12),
+                    color: Brand.success.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Row(

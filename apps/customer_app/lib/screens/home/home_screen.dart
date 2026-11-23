@@ -502,7 +502,7 @@ class _ProductCard extends StatelessWidget {
                                 color: !product.inStock
                                     ? Brand.danger
                                     : product.lowStock != null
-                                    ? Brand.flame
+                                    ? context.pal.warn
                                     : context.pal.muted,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -672,8 +672,8 @@ class _ShopStatus extends StatelessWidget {
     }
     final (IconData icon, Color tone) = switch (status.state) {
       OrderingState.paused => (Icons.block_rounded, Brand.danger),
-      OrderingState.closedHours => (Icons.nightlight_round, Brand.flame),
-      OrderingState.noRiders => (Icons.two_wheeler_rounded, Brand.flame),
+      OrderingState.closedHours => (Icons.nightlight_round, context.pal.warn),
+      OrderingState.noRiders => (Icons.two_wheeler_rounded, context.pal.warn),
       OrderingState.open => (Icons.check, Brand.success),
     };
     return Padding(
@@ -784,7 +784,7 @@ class _PlanDueCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pal = context.pal;
     return Material(
-      color: Brand.flame.withValues(alpha: 0.14),
+      color: context.pal.warnBg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -793,7 +793,7 @@ class _PlanDueCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              const Icon(Icons.event_repeat_rounded, color: Brand.flame),
+              Icon(Icons.event_repeat_rounded, color: context.pal.warn),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

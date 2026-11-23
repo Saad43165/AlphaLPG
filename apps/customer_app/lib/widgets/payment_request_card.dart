@@ -65,7 +65,7 @@ class PaymentRequestCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: m.color.withValues(alpha: 0.10),
+        color: m.color.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: m.color.withValues(alpha: 0.5)),
       ),
@@ -149,7 +149,7 @@ class ReceiptSection extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Brand.danger.withValues(alpha: 0.12),
+              color: Brand.danger.withValues(alpha: 0.22),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -346,7 +346,7 @@ class _PaySheetState extends State<_PaySheet> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Brand.success.withValues(alpha: 0.12),
+                  color: Brand.success.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -372,7 +372,7 @@ class _PaySheetState extends State<_PaySheet> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Brand.blueDark, width: 1.4),
-                  color: Brand.blueDark.withValues(alpha: 0.06),
+                  color: Brand.blueDark.withValues(alpha: 0.22),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -454,8 +454,8 @@ class _PaySheetState extends State<_PaySheet> {
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   'You need to pay ${formatRupees(_due)}. If you sent a different amount, Alpha LPG will contact you.',
-                  style: const TextStyle(
-                    color: Brand.flame,
+                  style: TextStyle(
+                    color: context.pal.warn,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

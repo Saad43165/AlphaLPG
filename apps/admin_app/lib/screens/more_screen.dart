@@ -49,12 +49,12 @@ class MoreScreen extends StatelessWidget {
               decoration: panel(context),
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 26,
                     backgroundColor: Brand.navy,
                     child: Icon(
                       Icons.admin_panel_settings_rounded,
-                      color: Brand.flame,
+                      color: context.pal.warn,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -226,7 +226,7 @@ class _Quick extends StatelessWidget {
                   backgroundColor: Brand.cylinderRed,
                   child: CircleAvatar(
                     radius: 24,
-                    backgroundColor: Brand.blue.withValues(alpha: 0.13),
+                    backgroundColor: Brand.blue.withValues(alpha: 0.22),
                     child: Icon(icon, color: Brand.blueDark, size: 26),
                   ),
                 ),
@@ -313,7 +313,7 @@ class _Item extends StatelessWidget {
       label: Text('$badge'),
       backgroundColor: Brand.cylinderRed,
       child: CircleAvatar(
-        backgroundColor: Brand.blue.withValues(alpha: 0.13),
+        backgroundColor: Brand.blue.withValues(alpha: 0.22),
         child: Icon(icon, color: Brand.blueDark),
       ),
     ),
@@ -555,7 +555,7 @@ class QuotesScreen extends StatelessWidget {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Brand.success.withValues(alpha: 0.12),
+                              color: Brand.success.withValues(alpha: 0.22),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(

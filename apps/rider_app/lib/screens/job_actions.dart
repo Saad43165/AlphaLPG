@@ -248,7 +248,7 @@ class _CompleteSheetState extends State<_CompleteSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Brand.flame.withValues(alpha: 0.18),
+                      color: context.pal.warnBg,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -277,7 +277,7 @@ class _CompleteSheetState extends State<_CompleteSheet> {
                         fontWeight: FontWeight.w800,
                         color: _empties == _slots.length
                             ? Brand.success
-                            : Brand.flame,
+                            : context.pal.warn,
                       ),
                     ),
                   ],

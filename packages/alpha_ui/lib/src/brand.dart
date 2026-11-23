@@ -286,6 +286,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.ink,
     required this.muted,
     required this.tint,
+    required this.warn,
+    required this.warnBg,
     required this.shadow,
   });
 
@@ -306,19 +308,27 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   /// Soft blue wash behind product images and icons.
   final Color tint;
+
+  /// Strong amber for text, icons and borders on this theme's surfaces.
+  final Color warn;
+
+  /// Solid pale amber behind warnings (light) / deep amber (dark).
+  final Color warnBg;
   final List<BoxShadow> shadow;
 
   static final light = AppPalette(
     isDark: false,
-    surface: const Color(0xFFF4F7FA),
+    surface: const Color(0xFFEDF2F7),
     card: Colors.white,
-    line: const Color(0xFFE2E9F0),
+    line: const Color(0xFFCFDBE7),
     ink: Brand.navy,
-    muted: const Color(0xFF61758A),
-    tint: const Color(0xFFEAF5FC),
+    muted: const Color(0xFF4B6074),
+    tint: const Color(0xFFD9ECFA),
+    warn: const Color(0xFFB45309),
+    warnBg: const Color(0xFFFFE9B8),
     shadow: [
       BoxShadow(
-        color: Brand.navy.withValues(alpha: 0.06),
+        color: Brand.navy.withValues(alpha: 0.10),
         blurRadius: 16,
         offset: const Offset(0, 6),
       ),
@@ -332,7 +342,9 @@ class AppPalette extends ThemeExtension<AppPalette> {
     line: Color(0xFF223A4F),
     ink: Color(0xFFE9F1F8),
     muted: Color(0xFF8CA3B8),
-    tint: Color(0xFF173650),
+    tint: Color(0xFF1B4163),
+    warn: Color(0xFFF6C23E),
+    warnBg: Color(0xFF4A3708),
     shadow: [],
   );
 

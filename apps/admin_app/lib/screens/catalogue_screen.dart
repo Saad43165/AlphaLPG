@@ -159,7 +159,7 @@ class CatalogueScreen extends StatelessWidget {
                                                   ? 'On sale'
                                                   : 'On sale · ${p.stock} left',
                                               color: p.lowStock != null
-                                                  ? Brand.flame
+                                                  ? context.pal.warn
                                                   : Brand.success,
                                             ),
                                           if (!p.hasUploadedImage)

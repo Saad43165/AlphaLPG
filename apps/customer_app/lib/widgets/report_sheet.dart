@@ -139,7 +139,7 @@ class _ReportSheetState extends State<_ReportSheet> {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Material(
                   color: _reason == label
-                      ? Brand.blueDark.withValues(alpha: 0.12)
+                      ? Brand.blueDark.withValues(alpha: 0.22)
                       : pal.card,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -224,7 +224,7 @@ class MyReports extends StatelessWidget {
               margin: const EdgeInsets.only(top: 10),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: (r.isOpen ? Brand.flame : Brand.success).withValues(
+                color: (r.isOpen ? context.pal.warn : Brand.success).withValues(
                   alpha: 0.12,
                 ),
                 borderRadius: BorderRadius.circular(12),

@@ -42,16 +42,16 @@ class SetupCheck extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Brand.flame.withValues(alpha: 0.12),
+        color: context.pal.warnBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Brand.flame.withValues(alpha: 0.4)),
+        border: Border.all(color: context.pal.warnBg),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.checklist_rounded, color: Brand.flame),
+              Icon(Icons.checklist_rounded, color: context.pal.warn),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

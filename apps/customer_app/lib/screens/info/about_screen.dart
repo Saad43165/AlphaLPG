@@ -1,5 +1,10 @@
+import 'package:alpha_ui/alpha_ui.dart' show WhatsAppIcon;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart' hide Text;
+import 'package:provider/provider.dart';
+
+import '../../state/app_state.dart';
+import '../../utils/launch.dart';
 
 import '../../l10n/text.dart';
 
@@ -19,6 +24,11 @@ class AboutScreen extends StatelessWidget {
       Icons.restaurant_rounded,
       'Commercial supply',
       '45.4kg cylinders on a schedule for restaurants, hotels and bakeries.',
+    ),
+    (
+      Icons.soup_kitchen_rounded,
+      'Stoves and regulators',
+      'Gas stoves and certified regulators, delivered with your cylinder.',
     ),
     (
       Icons.factory_rounded,
@@ -103,8 +113,8 @@ class AboutScreen extends StatelessWidget {
                       'Safe cylinders, straightforward ordering, and convenient delivery when you need it.',
                       style: TextStyle(
                         fontSize: 16,
-                        height: 1.45,
-                        color: context.pal.muted,
+                        height: 1.5,
+                        color: context.pal.ink,
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -132,12 +142,12 @@ class AboutScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(10),
+                                padding: const EdgeInsets.all(11),
                                 decoration: BoxDecoration(
-                                  color: context.pal.tint,
-                                  borderRadius: BorderRadius.circular(12),
+                                  gradient: Brand.headerGradient,
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: Icon(icon, color: Brand.blueDark),
+                                child: Icon(icon, color: Colors.white),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -177,8 +187,74 @@ class AboutScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    FilledButton(
+                    const SectionTitle('Why Alpha LPG'),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Brand.navy,
+                        borderRadius: BorderRadius.circular(Brand.radius),
+                      ),
+                      child: const Column(
+                        children: [
+                          _Why(
+                            Icons.verified_rounded,
+                            'Every cylinder is checked before it leaves',
+                          ),
+                          _Why(
+                            Icons.my_location_rounded,
+                            'Follow your rider live on the map',
+                          ),
+                          _Why(
+                            Icons.payments_rounded,
+                            'Pay cash, JazzCash, Easypaisa or bank',
+                          ),
+                          _Why(
+                            Icons.receipt_long_rounded,
+                            'A proper invoice for every order',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SectionTitle('Talk to us'),
+                    Builder(
+                      builder: (context) {
+                        final st = context.read<AppState>().settings;
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(54),
+                                ),
+                                onPressed: () => Launch.call(st.phone),
+                                icon: const Icon(Icons.call_rounded),
+                                label: const Text('Call us'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(54),
+                                  backgroundColor: const Color(0xFF128C4A),
+                                ),
+                                onPressed: () => Launch.whatsapp(
+                                  st.whatsapp,
+                                  'Assalam-o-Alaikum, I need help with Alpha LPG.',
+                                ),
+                                icon: const WhatsAppIcon(size: 22),
+                                label: const Text('WhatsApp'),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(54),
+                      ),
                       onPressed: () => context.go('/'),
                       child: const Text('Order LPG now'),
                     ),
@@ -219,14 +295,38 @@ class _Stat extends StatelessWidget {
           ),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 12,
-              height: 1.25,
-            ),
+            style: TextStyle(color: Colors.white, fontSize: 12, height: 1.25),
           ),
         ],
       ),
+    ),
+  );
+}
+
+class _Why extends StatelessWidget {
+  const _Why(this.icon, this.text);
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 7),
+    child: Row(
+      children: [
+        Icon(icon, color: Brand.flame, size: 24),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              height: 1.3,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }

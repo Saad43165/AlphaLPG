@@ -675,7 +675,7 @@ class OrderTile extends StatelessWidget {
                           ? Brand.success
                           : switch (o.payStage) {
                               PayStage.sendDetails => Brand.cylinderRed,
-                              PayStage.receipt => Brand.flame,
+                              PayStage.receipt => context.pal.warn,
                               _ => const Color(0xFF8A6D00),
                             },
                     ),
@@ -757,7 +757,7 @@ class _ShopBar extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.11),
+        color: color.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(Brand.radius),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
@@ -842,7 +842,7 @@ class _PayBanner extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
     child: Material(
-      color: Brand.flame.withValues(alpha: 0.18),
+      color: context.pal.warnBg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),

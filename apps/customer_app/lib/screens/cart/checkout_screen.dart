@@ -611,7 +611,7 @@ class _WhenTile extends StatelessWidget {
       button: true,
       selected: selected,
       child: Material(
-        color: selected ? Brand.blueDark.withValues(alpha: 0.1) : pal.surface,
+        color: selected ? Brand.blueDark.withValues(alpha: 0.22) : pal.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
@@ -761,7 +761,7 @@ class _SlotTile extends StatelessWidget {
     return Opacity(
       opacity: enabled ? 1 : 0.55,
       child: Material(
-        color: selected ? Brand.blueDark.withValues(alpha: 0.1) : pal.surface,
+        color: selected ? Brand.blueDark.withValues(alpha: 0.22) : pal.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(

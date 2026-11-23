@@ -81,7 +81,7 @@ class PaymentPanel extends StatelessWidget {
               color:
                   (stage == PayStage.sendDetails
                           ? Brand.cylinderRed
-                          : Brand.flame)
+                          : context.pal.warn)
                       .withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -105,7 +105,7 @@ class PaymentPanel extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Brand.danger.withValues(alpha: 0.12),
+                color: Brand.danger.withValues(alpha: 0.22),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Brand.danger.withValues(alpha: 0.4)),
               ),
@@ -140,7 +140,7 @@ class PaymentPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Brand.blueDark.withValues(alpha: 0.10),
+              color: Brand.blueDark.withValues(alpha: 0.22),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -179,7 +179,7 @@ class PaymentPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Brand.danger.withValues(alpha: 0.12),
+              color: Brand.danger.withValues(alpha: 0.22),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(

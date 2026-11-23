@@ -137,7 +137,7 @@ class CashScreen extends StatelessWidget {
                     'Cash still with riders',
                     rs(totalPending),
                     bold: true,
-                    color: totalPending > 0 ? Brand.flame : Brand.success,
+                    color: totalPending > 0 ? context.pal.warn : Brand.success,
                   ),
                 ],
               ),
@@ -177,7 +177,9 @@ class CashScreen extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 18,
-                            color: c.pending > 0 ? Brand.flame : Brand.success,
+                            color: c.pending > 0
+                                ? context.pal.warn
+                                : Brand.success,
                           ),
                         ),
                       ],

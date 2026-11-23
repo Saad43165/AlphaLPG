@@ -213,7 +213,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Brand.success.withValues(alpha: 0.08),
+                            color: Brand.success.withValues(alpha: 0.22),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Row(

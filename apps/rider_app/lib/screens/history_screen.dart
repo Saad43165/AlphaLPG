@@ -49,7 +49,7 @@ class HistoryScreen extends StatelessWidget {
           Material(
             color: pending > 0
                 ? const Color(0xFFFFF4D6)
-                : Brand.success.withValues(alpha: 0.12),
+                : Brand.success.withValues(alpha: 0.22),
             borderRadius: BorderRadius.circular(Brand.radius),
             child: InkWell(
               borderRadius: BorderRadius.circular(Brand.radius),
@@ -276,7 +276,9 @@ class _HistoryTile extends StatelessWidget {
                         Pill(
                           Icons.autorenew_rounded,
                           'Empties $took of $expected',
-                          color: took == expected ? Brand.success : Brand.flame,
+                          color: took == expected
+                              ? Brand.success
+                              : context.pal.warn,
                         ),
                     ],
                   ),

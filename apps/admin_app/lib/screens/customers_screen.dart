@@ -402,7 +402,7 @@ class CustomerDetailScreen extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Brand.blueDark.withValues(alpha: 0.12),
+                        color: Brand.blueDark.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(icon, color: Brand.blueDark, size: 21),
@@ -517,7 +517,7 @@ class CustomerDetailScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Brand.danger.withValues(alpha: 0.12),
+                  color: Brand.danger.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(Brand.radius),
                 ),
                 child: Row(
@@ -717,7 +717,7 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.10),
+      color: color.withValues(alpha: 0.22),
       borderRadius: BorderRadius.circular(Brand.radius),
     ),
     child: Column(

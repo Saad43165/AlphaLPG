@@ -334,7 +334,7 @@ class _IconBubble extends StatelessWidget {
     width: size,
     height: size,
     decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.12),
+      color: color.withValues(alpha: 0.22),
       borderRadius: BorderRadius.circular(size * 0.32),
     ),
     child: Icon(icon, color: color, size: size * 0.52),

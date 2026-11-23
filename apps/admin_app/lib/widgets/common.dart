@@ -58,7 +58,7 @@ class EmptyState extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundColor: Brand.blue.withValues(alpha: 0.12),
+            backgroundColor: Brand.blue.withValues(alpha: 0.22),
             child: Icon(icon, size: 40, color: Brand.blueDark),
           ),
           const SizedBox(height: 16),
@@ -123,7 +123,7 @@ class StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.13),
+        color: color.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -148,7 +148,7 @@ class Pill extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.13),
+      color: color.withValues(alpha: 0.22),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Row(

@@ -304,15 +304,15 @@ class ActiveOrderCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
                     decoration: BoxDecoration(
-                      color: Brand.flame.withValues(alpha: 0.15),
+                      color: context.pal.warnBg,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.account_balance_wallet_rounded,
                           size: 18,
-                          color: Brand.flame,
+                          color: context.pal.warn,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -422,7 +422,7 @@ class OrderTile extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor: color.withValues(alpha: 0.14),
+                        backgroundColor: color.withValues(alpha: 0.22),
                         child: Icon(
                           delivered ? Icons.check_rounded : Icons.close_rounded,
                           color: color,

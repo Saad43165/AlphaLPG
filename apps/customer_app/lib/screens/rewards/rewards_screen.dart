@@ -90,7 +90,7 @@ class RewardsScreen extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      color: Brand.blue.withValues(alpha: 0.1),
+                      color: Brand.blue.withValues(alpha: 0.22),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(

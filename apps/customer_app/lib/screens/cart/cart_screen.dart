@@ -315,7 +315,7 @@ class FreeDeliveryMeter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: done ? Brand.success.withValues(alpha: 0.1) : context.pal.tint,
+        color: done ? Brand.success.withValues(alpha: 0.22) : context.pal.tint,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -673,7 +673,7 @@ class _InfoBox extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: Brand.flame.withValues(alpha: 0.16),
+      color: context.pal.warnBg,
       borderRadius: BorderRadius.circular(14),
     ),
     child: Row(

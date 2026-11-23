@@ -262,7 +262,7 @@ class _BulkQuoteScreenState extends State<BulkQuoteScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Brand.blue.withValues(alpha: 0.1),
+                  color: Brand.blue.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Column(
@@ -464,7 +464,7 @@ class _MyRequests extends StatelessWidget {
           'contacted' => Brand.blueDark,
           'won' => Brand.success,
           'lost' => pal.muted,
-          _ => Brand.flame,
+          _ => context.pal.warn,
         };
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -529,7 +529,7 @@ class _MyRequests extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Brand.success.withValues(alpha: 0.12),
+                          color: Brand.success.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(

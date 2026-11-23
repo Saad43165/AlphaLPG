@@ -244,7 +244,7 @@ class _GuidePageState extends State<GuidePage> {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Brand.blue.withValues(alpha: 0.14),
+                      backgroundColor: Brand.blue.withValues(alpha: 0.22),
                       child: Icon(s.icon, color: Brand.blueDark),
                     ),
                     const SizedBox(width: 12),
@@ -323,7 +323,7 @@ class _GuidePageState extends State<GuidePage> {
                         margin: const EdgeInsets.only(top: 2),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Brand.flame.withValues(alpha: 0.16),
+                          color: context.pal.warnBg,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(

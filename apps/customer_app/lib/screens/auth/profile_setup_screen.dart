@@ -160,54 +160,108 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             children: [
               // Who you are: avatar, number (read-only, verified).
-              Center(
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+                decoration: BoxDecoration(
+                  gradient: Brand.headerGradient,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Brand.blueDeep.withValues(alpha: 0.30),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
                 child: Column(
                   children: [
                     ListenableBuilder(
                       listenable: _name,
-                      builder: (_, _) => CircleAvatar(
-                        radius: 38,
-                        backgroundColor: Brand.blueDark,
-                        child: Text(
-                          _initials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
+                      builder: (_, _) => Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: CircleAvatar(
+                          radius: 38,
+                          backgroundColor: Brand.navy,
+                          child: Text(
+                            _initials,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    ListenableBuilder(
+                      listenable: _name,
+                      builder: (_, _) => Text(
+                        _name.text.trim().isEmpty
+                            ? tr('Your name')
+                            : _name.text.trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
                     if (phone.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              _prettyPhone(phone),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!context.read<Backend>().auth.isQuick)
+                              const Padding(
+                                padding: EdgeInsetsDirectional.only(end: 6),
+                                child: Icon(
+                                  Icons.verified_rounded,
+                                  size: 18,
+                                  color: Brand.success,
+                                ),
+                              ),
+                            Flexible(
+                              child: Text(
+                                _prettyPhone(phone),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Brand.navy,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          if (!context.read<Backend>().auth.isQuick)
-                            const Icon(
-                              Icons.verified_rounded,
-                              size: 18,
-                              color: Brand.success,
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(height: 8),
                       Text(
                         context.read<Backend>().auth.isQuick
                             ? 'Our rider calls this number.'
                             : 'Verified number. You sign in with it.',
-                        style: TextStyle(color: pal.muted, fontSize: 12.5),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ],
@@ -221,7 +275,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   style: text.bodyMedium?.copyWith(color: pal.muted),
                 ),
               ],
-              const SizedBox(height: 22),
+              const SizedBox(height: 18),
               _SectionCard(
                 title: 'Your details',
                 children: [
@@ -405,12 +459,12 @@ class _TypeCard extends StatelessWidget {
       button: true,
       selected: selected,
       child: Material(
-        color: selected ? Brand.blue.withValues(alpha: 0.12) : pal.surface,
+        color: selected ? Brand.blueDark : pal.card,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(
             color: selected ? Brand.blueDark : pal.line,
-            width: selected ? 2 : 1,
+            width: selected ? 2 : 1.5,
           ),
         ),
         child: InkWell(
@@ -425,7 +479,7 @@ class _TypeCard extends StatelessWidget {
                   children: [
                     Icon(
                       icon,
-                      color: selected ? Brand.blueDark : pal.muted,
+                      color: selected ? Colors.white : pal.muted,
                       size: 26,
                     ),
                     const Spacer(),
@@ -434,16 +488,17 @@ class _TypeCard extends StatelessWidget {
                           ? Icons.check_circle_rounded
                           : Icons.circle_outlined,
                       size: 20,
-                      color: selected ? Brand.blueDark : pal.line,
+                      color: selected ? Colors.white : pal.muted,
                     ),
                   ],
                 ),
                 const Spacer(),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
+                    color: selected ? Colors.white : pal.ink,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -452,7 +507,7 @@ class _TypeCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: pal.muted,
+                    color: selected ? Colors.white : pal.muted,
                     fontSize: 12,
                     height: 1.25,
                   ),

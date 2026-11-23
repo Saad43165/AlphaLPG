@@ -198,7 +198,7 @@ class _Ticket extends StatelessWidget {
         : r.refund == 'declined'
         ? ('Refund not approved', Brand.danger)
         : r.isOpen
-        ? ('Open', Brand.flame)
+        ? ('Open', context.pal.warn)
         : ('Resolved', Brand.success);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -226,7 +226,7 @@ class _Ticket extends StatelessWidget {
                   vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
+                  color: color.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(

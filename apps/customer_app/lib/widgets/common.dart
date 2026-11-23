@@ -355,7 +355,7 @@ class StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.12),
+        color: c.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -412,7 +412,7 @@ class EmptyState extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundColor: Brand.blue.withValues(alpha: 0.12),
+            backgroundColor: Brand.blue.withValues(alpha: 0.22),
             child: Icon(icon, size: 40, color: Brand.blueDark),
           ),
           const SizedBox(height: 16),

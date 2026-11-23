@@ -138,7 +138,7 @@ class _LiveRiderMapState extends State<LiveRiderMap> {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Brand.success.withValues(alpha: 0.14),
+              color: Brand.success.withValues(alpha: 0.22),
               borderRadius: BorderRadius.circular(Brand.radius),
             ),
             child: const Row(

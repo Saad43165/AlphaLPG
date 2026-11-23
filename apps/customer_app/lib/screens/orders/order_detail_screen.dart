@@ -306,7 +306,8 @@ class _TrackingView extends StatelessWidget {
   }
 }
 
-/// Shown above everything while an online payment is still owed.
+/// Shown above everything while an online payment is still owed: a solid,
+/// unmissable card with one big button.
 class _PayFirstBanner extends StatelessWidget {
   const _PayFirstBanner(this.o);
   final LpgOrder o;
@@ -315,36 +316,65 @@ class _PayFirstBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final sent = o.paymentRequest != null;
     final checking = o.receiptAt != null && o.paymentIssue.isEmpty;
-    final (String title, String text, Color color) = o.paymentIssue.isNotEmpty
-        ? ('Payment problem', o.paymentIssue, Brand.danger)
+    final (
+      String title,
+      String text,
+      String button,
+      Color color,
+    ) = o.paymentIssue.isNotEmpty
+        ? ('Payment problem', o.paymentIssue, 'Fix payment', Brand.danger)
         : checking
         ? (
             'Checking your payment',
             'Alpha LPG is confirming transaction ${o.paymentReference}.',
+            'View payment',
             Brand.blueDark,
           )
         : sent
         ? (
-            'Payment details are ready',
-            'Pay ${formatRupees(o.total)} and send your receipt.',
-            Brand.flame,
+            'Pay ${formatRupees(o.total)} now',
+            'Payment details are ready. Pay, then send your receipt.',
+            'Pay now',
+            const Color(0xFFD9480F),
           )
         : (
             'Payment needed',
             'Alpha LPG will send the ${o.paymentMethod.label} account shortly.',
-            Brand.flame,
+            'View payment',
+            const Color(0xFFD9480F),
           );
-    return Material(
-      color: color.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => context.push('/orders/${o.id}/payment'),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+    void open() => context.push('/orders/${o.id}/payment');
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(Brand.radius),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.account_balance_wallet_rounded, color: color),
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: color,
+                  size: 22,
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -352,30 +382,42 @@ class _PayFirstBanner extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: color,
+                        fontSize: 18,
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(text, style: const TextStyle(height: 1.35)),
+                    const SizedBox(height: 3),
+                    Text(
+                      text,
+                      style: const TextStyle(
+                        height: 1.35,
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                  ),
-                  onPressed: () => context.push('/orders/${o.id}/payment'),
-                  child: Text(sent ? 'Pay now' : 'Open'),
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: color,
+              minimumSize: const Size(0, 50),
+            ),
+            onPressed: open,
+            icon: const Icon(Icons.arrow_forward_rounded),
+            iconAlignment: IconAlignment.end,
+            label: Text(
+              button,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -471,7 +513,7 @@ class _Hero extends StatelessWidget {
                         o.status == OrderStatus.delivered
                             ? Icons.check_circle_rounded
                             : Icons.schedule_rounded,
-                        color: Brand.flame,
+                        color: context.pal.warn,
                         size: 18,
                       ),
                       const SizedBox(width: 6),
@@ -1136,7 +1178,7 @@ class _RatedCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     decoration: BoxDecoration(
-      color: Brand.flame.withValues(alpha: 0.18),
+      color: context.pal.warnBg,
       borderRadius: BorderRadius.circular(Brand.radius),
     ),
     child: Row(
@@ -1201,7 +1243,7 @@ class _PaymentCard extends StatelessWidget {
                     : (o.paymentMethod.isPrepaid
                           ? 'UNPAID'
                           : 'CASH ON DELIVERY'),
-                color: paid ? Brand.success : Brand.flame,
+                color: paid ? Brand.success : context.pal.warn,
                 dark: !paid,
               ),
             ],
@@ -1266,7 +1308,7 @@ class _FactChips extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Brand.flame),
+          Icon(icon, size: 16, color: context.pal.warn),
           const SizedBox(width: 6),
           Text(
             text,
@@ -1549,7 +1591,7 @@ class _PayStatus extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1738,7 +1780,7 @@ class _ClosedView extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: color.withValues(alpha: 0.14),
+                        backgroundColor: color.withValues(alpha: 0.22),
                         child: Icon(
                           done ? Icons.check_rounded : Icons.close_rounded,
                           color: color,

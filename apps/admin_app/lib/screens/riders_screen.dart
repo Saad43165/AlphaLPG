@@ -172,7 +172,7 @@ class _RiderCard extends StatelessWidget {
         : onRoad
         ? (
             'On the road · seen ${timeAgo(r.lastSeen)}',
-            Brand.flame,
+            context.pal.warn,
             Icons.two_wheeler_rounded,
           )
         : live
