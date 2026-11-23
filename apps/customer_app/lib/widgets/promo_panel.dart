@@ -11,8 +11,9 @@ import '../theme/brand.dart';
 
 /// "Have a code?" and "Use my points" on the checkout.
 class PromoPanel extends StatefulWidget {
-  const PromoPanel({super.key, required this.subtotal});
+  const PromoPanel({super.key, required this.subtotal, this.lines = 1});
   final int subtotal;
+  final int lines;
 
   @override
   State<PromoPanel> createState() => _PromoPanelState();
@@ -42,6 +43,15 @@ class _PromoPanelState extends State<PromoPanel> {
     final promo = context.watch<PromoState>();
     final settings = context.watch<AppState>().settings;
     final pal = context.pal;
+    if (widget.lines > PriceBreakdown.maxLinesWithDiscount) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Text(
+          'Codes and reward points work on orders of up to ${PriceBreakdown.maxLinesWithDiscount} different items. Split this into two orders to use them.',
+          style: TextStyle(color: pal.muted, fontSize: 13, height: 1.35),
+        ),
+      );
+    }
     final c = promo.coupon;
     final cd = c == null ? 0 : c.discountFor(widget.subtotal);
     final maxPts = PriceBreakdown.maxPoints(

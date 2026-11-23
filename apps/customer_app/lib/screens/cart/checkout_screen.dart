@@ -428,7 +428,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       setState(() => _payment = m);
                     },
                   ),
-                  PromoPanel(subtotal: base.subtotal),
+                  PromoPanel(subtotal: base.subtotal, lines: base.lines),
                 ],
               ),
             ),

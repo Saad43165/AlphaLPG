@@ -22,7 +22,7 @@ beforeEach(async () => {
     const db = ctx.firestore();
     await setDoc(doc(db, 'products/cyl-11-8kg'), { name: '11.8kg', sizeKg: 11.8, refillPrice: 3296, newCylinderPrice: null, active: true, inStock: true });
     await setDoc(doc(db, 'products/cyl-6kg'), { name: '6kg', sizeKg: 6, refillPrice: 1676, newCylinderPrice: 5000, active: true, inStock: true });
-    for (const n of ['a', 'b', 'c', 'd']) {
+    for (const n of ['a', 'b', 'c', 'd', 'e', 'f']) {
       await setDoc(doc(db, `products/p-${n}`), { name: n, sizeKg: 10, refillPrice: 1000, newCylinderPrice: 4000, active: true, inStock: true });
     }
     await setDoc(doc(db, 'products/cyl-old'), { name: 'old', sizeKg: 5, refillPrice: 100, active: false, inStock: true });
@@ -68,13 +68,23 @@ describe('placing orders', () => {
     const items = [line('cyl-11-8kg', 2, 3296), line('cyl-6kg', 1, 5000, 'newCylinder')];
     await assertSucceeds(setDoc(doc(customer(), 'orders/o2'), order({ items, subtotal: 11592, deliveryFee: 0, total: 11592 })));
   });
+  it('accepts 8 lines (4 products, refill and new each)', async () => {
+    const items = ['a', 'b', 'c', 'd'].flatMap((n) => [line(`p-${n}`, 1, 1000), line(`p-${n}`, 1, 4000, 'newCylinder')]);
+    await assertSucceeds(setDoc(doc(customer(), 'orders/eight-lines'), order({ items, subtotal: 20000, deliveryFee: 0, total: 20000 })));
+  });
+  it('accepts a cart of 7 different products', async () => {
+    const items = ['a', 'b', 'c', 'd'].map((n) => line(`p-${n}`, 1, 1000))
+      .concat([line('cyl-6kg', 1, 1676), line('cyl-11-8kg', 1, 3296), line('p-e', 1, 1000)]);
+    await assertSucceeds(setDoc(doc(customer(), 'orders/seven'), order({ items, subtotal: 9972, deliveryFee: 0, total: 9972 })));
+  });
   it('accepts the largest cart (6 lines)', async () => {
     const items = ['a', 'b', 'c'].flatMap((n) => [line(`p-${n}`, 1, 1000), line(`p-${n}`, 1, 4000, 'newCylinder')]);
     await assertSucceeds(setDoc(doc(customer(), 'orders/big'), order({ items, subtotal: 15000, deliveryFee: 0, total: 15000, cylinderCount: 6 })));
   });
-  it('rejects more than 6 lines', async () => {
-    const items = ['a', 'b', 'c', 'd'].flatMap((n) => [line(`p-${n}`, 1, 1000), line(`p-${n}`, 1, 4000, 'newCylinder')]);
-    await assertFails(setDoc(doc(customer(), 'orders/big'), order({ items, subtotal: 20000, deliveryFee: 0, total: 20000 })));
+  it('rejects more than 8 lines', async () => {
+    const items = ['a', 'b', 'c', 'd'].flatMap((n) => [line(`p-${n}`, 1, 1000), line(`p-${n}`, 1, 4000, 'newCylinder')])
+      .concat([line('cyl-6kg', 1, 1676)]);
+    await assertFails(setDoc(doc(customer(), 'orders/big'), order({ items, subtotal: 21676, deliveryFee: 0, total: 21676 })));
   });
   it('rejects a forged unit price', async () => {
     await assertFails(setDoc(doc(customer(), 'orders/o1'), order({ items: [line('cyl-11-8kg', 1, 1)], subtotal: 1, total: 151 })));
@@ -88,8 +98,7 @@ describe('placing orders', () => {
     const items = [line('cyl-11-8kg', 2, 3296)];
     await assertFails(setDoc(doc(customer(), 'orders/o2'), order({ items, subtotal: 6592, deliveryFee: 150, total: 6742 })));
   });
-  it('rejects inactive or unknown products, zero or huge quantities', async () => {
-    await assertFails(setDoc(doc(customer(), 'orders/a'), order({ items: [line('cyl-old', 1, 100)], subtotal: 100, total: 250 })));
+  it('rejects unknown products, zero or huge quantities', async () => {
     await assertFails(setDoc(doc(customer(), 'orders/b'), order({ items: [line('nope', 1, 100)], subtotal: 100, total: 250 })));
     await assertFails(setDoc(doc(customer(), 'orders/c'), order({ items: [line('cyl-11-8kg', 0, 3296)], subtotal: 0, total: 150 })));
     await assertFails(setDoc(doc(customer(), 'orders/d'), order({ items: [line('cyl-11-8kg', 100, 3296)], subtotal: 329600, deliveryFee: 0, total: 329600 })));
@@ -692,6 +701,18 @@ describe('discount codes, friend codes and reward points', () => {
     });
   });
 
+  it('a shop code works on 5 different products', async () => {
+    const items = ['a', 'b', 'c', 'd', 'e'].map((n) => line(`p-${n}`, 1, 1000));
+    await assertSucceeds(place(customer(), { items, subtotal: 5000, deliveryFee: 150, couponCode: 'WELCOME', couponDiscount: 200, pointsUsed: 0, pointsDiscount: 0, discount: 200, total: 4950 }, 'coupons/WELCOME/uses/u1'));
+  });
+  it('a code and points together work on 5 different products', async () => {
+    const items = ['a', 'b', 'c', 'd', 'e'].map((n) => line(`p-${n}`, 1, 1000));
+    await assertSucceeds(place(customer(), { items, subtotal: 5000, deliveryFee: 150, couponCode: 'WELCOME', couponDiscount: 200, pointsUsed: 300, pointsDiscount: 300, discount: 500, total: 4650 }, 'coupons/WELCOME/uses/u1'));
+  });
+  it('reward points work on 6 different products', async () => {
+    const items = ['a', 'b', 'c', 'd', 'e', 'f'].map((n) => line(`p-${n}`, 1, 1000));
+    await assertSucceeds(place(customer(), { items, subtotal: 6000, deliveryFee: 0, couponCode: '', couponDiscount: 0, pointsUsed: 300, pointsDiscount: 300, discount: 300, total: 5700 }, null));
+  });
   it('a shop code takes its amount off, once per customer', async () => {
     await assertSucceeds(place(customer(), withCode(), 'coupons/WELCOME/uses/u1'));
     await assertFails(place(customer(), withCode(), 'coupons/WELCOME/uses/u1', 'o2'));

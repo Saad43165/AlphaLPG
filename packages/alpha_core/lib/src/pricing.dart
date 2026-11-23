@@ -36,7 +36,11 @@ class PriceBreakdown {
 
   /// The most different items one order can hold (also enforced by the
   /// security rules).
-  static const maxLines = 6;
+  static const maxLines = 8;
+
+  /// Codes and reward points are checked by the database rules, which have a
+  /// step limit, so they work on orders of up to this many different items.
+  static const maxLinesWithDiscount = 5;
 
   /// Rupees taken off by a discount code, and by spending points.
   final int couponDiscount;

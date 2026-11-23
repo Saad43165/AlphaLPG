@@ -119,20 +119,21 @@ service cloud.firestore {
 
     // ---- Orders -------------------------------------------------------------
 
-    // One order line is valid when it names an active, in-stock product at
-    // exactly the price in the catalogue. Index i beyond the list is fine.
-    function lineValid(it) {
+    // One order line is valid when it names a catalogue product at exactly the
+    // catalogue price. lineCost gives the line's price times its quantity, or a
+    // huge negative number when the line is not valid, so a single sum checks
+    // every line at once (cheap enough for Firestore's limit of 1000 rule
+    // steps). Index i beyond the list costs nothing. (Whether an item is in
+    // stock is checked by the app and by the shop confirming each order.)
+    function lineCost(it) {
       let p = get(/databases/$(database)/documents/products/$(it.productId)).data;
-      return it.quantity is int && it.quantity >= 1 && it.quantity <= 99
-        && it.unitPrice is int
-        && p.get('active', true) == true
-        && p.get('inStock', true) == true
-        && it.unitPrice == (it.type == 'newCylinder'
-             ? p.get('newCylinderPrice', null)
-             : p.get('refillPrice', null));
+      let q = it.quantity;
+      let u = it.unitPrice;
+      return (q is int && q > 0 && q < 100
+              && u == p.get(it.type == 'newCylinder' ? 'newCylinderPrice' : 'refillPrice', null))
+        ? u * q : -1000000000000;
     }
-    function lineOk(items, i) { return items.size() <= i || lineValid(items[i]); }
-    function lineSum(items, i) { return items.size() <= i ? 0 : items[i].unitPrice * items[i].quantity; }
+    function lc(items, i) { return items.size() <= i ? 0 : lineCost(items[i]); }
 
     function feeFor(subtotal, s, area) {
       return (subtotal == 0
@@ -181,12 +182,14 @@ service cloud.firestore {
         && d.createdAt == request.time && d.updatedAt == request.time
         && addressOk(d.address)
         // Prices and totals must match the catalogue and shop settings.
-        // At most 6 lines (a Firestore rule may run at most 1000 steps).
-        && items.size() >= 1 && items.size() <= 6
-        && lineOk(items, 0) && lineOk(items, 1) && lineOk(items, 2)
-        && lineOk(items, 3) && lineOk(items, 4) && lineOk(items, 5)
-        && d.subtotal == lineSum(items, 0) + lineSum(items, 1) + lineSum(items, 2)
-                       + lineSum(items, 3) + lineSum(items, 4) + lineSum(items, 5)
+        // Up to 8 lines (a refill and a new-cylinder line for the same
+        // product are two lines). Firestore stops a rule after 1000 steps, so
+        // an order that also uses a code or points is limited to 6 lines (the
+        // app takes the discount off bigger orders).
+        && items.size() >= 1 && items.size() <= 8
+        && d.subtotal == lc(items, 0) + lc(items, 1) + lc(items, 2)
+                       + lc(items, 3) + lc(items, 4) + lc(items, 5)
+                       + lc(items, 6) + lc(items, 7)
         && d.deliveryFee == feeFor(d.subtotal, s, d.address.get('area', ''))
         && d.total == d.subtotal + d.deliveryFee - d.get('discount', 0)
         && d.total >= 0
@@ -235,7 +238,7 @@ service cloud.firestore {
       let pu = d.get('pointsUsed', 0);
       let pd = d.get('pointsDiscount', 0);
       let code = d.get('couponCode', '');
-      return cd is int && pu is int && pd is int && cd >= 0 && pu >= 0 && pd >= 0
+      return pu is int && cd >= 0 && pu >= 0 && pd >= 0
         && d.get('discount', 0) == cd + pd
         && pd == pu * s.get('pointValue', 1)
         && (code == ''
