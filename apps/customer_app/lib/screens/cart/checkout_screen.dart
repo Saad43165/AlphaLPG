@@ -110,7 +110,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         LpgOrder(
           customerId: profile.uid,
           customerName: profile.name,
-          customerPhone: profile.phone,
+          // The verified sign-in number wins: the shop's rules compare it with
+          // the phone number on the order.
+          customerPhone: (backend.auth.phone ?? '').isNotEmpty
+              ? backend.auth.phone!
+              : profile.phone,
           customerType: profile.type,
           businessName: profile.businessName,
           items: items,
@@ -140,16 +144,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     } catch (e) {
       if (mounted) {
         final denied = '$e'.contains('permission-denied');
+        final why = denied ? _whyRefused(state, items, profile.phone) : null;
         showMessage(
           context,
           denied
-              ? 'Alpha LPG could not accept this order. Prices or settings may have just changed. Go back to the cart and try again, or call the shop.'
+              ? 'Alpha LPG could not accept this order. ${why ?? 'Prices or settings may have just changed. Go back to the cart and try again, or call the shop.'}'
               : 'Could not place order. Check your internet and try again.',
           error: true,
         );
       }
     }
     return false;
+  }
+
+  /// The shop's database refused the order. Find the likely reason on this
+  /// phone so the customer (and we) are not left guessing.
+  String? _whyRefused(AppState state, List<OrderItem> items, String phone) {
+    final auth = context.read<Backend>().auth.phone ?? '';
+    final number = auth.isNotEmpty ? auth : phone;
+    if (!RegExp(r'^\+923[0-9]{9}$').hasMatch(number)) {
+      return 'Your phone number ($number) is not a valid Pakistani mobile number. Sign out and sign in again with your number.';
+    }
+    for (final i in items) {
+      final p = state.productById(i.productId);
+      if (p == null)
+        return '${i.name} is no longer in the catalogue. Remove it from the cart.';
+      if (p.priceFor(i.type) != i.unitPrice) {
+        return 'The price of ${i.name} just changed. Go back to the cart and try again.';
+      }
+    }
+    return null;
   }
 
   @override
