@@ -112,7 +112,7 @@ class StatusChip extends StatelessWidget {
     OrderStatus.placed => ('New', Brand.warning),
     OrderStatus.confirmed => ('Confirmed', Brand.blueDark),
     OrderStatus.assigned => ('Ready to go', Brand.blueDark),
-    OrderStatus.outForDelivery => ('On the way', const Color(0xFF6A3FC1)),
+    OrderStatus.outForDelivery => ('On the way', Brand.blueDeep),
     OrderStatus.delivered => ('Delivered', Brand.success),
     OrderStatus.cancelled => ('Cancelled', Brand.danger),
   };

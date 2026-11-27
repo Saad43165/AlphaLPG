@@ -637,7 +637,7 @@ class _NextStep extends StatelessWidget {
         o.isUpcoming()
             ? (
                 Icons.event_available_rounded,
-                const Color(0xFF6A3FC1),
+                Brand.blueDeep,
                 'Confirmed: send a rider on the day',
                 'Nothing to do for the rider yet. It becomes a normal job ${LpgOrder.scheduleLead.inHours} hours before the window.$payNote',
               )

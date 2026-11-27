@@ -93,9 +93,6 @@ class JobsScreen extends StatelessWidget {
                           label: const Text('Start delivery'),
                         )
                       : FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E9E5A),
-                          ),
                           onPressed: () => completeDeliveryFlow(context, s, o),
                           icon: const Icon(Icons.check_circle_rounded),
                           label: const Text('Mark delivered'),
@@ -134,7 +131,7 @@ class _TodayStrip extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              Icon(icon, size: 20, color: color),
+              Icon(icon, size: 20, color: context.pal.blue),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -170,7 +167,7 @@ class _TodayStrip extends StatelessWidget {
         children: [
           cell(
             Icons.inventory_2_rounded,
-            Brand.blueDark,
+            pal.blue,
             '${s.jobs.length}',
             s.carrying == 0
                 ? 'To do'
@@ -178,13 +175,13 @@ class _TodayStrip extends StatelessWidget {
           ),
           cell(
             Icons.check_circle_rounded,
-            Brand.success,
+            pal.blue,
             '${s.deliveredToday.length}',
             'Done today',
           ),
           cell(
             Icons.payments_rounded,
-            s.cashPending > 0 ? const Color(0xFF9A6B00) : pal.muted,
+            pal.blue,
             formatRupees(s.cashPending),
             'Cash held',
           ),

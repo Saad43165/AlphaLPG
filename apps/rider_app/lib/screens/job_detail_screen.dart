@@ -256,9 +256,6 @@ class JobDetailScreen extends StatelessWidget {
                     const SizedBox(width: 6),
                     IconButton.filled(
                       tooltip: 'Call customer',
-                      style: IconButton.styleFrom(
-                        backgroundColor: Brand.success,
-                      ),
                       onPressed: () => Launch.call(o.customerPhone),
                       icon: const Icon(Icons.call_rounded, color: Colors.white),
                     ),
@@ -499,7 +496,7 @@ class JobDetailScreen extends StatelessWidget {
                   ),
                 ),
               FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: Brand.success),
+                style: FilledButton.styleFrom(),
                 onPressed: () async {
                   final ok = await completeDeliveryFlow(context, s, o);
                   if (ok && context.mounted) Navigator.pop(context);

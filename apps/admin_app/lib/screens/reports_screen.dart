@@ -198,7 +198,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       ? '–'
                       : rs((revenue / delivered.length).round()),
                   Icons.analytics_rounded,
-                  const Color(0xFF6A3FC1),
+                  Brand.blueDeep,
                 ),
               ],
             ),

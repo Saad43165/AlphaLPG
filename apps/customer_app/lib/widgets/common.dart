@@ -368,7 +368,7 @@ class StatusPill extends StatelessWidget {
   static Color colorOf(OrderStatus s) => switch (s) {
     OrderStatus.placed => Brand.warning,
     OrderStatus.confirmed || OrderStatus.assigned => Brand.blueDark,
-    OrderStatus.outForDelivery => const Color(0xFF6A3FC1),
+    OrderStatus.outForDelivery => Brand.blueDeep,
     OrderStatus.delivered => Brand.success,
     OrderStatus.cancelled => const Color(0xFFB3261E),
   };

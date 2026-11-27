@@ -1362,7 +1362,7 @@ class _DeliveredActions extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 22, color: color),
+            Icon(icon, size: 22, color: context.pal.blue),
             const SizedBox(height: 4),
             Text(label, style: const TextStyle(fontSize: 12.5)),
           ],

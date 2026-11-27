@@ -48,7 +48,7 @@ class ScheduleBanner extends StatelessWidget {
     final o = order;
     if (!o.isScheduled) return const SizedBox.shrink();
     final upcoming = o.isUpcoming();
-    final color = upcoming ? const Color(0xFF6A3FC1) : context.pal.warn;
+    final color = upcoming ? Brand.blueDeep : context.pal.warn;
     final pal = context.pal;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -113,7 +113,7 @@ class ScheduleChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final o = order;
     if (!o.isScheduled) return const SizedBox.shrink();
-    final color = o.isUpcoming() ? const Color(0xFF6A3FC1) : context.pal.warn;
+    final color = o.isUpcoming() ? Brand.blueDeep : context.pal.warn;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(

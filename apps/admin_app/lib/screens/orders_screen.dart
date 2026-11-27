@@ -311,7 +311,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       'On the road',
                       '${s.ordersIn([OrderStatus.outForDelivery]).length}',
                       Icons.local_shipping_rounded,
-                      const Color(0xFF6A3FC1),
+                      Brand.blueDeep,
                     ),
                     _Stat(
                       'Sales today',
@@ -478,7 +478,7 @@ class _Stat extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 16, color: color),
+            Icon(icon, size: 16, color: context.pal.blue),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
@@ -773,28 +773,24 @@ class _ShopBar extends StatelessWidget {
     final open = s.settings.acceptingOrders;
     final live = s.liveRiders.length;
     final color = open ? Brand.success : Brand.danger;
+    final pal = context.pal;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
       decoration: BoxDecoration(
-        color: Tone.fill(color),
+        color: pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
+        border: Border.all(color: pal.line, width: 1.5),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              open ? Icons.storefront_rounded : Icons.pause_circle_rounded,
-              color: Tone.fill(color),
-              size: 22,
-            ),
+            width: 12,
+            height: 12,
+            margin: const EdgeInsets.only(left: 4, right: 4),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -804,7 +800,6 @@ class _ShopBar extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
-                    color: Colors.white,
                   ),
                 ),
                 Text(
@@ -813,17 +808,13 @@ class _ShopBar extends StatelessWidget {
                             ? 'No rider on shift'
                             : '$live rider${live == 1 ? '' : 's'} on shift')
                       : 'Customers cannot place orders',
-                  style: const TextStyle(color: Colors.white, fontSize: 12.5),
+                  style: TextStyle(color: pal.muted, fontSize: 12.5),
                 ),
               ],
             ),
           ),
           Switch(
             value: open,
-            activeTrackColor: Colors.white,
-            activeThumbColor: Tone.fill(color),
-            inactiveTrackColor: Colors.white,
-            inactiveThumbColor: Tone.fill(color),
             onChanged: (v) async {
               if (!v) {
                 final ok = await showDialog<bool>(

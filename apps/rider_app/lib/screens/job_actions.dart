@@ -362,7 +362,7 @@ class _CompleteSheetState extends State<_CompleteSheet> {
                 ),
               const SizedBox(height: 20),
               FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: Brand.success),
+                style: FilledButton.styleFrom(),
                 onPressed: _photoBusy
                     ? null
                     : () => Navigator.pop(context, (
