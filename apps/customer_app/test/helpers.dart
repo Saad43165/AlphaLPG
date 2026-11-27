@@ -66,8 +66,24 @@ Future<void> scrollTo(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+/// Checkout has three steps; moves from Delivery on to Payment.
+Future<void> toPaymentStep(WidgetTester tester) async {
+  if (find.text('Continue to payment').evaluate().isNotEmpty) {
+    await tapText(tester, 'Continue to payment');
+  }
+}
+
+/// ...and on to the final Review step, where the slide lives.
+Future<void> toReviewStep(WidgetTester tester) async {
+  await toPaymentStep(tester);
+  if (find.text('Review order').evaluate().isNotEmpty) {
+    await tapText(tester, 'Review order');
+  }
+}
+
 /// Drags the "slide to order" control all the way across.
 Future<void> slideToOrder(WidgetTester tester) async {
+  await toReviewStep(tester);
   await tester.drag(find.byType(SlideToConfirm), const Offset(700, 0));
   await tester.pumpAndSettle();
 }

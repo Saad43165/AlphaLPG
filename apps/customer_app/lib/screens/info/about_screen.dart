@@ -233,10 +233,9 @@ class AboutScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: FilledButton.icon(
-                                style: FilledButton.styleFrom(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
                                   minimumSize: const Size.fromHeight(54),
-                                  backgroundColor: const Color(0xFF128C4A),
                                 ),
                                 onPressed: () => Launch.whatsapp(
                                   st.whatsapp,

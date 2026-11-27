@@ -45,6 +45,8 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
+  /// 0 delivery, 1 payment, 2 review.
+  int _step = 0;
   bool _asap = true;
   DateTime _day = DateTime.now();
   DeliverySlot _slot = DeliverySlot.morning;
@@ -217,330 +219,409 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             null => (null, 'Slide to place order'),
           };
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const ScreenBack(),
-        title: const Text('Checkout'),
-      ),
-      body: Constrained(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          children: [
-            _Section(
-              number: 1,
-              title: 'Delivery address',
-              trailing: address == null
-                  ? null
-                  : TextButton(
-                      onPressed: () => showAddressPicker(context),
-                      child: const Text('Change'),
-                    ),
-              child: address == null
-                  ? ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        backgroundColor: context.pal.tint,
-                        child: Icon(
-                          Icons.add_location_alt_rounded,
-                          color: context.pal.blue,
-                        ),
-                      ),
-                      title: const Text(
-                        'Add a delivery address',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: _addAddress,
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          address.hasLocation
-                              ? Icons.location_on_rounded
-                              : Icons.location_on_outlined,
-                          color: address.hasLocation
-                              ? Brand.success
-                              : Brand.blueDark,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                address.label,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
+    return PopScope(
+      canPop: _step == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(() => _step--);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: _step == 0
+              ? const ScreenBack()
+              : BackButton(onPressed: () => setState(() => _step--)),
+          title: const Text('Checkout'),
+        ),
+        body: Constrained(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            children: [
+              _StepHeader(step: _step, onTap: (i) => setState(() => _step = i)),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 240),
+                transitionBuilder: (c, a) =>
+                    FadeTransition(opacity: a, child: c),
+                child: Column(
+                  key: ValueKey(_step),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_step == 0) ...[
+                      _Section(
+                        number: 1,
+                        title: 'Delivery address',
+                        trailing: address == null
+                            ? null
+                            : TextButton(
+                                onPressed: () => showAddressPicker(context),
+                                child: const Text('Change'),
+                              ),
+                        child: address == null
+                            ? ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: CircleAvatar(
+                                  backgroundColor: context.pal.tint,
+                                  child: Icon(
+                                    Icons.add_location_alt_rounded,
+                                    color: context.pal.blue,
+                                  ),
                                 ),
+                                title: const Text(
+                                  'Add a delivery address',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                                trailing: const Icon(
+                                  Icons.chevron_right_rounded,
+                                ),
+                                onTap: _addAddress,
+                              )
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    address.hasLocation
+                                        ? Icons.location_on_rounded
+                                        : Icons.location_on_outlined,
+                                    color: address.hasLocation
+                                        ? Brand.success
+                                        : Brand.blueDark,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          address.label,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        Text(
+                                          address.oneLine,
+                                          style: TextStyle(
+                                            color: context.pal.muted,
+                                          ),
+                                        ),
+                                        if (state.profile != null)
+                                          Text(
+                                            '${state.profile!.name} · ${prettyPkMobile(state.profile!.phone)}',
+                                            style: TextStyle(
+                                              color: context.pal.muted,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                address.oneLine,
-                                style: TextStyle(color: context.pal.muted),
+                      ),
+                      _Section(
+                        number: 2,
+                        title: 'Delivery time',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: _WhenTile(
+                                      icon: Icons.bolt_rounded,
+                                      title: 'As soon as possible',
+                                      subtitle: 'We confirm your order, then send a rider',
+                                      selected: _asap,
+                                      onTap: () => setState(() => _asap = true),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _WhenTile(
+                                      icon: Icons.event_available_rounded,
+                                      title: 'Schedule',
+                                      subtitle: 'Choose a day and a time slot',
+                                      selected: !_asap,
+                                      onTap: () =>
+                                          setState(() => _asap = false),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              if (state.profile != null)
-                                Text(
-                                  '${state.profile!.name} · ${prettyPkMobile(state.profile!.phone)}',
-                                  style: TextStyle(
-                                    color: context.pal.muted,
-                                    fontSize: 12,
+                            ),
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                              alignment: Alignment.topCenter,
+                              child: _asap
+                                  ? const SizedBox(width: double.infinity)
+                                  : Padding(
+                                      padding: const EdgeInsets.only(top: 16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Day',
+                                            style: TextStyle(
+                                              color: context.pal.muted,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          SizedBox(
+                                            height: 72,
+                                            child: ListView(
+                                              scrollDirection: Axis.horizontal,
+                                              children: [
+                                                for (final d in days)
+                                                  _DayCard(
+                                                    day: d,
+                                                    isToday: _isSameDay(
+                                                      d,
+                                                      today,
+                                                    ),
+                                                    selected: _isSameDay(
+                                                      d,
+                                                      _day,
+                                                    ),
+                                                    onTap: () => setState(
+                                                      () => _day = d,
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 14),
+                                          Text(
+                                            'Time',
+                                            style: TextStyle(
+                                              color: context.pal.muted,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          if (slots.isEmpty)
+                                            const Text(
+                                              'No time slots left today. Please pick another day.',
+                                            )
+                                          else
+                                            Row(
+                                              children: [
+                                                for (final sl
+                                                    in DeliverySlot.values)
+                                                  Expanded(
+                                                    child: Padding(
+                                                      padding: EdgeInsets.only(
+                                                        right:
+                                                            sl ==
+                                                                DeliverySlot
+                                                                    .values
+                                                                    .last
+                                                            ? 0
+                                                            : 8,
+                                                      ),
+                                                      child: _SlotTile(
+                                                        slot: sl,
+                                                        enabled: slots.contains(
+                                                          sl,
+                                                        ),
+                                                        selected: _slot == sl,
+                                                        onTap: () => setState(
+                                                          () => _slot = sl,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          const SizedBox(height: 14),
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: context.pal.card,
+                                              border: Border.all(
+                                                color: Brand.blueDark,
+                                                width: 2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.event_available_rounded,
+                                                  color: context.pal.blue,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    slots.isEmpty
+                                                        ? 'Pick another day'
+                                                        : 'Delivery on ${_isSameDay(_day, today) ? 'today' : formatDay(_day)}, ${_slot.label.toLowerCase()} ${_slot.range}',
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      height: 1.3,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _Section(
+                        number: 4,
+                        title: 'Notes for the rider',
+                        child: TextField(
+                          controller: _notes,
+                          maxLines: 2,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: InputDecoration(
+                            hintText: tr(
+                              'e.g. Call on arrival, 2nd floor, gate code…',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (_step == 1) ...[
+                      _Section(
+                        number: 3,
+                        title: 'Payment',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            PaymentMethodPicker(
+                              value: _payment,
+                              settings: state.settings,
+                              total: price.total,
+                              onChanged: (m) {
+                                state.setLastPayment(m);
+                                setState(() => _payment = m);
+                              },
+                            ),
+                            PromoPanel(
+                              subtotal: base.subtotal,
+                              lines: base.lines,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_payment.isPrepaid)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                          child: Text(
+                            'How it works: 1. You place the order. 2. Alpha LPG sends you '
+                            'the account to pay. 3. You pay and send the receipt here. '
+                            '4. The rider is sent once the payment is confirmed.',
+                            style: TextStyle(
+                              color: context.pal.muted,
+                              fontSize: 12.5,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                    ],
+                    if (_step == 2) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: context.pal.card,
+                          borderRadius: BorderRadius.circular(Brand.radius),
+                          boxShadow: context.pal.shadow,
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Theme(
+                          data: Theme.of(context)
+                              .copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            shape: const Border(),
+                            collapsedShape: const Border(),
+                            leading: Icon(
+                              Icons.receipt_long_rounded,
+                              color: context.pal.blue,
+                            ),
+                            title: Text(
+                              'Order summary · ${price.countLabel}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            childrenPadding: const EdgeInsets.fromLTRB(
+                              16,
+                              0,
+                              16,
+                              12,
+                            ),
+                            children: [
+                              for (final i in items)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${i.quantity} × ${i.name} (${i.typeLabel})',
+                                        ),
+                                      ),
+                                      Text(formatRupees(i.lineTotal)),
+                                    ],
                                   ),
                                 ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-            ),
-            _Section(
-              number: 2,
-              title: 'Delivery time',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _WhenTile(
-                            icon: Icons.bolt_rounded,
-                            title: 'As soon as possible',
-                            subtitle:
-                                'We confirm your order, then send a rider',
-                            selected: _asap,
-                            onTap: () => setState(() => _asap = true),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _WhenTile(
-                            icon: Icons.event_available_rounded,
-                            title: 'Schedule',
-                            subtitle: 'Choose a day and a time slot',
-                            selected: !_asap,
-                            onTap: () => setState(() => _asap = false),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    alignment: Alignment.topCenter,
-                    child: _asap
-                        ? const SizedBox(width: double.infinity)
-                        : Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Day',
-                                  style: TextStyle(
-                                    color: context.pal.muted,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  height: 72,
-                                  child: ListView(
-                                    scrollDirection: Axis.horizontal,
-                                    children: [
-                                      for (final d in days)
-                                        _DayCard(
-                                          day: d,
-                                          isToday: _isSameDay(d, today),
-                                          selected: _isSameDay(d, _day),
-                                          onTap: () => setState(() => _day = d),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                Text(
-                                  'Time',
-                                  style: TextStyle(
-                                    color: context.pal.muted,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                if (slots.isEmpty)
-                                  const Text(
-                                    'No time slots left today. Please pick another day.',
-                                  )
-                                else
-                                  Row(
-                                    children: [
-                                      for (final sl in DeliverySlot.values)
-                                        Expanded(
-                                          child: Padding(
-                                            padding: EdgeInsets.only(
-                                              right:
-                                                  sl == DeliverySlot.values.last
-                                                  ? 0
-                                                  : 8,
-                                            ),
-                                            child: _SlotTile(
-                                              slot: sl,
-                                              enabled: slots.contains(sl),
-                                              selected: _slot == sl,
-                                              onTap: () =>
-                                                  setState(() => _slot = sl),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                const SizedBox(height: 14),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: context.pal.card,
-                                    border: Border.all(
-                                      color: Brand.blueDark,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.event_available_rounded,
-                                        color: context.pal.blue,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          slots.isEmpty
-                                              ? 'Pick another day'
-                                              : 'Delivery on ${_isSameDay(_day, today) ? 'today' : formatDay(_day)}, ${_slot.label.toLowerCase()} ${_slot.range}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            height: 1.3,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                  ),
-                ],
-              ),
-            ),
-            _Section(
-              number: 3,
-              title: 'Payment',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  PaymentMethodPicker(
-                    value: _payment,
-                    settings: state.settings,
-                    total: price.total,
-                    onChanged: (m) {
-                      state.setLastPayment(m);
-                      setState(() => _payment = m);
-                    },
-                  ),
-                  PromoPanel(subtotal: base.subtotal, lines: base.lines),
-                ],
-              ),
-            ),
-            if (_payment.isPrepaid)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-                child: Text(
-                  'How it works: 1. You place the order. 2. Alpha LPG sends you '
-                  'the account to pay. 3. You pay and send the receipt here. '
-                  '4. The rider is sent once the payment is confirmed.',
-                  style: TextStyle(
-                    color: context.pal.muted,
-                    fontSize: 12.5,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            _Section(
-              number: 4,
-              title: 'Notes for the rider',
-              child: TextField(
-                controller: _notes,
-                maxLines: 2,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: tr('e.g. Call on arrival, 2nd floor, gate code…'),
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              decoration: BoxDecoration(
-                color: context.pal.card,
-                borderRadius: BorderRadius.circular(Brand.radius),
-                boxShadow: context.pal.shadow,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Theme(
-                data: Theme.of(context)
-                    .copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  shape: const Border(),
-                  collapsedShape: const Border(),
-                  leading: Icon(
-                    Icons.receipt_long_rounded,
-                    color: context.pal.blue,
-                  ),
-                  title: Text(
-                    'Order summary · ${price.countLabel}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  children: [
-                    for (final i in items)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${i.quantity} × ${i.name} (${i.typeLabel})',
-                              ),
-                            ),
-                            Text(formatRupees(i.lineTotal)),
-                          ],
+                      ),
+                      const SizedBox(height: 12),
+                      PriceSummary(price: price, settings: state.settings),
+                      const SizedBox(height: 12),
+                      Text(
+                        'By placing this order you agree to keep empty cylinders ready for refill orders. '
+                        'Alpha LPG will confirm your order and final price.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.pal.muted,
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            PriceSummary(price: price, settings: state.settings),
-            const SizedBox(height: 12),
-            Text(
-              'By placing this order you agree to keep empty cylinders ready for refill orders. '
-              'Alpha LPG will confirm your order and final price.',
-              style: TextStyle(fontSize: 12, color: context.pal.muted),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: _SlideBar(
-        total: price.total,
-        caption: _payment.label,
-        problem: problem,
-        label: lockLabel,
-        onConfirmed: _place,
+        bottomNavigationBar: _step < 2
+            ? _ContinueBar(
+                total: price.total,
+                caption: _payment.label,
+                label: _step == 0 ? 'Continue to payment' : 'Review order',
+                problem: _step == 0 ? problem : null,
+                enabled: _step == 0
+                    ? (address != null &&
+                          (_asap || slots.isNotEmpty) &&
+                          items.isNotEmpty)
+                    : true,
+                onPressed: () => setState(() => _step++),
+              )
+            : _SlideBar(
+                total: price.total,
+                caption: _payment.label,
+                problem: problem,
+                label: lockLabel,
+                onConfirmed: _place,
+              ),
       ),
     );
   }
@@ -579,19 +660,6 @@ class _Section extends StatelessWidget {
             height: 40,
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 12,
-                  backgroundColor: Brand.navy,
-                  child: Text(
-                    '$number',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     title,
@@ -917,6 +985,139 @@ class _SlideBar extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Delivery, Payment, Review: where the customer is in checkout. Finished
+/// steps can be tapped to go back.
+class _StepHeader extends StatelessWidget {
+  const _StepHeader({required this.step, required this.onTap});
+  final int step;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    const labels = ['Delivery', 'Payment', 'Review'];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 16),
+      child: Row(
+        children: [
+          for (var i = 0; i < 3; i++) ...[
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: i < step ? () => onTap(i) : null,
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 15,
+                      backgroundColor: i <= step
+                          ? pal.blue
+                          : Colors.transparent,
+                      child: i < step
+                          ? Icon(
+                              Icons.check_rounded,
+                              size: 18,
+                              color: pal.isDark ? Colors.black : Colors.white,
+                            )
+                          : Text(
+                              '${i + 1}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: i == step
+                                    ? (pal.isDark ? Colors.black : Colors.white)
+                                    : pal.muted,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      labels[i],
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: i == step
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                        color: i <= step ? pal.ink : pal.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The bar at the bottom of the first two steps: the total and one button.
+class _ContinueBar extends StatelessWidget {
+  const _ContinueBar({
+    required this.total,
+    required this.caption,
+    required this.label,
+    required this.onPressed,
+    this.problem,
+    this.enabled = true,
+  });
+  final int total;
+  final String caption;
+  final String label;
+  final String? problem;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: context.pal.card,
+      border: Border(top: BorderSide(color: context.pal.line)),
+    ),
+    child: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Constrained(
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    formatRupees(total),
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    caption,
+                    style: TextStyle(color: context.pal.muted, fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: FilledButton(
+                  onPressed: enabled ? onPressed : null,
+                  child: Text(
+                    enabled
+                        ? label
+                        : (problem == null ? label : 'Add delivery location'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
             ],
           ),

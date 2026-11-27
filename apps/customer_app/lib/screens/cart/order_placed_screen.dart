@@ -398,7 +398,6 @@ class _Content extends StatelessWidget {
           if (todoIsPayment && prepaid && !paid)
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: Brand.flame,
                 minimumSize: const Size.fromHeight(54),
               ),
               onPressed: () =>

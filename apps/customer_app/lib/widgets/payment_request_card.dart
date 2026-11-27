@@ -67,7 +67,7 @@ class PaymentRequestCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.pal.card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: m.color, width: 2),
+        border: Border.all(color: context.pal.line, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

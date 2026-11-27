@@ -58,57 +58,46 @@ class _Body extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
-        // Summary: method, amount, status.
+        // Summary: the amount to pay, the method and the state.
+        Text(
+          paid
+              ? 'Paid ${formatRupees(o.total)}'
+              : 'Pay ${formatRupees(o.total)}',
+          style: Theme.of(context).textTheme.headlineMedium
+              ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.6),
+        ),
+        const SizedBox(height: 10),
         Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [m.color, Color.lerp(m.color, Brand.navy, 0.45)!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: pal.card,
             borderRadius: BorderRadius.circular(Brand.radius),
+            border: Border.all(color: pal.line, width: 1.5),
           ),
           child: Row(
             children: [
-              PaymentLogo(m, width: 60, height: 44),
-              const SizedBox(width: 14),
+              PaymentLogo(m, width: 56, height: 42),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      formatRupees(o.total),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 26,
-                      ),
+                      m.label,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     Text(
-                      '${m.label} · order ${o.displayNumber}',
-                      style: TextStyle(color: Colors.white),
+                      'Order ${o.displayNumber}',
+                      style: TextStyle(color: pal.muted, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  paid ? 'PAID' : (receipt ? 'CHECKING' : 'UNPAID'),
-                  style: TextStyle(
-                    color: paid ? context.pal.green : Brand.navy,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                  ),
-                ),
+              StatusTag(
+                paid ? 'Paid' : (receipt ? 'Checking' : 'Unpaid'),
+                paid
+                    ? Brand.success
+                    : (receipt ? Brand.blueDark : Brand.warning),
               ),
             ],
           ),

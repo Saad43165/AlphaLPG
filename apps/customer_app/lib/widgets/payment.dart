@@ -34,11 +34,10 @@ extension PaymentMethodUi on PaymentMethod {
   };
 
   String get tagline => switch (this) {
-    PaymentMethod.cashOnDelivery =>
-      'Pay the rider in cash when your cylinders arrive',
-    PaymentMethod.jazzCash => 'Send money from your JazzCash wallet',
-    PaymentMethod.easyPaisa => 'Send money from your Easypaisa wallet',
-    PaymentMethod.bankTransfer => 'Any bank app via IBAN or Raast ID',
+    PaymentMethod.cashOnDelivery => 'Pay the rider when it arrives',
+    PaymentMethod.jazzCash => 'Pay from your JazzCash wallet',
+    PaymentMethod.easyPaisa => 'Pay from your Easypaisa wallet',
+    PaymentMethod.bankTransfer => 'Any bank app, IBAN or Raast',
   };
 
   /// Play Store id of the provider's app (null for cash / any bank).
@@ -99,7 +98,11 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (text, bg, fg) = switch (method) {
-      PaymentMethod.cashOnDelivery => ('CASH', Brand.success, Colors.white),
+      PaymentMethod.cashOnDelivery => (
+        'CASH',
+        context.pal.tint,
+        context.pal.ink,
+      ),
       PaymentMethod.jazzCash => (
         'Jazz\nCash',
         const Color(0xFFEE2328),
@@ -181,18 +184,35 @@ class PaymentMethodPicker extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      for (final m in PaymentMethod.available) ...[
-        _MethodTile(
-          method: m,
-          selected: m == value,
-          recommended: m == PaymentMethod.cashOnDelivery,
-          onTap: () {
-            Haptics.select();
-            onChanged(m);
-          },
-        ),
-        const SizedBox(height: 8),
-      ],
+      for (final online in [false, true])
+        if (PaymentMethod.available.any((m) => m.isPrepaid == online)) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(2, 4, 2, 8),
+            child: Text(
+              online ? 'PAY ONLINE NOW' : 'PAY WHEN IT ARRIVES',
+              style: TextStyle(
+                color: context.pal.muted,
+                fontWeight: FontWeight.w800,
+                fontSize: 11.5,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ),
+          for (final m in PaymentMethod.available.where(
+            (m) => m.isPrepaid == online,
+          )) ...[
+            _MethodTile(
+              method: m,
+              selected: m == value,
+              onTap: () {
+                Haptics.select();
+                onChanged(m);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+          const SizedBox(height: 6),
+        ],
       AnimatedSize(
         duration: const Duration(milliseconds: 220),
         alignment: Alignment.topCenter,
@@ -207,12 +227,15 @@ class PaymentMethodPicker extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: context.pal.card,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: value.color, width: 2),
+                        border: Border.all(color: context.pal.line, width: 1.5),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.info_outline_rounded, color: value.color),
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: context.pal.blue,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -246,109 +269,92 @@ class _MethodTile extends StatelessWidget {
     required this.method,
     required this.selected,
     required this.onTap,
-    this.recommended = false,
   });
 
   final PaymentMethod method;
   final bool selected;
-  final bool recommended;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final pal = context.pal;
-    final brand = method.color;
-    // Selected: the tile takes the provider's exact colours, like their app.
-    final fg = selected ? Colors.white : pal.ink;
-    final sub = selected ? Colors.white : pal.muted;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      decoration: BoxDecoration(
-        color: selected ? brand : pal.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: selected ? brand : pal.line,
-          width: selected ? 1.5 : 1,
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        decoration: BoxDecoration(
+          color: selected ? pal.tint : pal.card,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? pal.blue : pal.line,
+            width: selected ? 2 : 1.5,
+          ),
         ),
-        boxShadow: selected
-            ? [
-                BoxShadow(
-                  color: brand.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-              ]
-            : null,
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                PaymentLogo(method),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 72),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
+                child: Row(
+                  children: [
+                    PaymentLogo(method, width: 56, height: 42),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Flexible(
-                            child: Text(
-                              method.label,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: fg,
-                              ),
+                          Text(
+                            method.label,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15.5,
                             ),
                           ),
-                          if (recommended) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: selected ? Brand.navy : Tone.fill(brand),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                'Popular',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
+                          const SizedBox(height: 2),
+                          Text(
+                            method.tagline,
+                            style: TextStyle(
+                              color: pal.muted,
+                              fontSize: 13,
+                              height: 1.3,
                             ),
-                          ],
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        method.tagline,
-                        style: TextStyle(color: sub, fontSize: 12, height: 1.3),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected ? pal.blue : pal.muted,
+                          width: 2,
+                        ),
                       ),
-                    ],
-                  ),
+                      child: selected
+                          ? Center(
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: pal.blue,
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: Icon(
-                    selected
-                        ? Icons.check_circle_rounded
-                        : Icons.circle_outlined,
-                    key: ValueKey(selected),
-                    color: selected ? method.accent : pal.line,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

@@ -112,6 +112,30 @@ class SizeBadge extends StatelessWidget {
   );
 }
 
+/// A small solid label ("Paid", "Unpaid") whose colour only means a state.
+class StatusTag extends StatelessWidget {
+  const StatusTag(this.label, this.color, {super.key});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: Tone.fill(color),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        color: Tone.on(Tone.fill(color)),
+        fontWeight: FontWeight.w800,
+        fontSize: 12,
+      ),
+    ),
+  );
+}
+
 class Tag extends StatelessWidget {
   const Tag(
     this.label, {

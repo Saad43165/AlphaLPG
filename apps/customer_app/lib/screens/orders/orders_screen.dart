@@ -321,7 +321,7 @@ class ActiveOrderCard extends StatelessWidget {
         color: pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
         boxShadow: pal.shadow,
-        border: Border.all(color: color, width: 2),
+        border: Border.all(color: pal.line, width: 1.5),
       ),
       child: Material(
         color: Colors.transparent,

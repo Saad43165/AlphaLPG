@@ -83,6 +83,7 @@ void main() {
     expect(find.textContaining('Bilal Ahmed'), findsOneWidget);
 
     // Pay by JazzCash: the shop sends the account after the order is placed.
+    await toPaymentStep(tester);
     await tapText(tester, 'JazzCash');
     expect(
       find.textContaining('Alpha LPG sends the JazzCash account'),

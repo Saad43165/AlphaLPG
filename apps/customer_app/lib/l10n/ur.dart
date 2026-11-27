@@ -421,7 +421,7 @@ const Map<String, String> urExact = {
   'Ordering not available': 'آرڈر دینا ممکن نہیں',
   'Add your delivery location in step 1.':
       'مرحلہ 1 میں اپنی ڈیلیوری کی لوکیشن شامل کریں۔',
-  'Add delivery location': 'ڈیلیوری لوکیشن شامل کریں',
+  'Add delivery location': 'ڈیلیوری کی جگہ شامل کریں',
   'No delivery slot left on this day. Choose another day.':
       'اس دن ڈیلیوری کا کوئی وقت باقی نہیں۔ کوئی اور دن چنیں۔',
   'Choose a delivery time': 'ڈیلیوری کا وقت منتخب کریں',
@@ -947,6 +947,18 @@ const Map<String, String> urExact = {
   'View': 'دیکھیں',
   'Codes and reward points work on orders of up to 5 different items. Split this into two orders to use them.': 'کوڈ اور ریوارڈ پوائنٹس زیادہ سے زیادہ 5 مختلف اشیاء کے آرڈر پر چلتے ہیں۔ انہیں استعمال کرنے کے لیے آرڈر کو دو حصوں میں بانٹ دیں۔',
   'One order can have up to 8 different items. Please place the rest as a second order.': 'ایک آرڈر میں زیادہ سے زیادہ 8 مختلف اشیاء ہو سکتی ہیں۔ باقی کا دوسرا آرڈر دے دیں۔',
+  'Review': 'جائزہ',
+  'Continue to payment': 'ادائیگی پر جائیں',
+  'Review order': 'آرڈر دیکھیں',
+  'Review and place order': 'جائزہ لیں اور آرڈر دیں',
+  'Checking': 'جانچ جاری',
+  'Unpaid': 'ادائیگی باقی',
+  'PAY ONLINE NOW': 'ابھی آن لائن ادا کریں',
+  'PAY WHEN IT ARRIVES': 'پہنچنے پر ادا کریں',
+  'Pay the rider when it arrives': 'سلنڈر پہنچنے پر رائیڈر کو ادا کریں',
+  'Pay from your JazzCash wallet': 'اپنے جاز کیش والٹ سے ادا کریں',
+  'Pay from your Easypaisa wallet': 'اپنے ایزی پیسہ والٹ سے ادا کریں',
+  'Any bank app, IBAN or Raast': 'کوئی بھی بینک ایپ، آئی بین یا راست',
   '• Your mobile number, to sign you in and so the rider and shop can call you.\n• Your name, and optionally your email and business name and type.\n• Delivery addresses, including the map spot you choose.\n• Your orders: items, prices, payment method, the transaction ID you enter, notes, and any rating or feedback.\n• Payment receipt pictures you choose to send us for online payments.\n• Messages you send in the order chat with the shop and your rider.\n• A photo the rider takes at delivery, to prove the cylinders arrived.\n• Business quote requests you send us.\n• Your phone\'s location only at the moment you tap "Use my current location". It is used to place the map pin. We do not track you in the background.\n• Basic crash reports (error text and app version) if the app crashes, so we can fix it.': '• آپ کا موبائل نمبر، تاکہ آپ سائن اِن ہو سکیں اور رائیڈر و دکان آپ کو کال کر سکیں۔\n• آپ کا نام، اور اختیاری طور پر ای میل، کاروبار کا نام اور قسم۔\n• ڈیلیوری کے پتے، بشمول نقشے پر آپ کی منتخب کردہ جگہ۔\n• آپ کے آرڈر: اشیا، قیمتیں، ادائیگی کا طریقہ، آپ کی لکھی ہوئی ٹرانزیکشن آئی ڈی، ہدایات، اور کوئی ریٹنگ یا رائے۔\n• آن لائن ادائیگی کے لیے آپ کی بھیجی ہوئی رسید کی تصاویر۔\n• آرڈر چیٹ میں دکان اور رائیڈر کو بھیجے گئے پیغامات۔\n• ڈیلیوری کے وقت رائیڈر کی لی ہوئی تصویر، جو سلنڈر پہنچنے کا ثبوت ہے۔\n• آپ کی بھیجی ہوئی کاروباری ریٹ کی درخواستیں۔\n• فون کی لوکیشن صرف اس وقت جب آپ "میری موجودہ لوکیشن استعمال کریں" دباتے ہیں۔ یہ نقشے پر پن لگانے کے لیے ہے۔ ہم پس منظر میں آپ کو ٹریک نہیں کرتے۔\n• ایپ کریش ہونے پر بنیادی کریش رپورٹ (خرابی کا متن اور ایپ ورژن)، تاکہ ہم اسے ٹھیک کر سکیں۔',
   'Alpha LPG staff, and the rider assigned to your order. The rider sees your name, phone number and delivery address only while the order is open. During delivery you can see the rider\'s name, phone and live location. Your own location is never shared with other customers. The shop owner and staff can see your orders, receipts and messages. Orders may also be blocked by the shop if there is misuse.': 'الفا ایل پی جی کا عملہ، اور آپ کے آرڈر پر مقرر رائیڈر۔ رائیڈر آپ کا نام، فون نمبر اور ڈیلیوری کا پتا صرف اس وقت دیکھتا ہے جب آرڈر کھلا ہو۔ ڈیلیوری کے دوران آپ رائیڈر کا نام، فون اور لائیو لوکیشن دیکھ سکتے ہیں۔ آپ کی اپنی لوکیشن دوسرے کسٹمرز کے ساتھ کبھی شیئر نہیں ہوتی۔ دکان کا مالک اور عملہ آپ کے آرڈر، رسیدیں اور پیغامات دیکھ سکتے ہیں۔ غلط استعمال کی صورت میں دکان آرڈرز بلاک بھی کر سکتی ہے۔',
   'Google Firebase stores your account and orders. Geoapify supplies map images and address search; it receives the area you are looking at or the text you search for, not your name or phone number. WhatsApp, phone calls and Google Maps open only when you tap them.': 'گوگل فائر بیس آپ کا اکاؤنٹ اور آرڈر محفوظ رکھتا ہے۔ جیوآپی فائی نقشے کی تصاویر اور پتے کی تلاش فراہم کرتا ہے؛ اسے وہ علاقہ یا متن ملتا ہے جو آپ دیکھ یا تلاش کر رہے ہوں، آپ کا نام یا فون نمبر نہیں۔ واٹس ایپ، فون کالز اور گوگل میپس صرف اس وقت کھلتے ہیں جب آپ انہیں دباتے ہیں۔',
@@ -1137,6 +1149,7 @@ const Map<String, String> urTemplates = {
   'Order summary · {} items': 'آرڈر کا خلاصہ · {1} اشیاء',
   'Pay {} now': '{1} ابھی ادا کریں',
   'Pay {}': '{1} ادا کریں',
+  'Paid {}': 'ادا شدہ {1}',
   'Refill price — our rider collects your empty {} cylinder.':
       'ریفل قیمت — ہمارا رائیڈر آپ کا خالی {} سلنڈر لے جاتا ہے۔',
   'Questions? Contact Alpha LPG\n{}\nPhone: {}  ·  Email: {}':

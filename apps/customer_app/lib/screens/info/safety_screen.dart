@@ -672,8 +672,6 @@ class _OrderSafelyCard extends StatelessWidget {
             Expanded(
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: Brand.flame,
-                  foregroundColor: Brand.navy,
                   minimumSize: const Size.fromHeight(46),
                 ),
                 onPressed: () => context.go('/'),
