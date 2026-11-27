@@ -95,7 +95,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await toPaymentStep(tester);
+      await openDiscounts(tester);
       await scrollTo(tester, find.text('Apply'));
       // A wrong code says why.
       await tester.enterText(
@@ -323,7 +323,6 @@ void main() {
       await tester.tap(find.text('Order again'));
       await tester.pumpAndSettle();
       expect(find.text('Checkout'), findsOneWidget);
-      await toReviewStep(tester);
       expect(find.text('Slide to place order'), findsOneWidget);
       // Tap 2 (slide): the order is placed.
       await slideToOrder(tester);

@@ -213,46 +213,6 @@ class PaymentMethodPicker extends StatelessWidget {
           ],
           const SizedBox(height: 6),
         ],
-      AnimatedSize(
-        duration: const Duration(milliseconds: 220),
-        alignment: Alignment.topCenter,
-        child: value.isPrepaid
-            ? Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: context.pal.card,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: context.pal.line, width: 1.5),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.info_outline_rounded,
-                            color: context.pal.blue,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'How it works: place your order and Alpha LPG sends the ${value.label} account to your order screen. '
-                              'Pay ${formatRupees(total)}, then send the transaction ID and a screenshot there. '
-                              'Your order is delivered once the payment is confirmed.',
-                              style: const TextStyle(height: 1.45),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : const SizedBox(width: double.infinity),
-      ),
     ],
   );
 }

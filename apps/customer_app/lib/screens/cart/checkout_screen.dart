@@ -2,7 +2,10 @@ import 'package:alpha_core/alpha_core.dart';
 
 import '../../l10n/lang.dart';
 
+import 'package:alpha_ui/alpha_ui.dart' as ui;
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart' hide Text;
 
 import '../../l10n/text.dart';
@@ -45,13 +48,16 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  /// 0 delivery, 1 payment, 2 review.
-  int _step = 0;
   bool _asap = true;
   DateTime _day = DateTime.now();
   DeliverySlot _slot = DeliverySlot.morning;
   PaymentMethod _payment = PaymentMethod.cashOnDelivery;
   final _notes = TextEditingController();
+  final _tid = TextEditingController();
+
+  /// Payment screenshot (base64) the customer attached for an online payment.
+  String? _proof;
+  bool _picking = false;
 
   @override
   void initState() {
@@ -63,6 +69,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void dispose() {
     _notes.dispose();
+    _tid.dispose();
     super.dispose();
   }
 
@@ -138,6 +145,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ].join('\n'),
         ),
       );
+      // Online payment: the proof travels with the order.
+      if (_payment.isPrepaid && _hasProof) {
+        try {
+          await backend.orders.submitPayment(
+            id,
+            uid: profile.uid,
+            reference: _tid.text.trim(),
+            amount: price.total,
+            data: _proof,
+          );
+          await backend.orders.sendMessage(
+            id,
+            uid: profile.uid,
+            role: MessageRole.customer,
+            name: 'Customer',
+            text:
+                '📎 I paid ${formatRupees(price.total)} via ${_payment.label}. Transaction ID: ${_tid.text.trim()}.',
+          );
+        } catch (_) {
+          // The order is placed; the proof can be sent again from the order.
+        }
+      }
       cart.clear();
       promo.clear();
       promo.afterOrder();
@@ -178,6 +207,220 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return null;
   }
 
+  bool get _hasProof => _proof != null && _tid.text.trim().length >= 4;
+
+  Future<void> _pickProof() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose a screenshot'),
+              onTap: () => Navigator.pop(c, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(c, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    try {
+      final file = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 2200,
+        imageQuality: 90,
+      );
+      if (file == null) return;
+      setState(() => _picking = true);
+      final data = await ui.compressReceiptPhoto(await file.readAsBytes());
+      if (mounted) setState(() => _proof = data);
+    } catch (e) {
+      if (mounted) {
+        showMessage(
+          context,
+          e is String ? e : 'Could not use that picture.',
+          error: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
+
+  Future<void> _copy(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (mounted) showMessage(context, 'Copied');
+  }
+
+  /// "When": as soon as possible, or a day and a time slot.
+  Future<void> _chooseTime() => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (sheet) => StatefulBuilder(
+      builder: (sheet, setSheet) {
+        void both(VoidCallback f) {
+          setState(f);
+          setSheet(() {});
+        }
+
+        final today = DateTime.now();
+        final days = [for (var i = 0; i < 4; i++) today.add(Duration(days: i))];
+        final slots = DeliverySlot.values
+            .where((x) => !_isSameDay(_day, today) || x.to > today.hour + 1)
+            .toList();
+        if (!slots.contains(_slot) && slots.isNotEmpty) _slot = slots.first;
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Delivery time',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+                ),
+                const SizedBox(height: 12),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _WhenTile(
+                          icon: Icons.bolt_rounded,
+                          title: 'As soon as possible',
+                          subtitle: 'We confirm, then send a rider',
+                          selected: _asap,
+                          onTap: () => both(() => _asap = true),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _WhenTile(
+                          icon: Icons.event_available_rounded,
+                          title: 'Schedule',
+                          subtitle: 'Choose a day and a time',
+                          selected: !_asap,
+                          onTap: () => both(() => _asap = false),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!_asap) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Day',
+                    style: TextStyle(
+                      color: context.pal.muted,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 72,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        for (final d in days)
+                          _DayCard(
+                            day: d,
+                            isToday: _isSameDay(d, today),
+                            selected: _isSameDay(d, _day),
+                            onTap: () => both(() => _day = d),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Time',
+                    style: TextStyle(
+                      color: context.pal.muted,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (slots.isEmpty)
+                    const Text(
+                      'No time slots left today. Please pick another day.',
+                    )
+                  else
+                    Row(
+                      children: [
+                        for (final sl in DeliverySlot.values)
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                right: sl == DeliverySlot.values.last ? 0 : 8,
+                              ),
+                              child: _SlotTile(
+                                slot: sl,
+                                enabled: slots.contains(sl),
+                                selected: _slot == sl,
+                                onTap: () => both(() => _slot = sl),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                ],
+                const SizedBox(height: 18),
+                FilledButton(
+                  onPressed: () => Navigator.pop(sheet),
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+
+  /// "Pay with": cash, or one of the online methods.
+  Future<void> _choosePayment(AppState state, int total) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (sheet) => SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Pay with',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+                ),
+                const SizedBox(height: 12),
+                PaymentMethodPicker(
+                  value: _payment,
+                  settings: state.settings,
+                  total: total,
+                  onChanged: (m) {
+                    state.setLastPayment(m);
+                    setState(() => _payment = m);
+                    Navigator.pop(sheet);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -192,11 +435,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final price = promo.priced(base);
     final address = state.selectedAddress;
     final today = DateTime.now();
-    final days = [for (var i = 0; i < 4; i++) today.add(Duration(days: i))];
     final slots = DeliverySlot.values
         .where((s) => !_isSameDay(_day, today) || s.to > today.hour + 1)
         .toList();
     if (!slots.contains(_slot) && slots.isNotEmpty) _slot = slots.first;
+    final pal = context.pal;
 
     // Everything needed before the order can be placed. The slide stays
     // locked (with the reason on it) until all of it is done.
@@ -208,7 +451,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             'Ordering not available',
           )
         : address == null
-        ? ('Add your delivery location in step 1.', 'Add delivery location')
+        ? ('Add your delivery location first.', 'Add delivery location')
         : (!_asap && slots.isEmpty)
         ? (
             'No delivery slot left on this day. Choose another day.',
@@ -219,409 +462,335 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             null => (null, 'Slide to place order'),
           };
 
-    return PopScope(
-      canPop: _step == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) setState(() => _step--);
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          leading: _step == 0
-              ? const ScreenBack()
-              : BackButton(onPressed: () => setState(() => _step--)),
-          title: const Text('Checkout'),
+    final account = _payment.accountIn(state.settings).trim();
+
+    Widget row({
+      Key? key,
+      required IconData icon,
+      required String title,
+      required String subtitle,
+      required VoidCallback onTap,
+      String action = 'Change',
+    }) => InkWell(
+      key: key,
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: pal.tint,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: pal.blue, size: 21),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: pal.muted,
+                      fontSize: 13,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              action,
+              style: TextStyle(
+                color: pal.blue,
+                fontWeight: FontWeight.w800,
+                fontSize: 13.5,
+              ),
+            ),
+          ],
         ),
-        body: Constrained(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            children: [
-              _StepHeader(step: _step, onTap: (i) => setState(() => _step = i)),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 240),
-                transitionBuilder: (c, a) =>
-                    FadeTransition(opacity: a, child: c),
-                child: Column(
-                  key: ValueKey(_step),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_step == 0) ...[
-                      _Section(
-                        number: 1,
-                        title: 'Delivery address',
-                        trailing: address == null
-                            ? null
-                            : TextButton(
-                                onPressed: () => showAddressPicker(context),
-                                child: const Text('Change'),
-                              ),
-                        child: address == null
-                            ? ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: CircleAvatar(
-                                  backgroundColor: context.pal.tint,
-                                  child: Icon(
-                                    Icons.add_location_alt_rounded,
-                                    color: context.pal.blue,
+      ),
+    );
+
+    Widget card(List<Widget> children) => Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: pal.card,
+        borderRadius: BorderRadius.circular(Brand.radius),
+        border: Border.all(color: pal.line),
+      ),
+      child: Column(children: children),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: const ScreenBack(),
+        title: const Text('Checkout'),
+      ),
+      body: Constrained(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          children: [
+            card([
+              row(
+                key: const Key('address-row'),
+                icon: Icons.location_on_outlined,
+                title: address == null
+                    ? 'Add a delivery address'
+                    : 'Deliver to ${address.label}',
+                subtitle: address == null
+                    ? 'We need to know where to bring it'
+                    : '${address.oneLine}${state.profile == null ? '' : '\n${state.profile!.name} · ${prettyPkMobile(state.profile!.phone)}'}',
+                action: address == null ? 'Add' : 'Change',
+                onTap: address == null
+                    ? _addAddress
+                    : () => showAddressPicker(context),
+              ),
+              Divider(height: 1, color: pal.line),
+              row(
+                key: const Key('time-row'),
+                icon: Icons.schedule_rounded,
+                title: _asap
+                    ? 'As soon as possible'
+                    : '${_isSameDay(_day, today) ? 'Today' : formatDay(_day)}, ${_slot.label}',
+                subtitle: _asap
+                    ? 'We confirm your order, then send a rider'
+                    : _slot.range,
+                onTap: _chooseTime,
+              ),
+              Divider(height: 1, color: pal.line),
+              row(
+                key: const Key('pay-row'),
+                icon: _payment.icon,
+                title: _payment.label,
+                subtitle: _payment.tagline,
+                onTap: () => _choosePayment(state, price.total),
+              ),
+            ]),
+
+            // Online payment: pay first, and send the proof with the order.
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              alignment: Alignment.topCenter,
+              child: !_payment.isPrepaid
+                  ? const SizedBox(width: double.infinity)
+                  : Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: pal.card,
+                        borderRadius: BorderRadius.circular(Brand.radius),
+                        border: Border.all(color: pal.line),
+                      ),
+                      child: account.isEmpty
+                          ? Text(
+                              'Alpha LPG sends the ${_payment.label} account to your order screen right after you place the order. Pay it there and send the receipt.',
+                              style: TextStyle(color: pal.muted, height: 1.45),
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Pay ${formatRupees(price.total)} with ${_payment.label}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16.5,
                                   ),
                                 ),
-                                title: const Text(
-                                  'Add a delivery address',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                const SizedBox(height: 10),
+                                _CopyRow(
+                                  label: 'Send to',
+                                  value: account,
+                                  onCopy: () => _copy(account),
                                 ),
-                                trailing: const Icon(
-                                  Icons.chevron_right_rounded,
+                                _CopyRow(
+                                  label: 'Amount',
+                                  value: formatRupees(price.total),
+                                  onCopy: () => _copy('${price.total}'),
                                 ),
-                                onTap: _addAddress,
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    address.hasLocation
-                                        ? Icons.location_on_rounded
-                                        : Icons.location_on_outlined,
-                                    color: address.hasLocation
-                                        ? Brand.success
-                                        : Brand.blueDark,
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Pay in your ${_payment.label} app, then add the proof here. You can also place the order now and add it later.',
+                                  style: TextStyle(
+                                    color: pal.muted,
+                                    fontSize: 13,
+                                    height: 1.4,
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                ),
+                                const SizedBox(height: 12),
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: _picking ? null : _pickProof,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: _proof == null
+                                            ? pal.line
+                                            : pal.green,
+                                        width: _proof == null ? 1.5 : 2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
+                                        Icon(
+                                          _proof == null
+                                              ? Icons.cloud_upload_outlined
+                                              : Icons.check_circle_rounded,
+                                          color: _proof == null
+                                              ? pal.muted
+                                              : pal.green,
+                                        ),
+                                        const SizedBox(width: 10),
                                         Text(
-                                          address.label,
+                                          _picking
+                                              ? 'Adding…'
+                                              : _proof == null
+                                              ? 'Add payment screenshot'
+                                              : 'Screenshot added. Tap to change',
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                        Text(
-                                          address.oneLine,
-                                          style: TextStyle(
-                                            color: context.pal.muted,
-                                          ),
-                                        ),
-                                        if (state.profile != null)
-                                          Text(
-                                            '${state.profile!.name} · ${prettyPkMobile(state.profile!.phone)}',
-                                            style: TextStyle(
-                                              color: context.pal.muted,
-                                              fontSize: 12,
-                                            ),
-                                          ),
                                       ],
                                     ),
                                   ),
-                                ],
-                              ),
-                      ),
-                      _Section(
-                        number: 2,
-                        title: 'Delivery time',
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Expanded(
-                                    child: _WhenTile(
-                                      icon: Icons.bolt_rounded,
-                                      title: 'As soon as possible',
-                                      subtitle: 'We confirm your order, then send a rider',
-                                      selected: _asap,
-                                      onTap: () => setState(() => _asap = true),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _WhenTile(
-                                      icon: Icons.event_available_rounded,
-                                      title: 'Schedule',
-                                      subtitle: 'Choose a day and a time slot',
-                                      selected: !_asap,
-                                      onTap: () =>
-                                          setState(() => _asap = false),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            AnimatedSize(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOut,
-                              alignment: Alignment.topCenter,
-                              child: _asap
-                                  ? const SizedBox(width: double.infinity)
-                                  : Padding(
-                                      padding: const EdgeInsets.only(top: 16),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Day',
-                                            style: TextStyle(
-                                              color: context.pal.muted,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 12.5,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          SizedBox(
-                                            height: 72,
-                                            child: ListView(
-                                              scrollDirection: Axis.horizontal,
-                                              children: [
-                                                for (final d in days)
-                                                  _DayCard(
-                                                    day: d,
-                                                    isToday: _isSameDay(
-                                                      d,
-                                                      today,
-                                                    ),
-                                                    selected: _isSameDay(
-                                                      d,
-                                                      _day,
-                                                    ),
-                                                    onTap: () => setState(
-                                                      () => _day = d,
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(height: 14),
-                                          Text(
-                                            'Time',
-                                            style: TextStyle(
-                                              color: context.pal.muted,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 12.5,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          if (slots.isEmpty)
-                                            const Text(
-                                              'No time slots left today. Please pick another day.',
-                                            )
-                                          else
-                                            Row(
-                                              children: [
-                                                for (final sl
-                                                    in DeliverySlot.values)
-                                                  Expanded(
-                                                    child: Padding(
-                                                      padding: EdgeInsets.only(
-                                                        right:
-                                                            sl ==
-                                                                DeliverySlot
-                                                                    .values
-                                                                    .last
-                                                            ? 0
-                                                            : 8,
-                                                      ),
-                                                      child: _SlotTile(
-                                                        slot: sl,
-                                                        enabled: slots.contains(
-                                                          sl,
-                                                        ),
-                                                        selected: _slot == sl,
-                                                        onTap: () => setState(
-                                                          () => _slot = sl,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          const SizedBox(height: 14),
-                                          Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: context.pal.card,
-                                              border: Border.all(
-                                                color: Brand.blueDark,
-                                                width: 2,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.event_available_rounded,
-                                                  color: context.pal.blue,
-                                                  size: 20,
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Text(
-                                                    slots.isEmpty
-                                                        ? 'Pick another day'
-                                                        : 'Delivery on ${_isSameDay(_day, today) ? 'today' : formatDay(_day)}, ${_slot.label.toLowerCase()} ${_slot.range}',
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      height: 1.3,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _Section(
-                        number: 4,
-                        title: 'Notes for the rider',
-                        child: TextField(
-                          controller: _notes,
-                          maxLines: 2,
-                          textCapitalization: TextCapitalization.sentences,
-                          decoration: InputDecoration(
-                            hintText: tr(
-                              'e.g. Call on arrival, 2nd floor, gate code…',
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                    if (_step == 1) ...[
-                      _Section(
-                        number: 3,
-                        title: 'Payment',
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            PaymentMethodPicker(
-                              value: _payment,
-                              settings: state.settings,
-                              total: price.total,
-                              onChanged: (m) {
-                                state.setLastPayment(m);
-                                setState(() => _payment = m);
-                              },
-                            ),
-                            PromoPanel(
-                              subtotal: base.subtotal,
-                              lines: base.lines,
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_payment.isPrepaid)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-                          child: Text(
-                            'How it works: 1. You place the order. 2. Alpha LPG sends you '
-                            'the account to pay. 3. You pay and send the receipt here. '
-                            '4. The rider is sent once the payment is confirmed.',
-                            style: TextStyle(
-                              color: context.pal.muted,
-                              fontSize: 12.5,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                    ],
-                    if (_step == 2) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: context.pal.card,
-                          borderRadius: BorderRadius.circular(Brand.radius),
-                          boxShadow: context.pal.shadow,
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Theme(
-                          data: Theme.of(context)
-                              .copyWith(dividerColor: Colors.transparent),
-                          child: ExpansionTile(
-                            shape: const Border(),
-                            collapsedShape: const Border(),
-                            leading: Icon(
-                              Icons.receipt_long_rounded,
-                              color: context.pal.blue,
-                            ),
-                            title: Text(
-                              'Order summary · ${price.countLabel}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            childrenPadding: const EdgeInsets.fromLTRB(
-                              16,
-                              0,
-                              16,
-                              12,
-                            ),
-                            children: [
-                              for (final i in items)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          '${i.quantity} × ${i.name} (${i.typeLabel})',
-                                        ),
-                                      ),
-                                      Text(formatRupees(i.lineTotal)),
-                                    ],
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _tid,
+                                  onChanged: (_) => setState(() {}),
+                                  textCapitalization:
+                                      TextCapitalization.characters,
+                                  decoration: InputDecoration(
+                                    labelText: tr('Transaction ID'),
+                                    hintText: 'TID-982347102',
+                                    prefixIcon: const Icon(Icons.tag_rounded),
                                   ),
                                 ),
-                            ],
+                              ],
+                            ),
+                    ),
+            ),
+
+            // Order summary.
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: pal.card,
+                borderRadius: BorderRadius.circular(Brand.radius),
+                border: Border.all(color: pal.line),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Order summary · ${price.countLabel}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final i in items)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${i.quantity} × ${i.name} (${i.typeLabel})',
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Text(formatRupees(i.lineTotal)),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      PriceSummary(price: price, settings: state.settings),
-                      const SizedBox(height: 12),
-                      Text(
-                        'By placing this order you agree to keep empty cylinders ready for refill orders. '
-                        'Alpha LPG will confirm your order and final price.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.pal.muted,
-                        ),
-                      ),
-                    ],
+                    ),
+                  const SizedBox(height: 4),
+                  PriceSummary(price: price, settings: state.settings),
+                ],
+              ),
+            ),
+
+            // Optional extras, tucked away.
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: pal.card,
+                borderRadius: BorderRadius.circular(Brand.radius),
+                border: Border.all(color: pal.line),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Theme(
+                data: Theme.of(context)
+                    .copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  key: const Key('discounts-tile'),
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  leading: Icon(Icons.local_offer_outlined, color: pal.blue),
+                  title: const Text(
+                    'Have a code or points?',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                  children: [
+                    PromoPanel(subtotal: base.subtotal, lines: base.lines),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-        bottomNavigationBar: _step < 2
-            ? _ContinueBar(
-                total: price.total,
-                caption: _payment.label,
-                label: _step == 0 ? 'Continue to payment' : 'Review order',
-                problem: _step == 0 ? problem : null,
-                enabled: _step == 0
-                    ? (address != null &&
-                          (_asap || slots.isNotEmpty) &&
-                          items.isNotEmpty)
-                    : true,
-                onPressed: () => setState(() => _step++),
-              )
-            : _SlideBar(
-                total: price.total,
-                caption: _payment.label,
-                problem: problem,
-                label: lockLabel,
-                onConfirmed: _place,
+            ),
+            TextField(
+              controller: _notes,
+              maxLines: 2,
+              minLines: 1,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.sticky_note_2_outlined),
+                hintText: tr('Note for the rider (optional)'),
               ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'By placing this order you agree to keep empty cylinders ready for refill orders. '
+              'Alpha LPG will confirm your order and final price.',
+              style: TextStyle(fontSize: 12, color: pal.muted),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _SlideBar(
+        total: price.total,
+        caption: _payment.isPrepaid && _hasProof
+            ? '${_payment.label} · proof added'
+            : _payment.label,
+        problem: problem,
+        label: lockLabel,
+        onConfirmed: _place,
       ),
     );
   }
@@ -630,56 +799,56 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-class _Section extends StatelessWidget {
-  const _Section({
-    required this.number,
-    required this.title,
-    required this.child,
-    this.trailing,
+/// "Send to / 0300…  [Copy]".
+class _CopyRow extends StatelessWidget {
+  const _CopyRow({
+    required this.label,
+    required this.value,
+    required this.onCopy,
   });
-
-  final int number;
-  final String title;
-  final Widget child;
-  final Widget? trailing;
+  final String label;
+  final String value;
+  final VoidCallback onCopy;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 14),
-    child: Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 12, 16),
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: context.pal.card,
-        borderRadius: BorderRadius.circular(Brand.radius),
-        boxShadow: context.pal.shadow,
+        border: Border(top: BorderSide(color: pal.line)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
         children: [
-          SizedBox(
-            height: 40,
-            child: Row(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                    ),
+                Text(label, style: TextStyle(color: pal.muted, fontSize: 12.5)),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    letterSpacing: 0.2,
                   ),
                 ),
-                ?trailing,
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          // Lets list-tile ripples paint on top of the card colour.
-          Material(type: MaterialType.transparency, child: child),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            onPressed: onCopy,
+            icon: const Icon(Icons.copy_rounded, size: 18),
+            label: const Text('Copy'),
+          ),
         ],
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// "As soon as possible" / "Schedule": two equal cards with a clear tick.
@@ -985,139 +1154,6 @@ class _SlideBar extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-/// Delivery, Payment, Review: where the customer is in checkout. Finished
-/// steps can be tapped to go back.
-class _StepHeader extends StatelessWidget {
-  const _StepHeader({required this.step, required this.onTap});
-  final int step;
-  final ValueChanged<int> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final pal = context.pal;
-    const labels = ['Delivery', 'Payment', 'Review'];
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 4, 16),
-      child: Row(
-        children: [
-          for (var i = 0; i < 3; i++) ...[
-            Expanded(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: i < step ? () => onTap(i) : null,
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 15,
-                      backgroundColor: i <= step
-                          ? pal.blue
-                          : Colors.transparent,
-                      child: i < step
-                          ? Icon(
-                              Icons.check_rounded,
-                              size: 18,
-                              color: pal.isDark ? Colors.black : Colors.white,
-                            )
-                          : Text(
-                              '${i + 1}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: i == step
-                                    ? (pal.isDark ? Colors.black : Colors.white)
-                                    : pal.muted,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      labels[i],
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: i == step
-                            ? FontWeight.w800
-                            : FontWeight.w600,
-                        color: i <= step ? pal.ink : pal.muted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// The bar at the bottom of the first two steps: the total and one button.
-class _ContinueBar extends StatelessWidget {
-  const _ContinueBar({
-    required this.total,
-    required this.caption,
-    required this.label,
-    required this.onPressed,
-    this.problem,
-    this.enabled = true,
-  });
-  final int total;
-  final String caption;
-  final String label;
-  final String? problem;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: context.pal.card,
-      border: Border(top: BorderSide(color: context.pal.line)),
-    ),
-    child: SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        child: Constrained(
-          child: Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    formatRupees(total),
-                    style: const TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Text(
-                    caption,
-                    style: TextStyle(color: context.pal.muted, fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: FilledButton(
-                  onPressed: enabled ? onPressed : null,
-                  child: Text(
-                    enabled
-                        ? label
-                        : (problem == null ? label : 'Add delivery location'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
               ),
             ],
           ),
