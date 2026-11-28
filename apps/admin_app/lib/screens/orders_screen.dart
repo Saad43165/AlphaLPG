@@ -178,6 +178,204 @@ class _OrdersScreenState extends State<OrdersScreen> {
       _Filter.active: s.activeCount,
       _Filter.verify: s.toVerifyCount,
     };
+    Widget itemAt(int i) {
+      final item = list[i];
+      if (item is String) {
+        final waiting = item.startsWith('Waiting for a rider');
+        final many = waiting && s.activeOrders.where(_isWaiting).length >= 2;
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: context.pal.muted,
+                  ),
+                ),
+              ),
+              if (many)
+                TextButton(
+                  onPressed: () => setState(() {
+                    _selecting = !_selecting;
+                    _picked.clear();
+                  }),
+                  child: Text(_selecting ? 'Cancel' : 'Select several'),
+                ),
+            ],
+          ),
+        );
+      }
+      final order = item as LpgOrder;
+      if (_selecting && _isWaiting(order)) {
+        final on = _picked.contains(order.id);
+        return InkWell(
+          borderRadius: BorderRadius.circular(Brand.radius),
+          onTap: () => setState(
+            () => on ? _picked.remove(order.id) : _picked.add(order.id),
+          ),
+          child: Row(
+            children: [
+              Checkbox(
+                value: on,
+                onChanged: (_) => setState(
+                  () => on ? _picked.remove(order.id) : _picked.add(order.id),
+                ),
+              ),
+              Expanded(
+                child: AbsorbPointer(child: OrderTile(order: order)),
+              ),
+            ],
+          ),
+        );
+      }
+      return OrderTile(order: order);
+    }
+
+    final alerts = <(IconData, String, VoidCallback)>[
+      if (!_searching && s.waitingForRider.isNotEmpty)
+        (
+          Icons.local_shipping_rounded,
+          s.waitingForRider.length == 1
+              ? '1 order has waited ${AdminSession.waitingMinutes}+ min for a rider'
+              : '${s.waitingForRider.length} orders have waited ${AdminSession.waitingMinutes}+ min for a rider',
+          () => setState(() => _f = _Filter.fresh),
+        ),
+      if (!_searching && s.silentRiders.isNotEmpty)
+        (
+          Icons.signal_wifi_off_rounded,
+          s.silentRiders.length == 1
+              ? '${s.silentRiders.first.name} has an order but the phone has not reported for 5+ min'
+              : '${s.silentRiders.length} riders with orders have not reported for 5+ min',
+          () => showModalBottomSheet<void>(
+            context: context,
+            showDragHandle: true,
+            isScrollControlled: true,
+            builder: (_) => ChangeNotifierProvider.value(
+              value: s,
+              child: _RiderJobsSheet(s.silentRiders.first),
+            ),
+          ),
+        ),
+      if (!_searching && s.unpaidAfterDetails.isNotEmpty)
+        (
+          Icons.hourglass_bottom_rounded,
+          s.unpaidAfterDetails.length == 1
+              ? '1 customer has not paid 1+ hour after getting the account details'
+              : '${s.unpaidAfterDetails.length} customers have not paid 1+ hour after getting the account details',
+          () => setState(() => _f = _Filter.verify),
+        ),
+      if (!_searching && s.scheduledSoonCount > 0)
+        (
+          Icons.event_rounded,
+          s.scheduledSoonCount == 1
+              ? '1 scheduled order in the next 24 hours'
+              : '${s.scheduledSoonCount} scheduled orders in the next 24 hours',
+          () => setState(() => _f = _Filter.scheduled),
+        ),
+      if (!_searching && s.needDetailsCount > 0)
+        (
+          Icons.send_rounded,
+          s.needDetailsCount == 1
+              ? '1 order needs payment details sent'
+              : '${s.needDetailsCount} orders need payment details sent',
+          () => setState(() => _f = _Filter.verify),
+        ),
+      if (!_searching && s.receiptsToCheckCount > 0)
+        (
+          Icons.receipt_long_rounded,
+          s.receiptsToCheckCount == 1
+              ? '1 payment receipt to check'
+              : '${s.receiptsToCheckCount} payment receipts to check',
+          () => setState(() => _f = _Filter.verify),
+        ),
+    ];
+    final headers = <Widget>[
+      if (!_searching) const _ShopBar(),
+      if (!_searching && alerts.length == 1)
+        _PayBanner(
+          icon: alerts.first.$1,
+          text: alerts.first.$2,
+          onTap: alerts.first.$3,
+        ),
+      if (!_searching && alerts.length > 1)
+        _PayBanner(
+          icon: Icons.notifications_active_rounded,
+          text: '${alerts.length} things need your attention',
+          onTap: () => showModalBottomSheet<void>(
+            context: context,
+            showDragHandle: true,
+            builder: (sheet) => SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Needs your attention',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 19,
+                        ),
+                      ),
+                    ),
+                  ),
+                  for (final a in alerts)
+                    ListTile(
+                      leading: Icon(a.$1, color: context.pal.blue),
+                      title: Text(a.$2),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () {
+                        Navigator.pop(sheet);
+                        a.$3();
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      if (!_searching)
+        SizedBox(
+          height: 96 + (MediaQuery.textScalerOf(context).scale(14) - 14) * 4,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            children: [
+              _Stat(
+                'New orders',
+                '${s.newCount}',
+                Icons.notifications_active_rounded,
+                const Color(0xFFB58900),
+              ),
+              _Stat(
+                'On the road',
+                '${s.ordersIn([OrderStatus.outForDelivery]).length}',
+                Icons.local_shipping_rounded,
+                Brand.blueDeep,
+              ),
+              _Stat(
+                'Sales today',
+                rs(s.salesToday),
+                Icons.payments_rounded,
+                Brand.success,
+              ),
+              _Stat(
+                'Delivered today',
+                '${s.deliveredTodayCount}',
+                Icons.check_circle_rounded,
+                Brand.blueDark,
+              ),
+            ],
+          ),
+        ),
+      if (!_searching && s.riders.any((r) => r.active)) _RiderStrip(s),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 16,
@@ -236,99 +434,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
       body: Constrained(
         child: Column(
           children: [
-            if (!_searching) const _ShopBar(),
-            if (!_searching && s.waitingForRider.isNotEmpty)
-              _PayBanner(
-                icon: Icons.local_shipping_rounded,
-                text: s.waitingForRider.length == 1
-                    ? '1 order has waited ${AdminSession.waitingMinutes}+ min for a rider'
-                    : '${s.waitingForRider.length} orders have waited ${AdminSession.waitingMinutes}+ min for a rider',
-                onTap: () => setState(() => _f = _Filter.fresh),
-              ),
-            if (!_searching && s.silentRiders.isNotEmpty)
-              _PayBanner(
-                icon: Icons.signal_wifi_off_rounded,
-                text: s.silentRiders.length == 1
-                    ? '${s.silentRiders.first.name} has an order but the phone has not reported for 5+ min'
-                    : '${s.silentRiders.length} riders with orders have not reported for 5+ min',
-                onTap: () => showModalBottomSheet<void>(
-                  context: context,
-                  showDragHandle: true,
-                  isScrollControlled: true,
-                  builder: (_) => ChangeNotifierProvider.value(
-                    value: s,
-                    child: _RiderJobsSheet(s.silentRiders.first),
-                  ),
-                ),
-              ),
-            if (!_searching && s.unpaidAfterDetails.isNotEmpty)
-              _PayBanner(
-                icon: Icons.hourglass_bottom_rounded,
-                text: s.unpaidAfterDetails.length == 1
-                    ? '1 customer has not paid 1+ hour after getting the account details'
-                    : '${s.unpaidAfterDetails.length} customers have not paid 1+ hour after getting the account details',
-                onTap: () => setState(() => _f = _Filter.verify),
-              ),
-            if (!_searching && s.scheduledSoonCount > 0)
-              _PayBanner(
-                icon: Icons.event_rounded,
-                text: s.scheduledSoonCount == 1
-                    ? '1 scheduled order in the next 24 hours'
-                    : '${s.scheduledSoonCount} scheduled orders in the next 24 hours',
-                onTap: () => setState(() => _f = _Filter.scheduled),
-              ),
-            if (!_searching && s.needDetailsCount > 0)
-              _PayBanner(
-                icon: Icons.send_rounded,
-                text: s.needDetailsCount == 1
-                    ? '1 order needs payment details sent'
-                    : '${s.needDetailsCount} orders need payment details sent',
-                onTap: () => setState(() => _f = _Filter.verify),
-              ),
-            if (!_searching && s.receiptsToCheckCount > 0)
-              _PayBanner(
-                icon: Icons.receipt_long_rounded,
-                text: s.receiptsToCheckCount == 1
-                    ? '1 payment receipt to check'
-                    : '${s.receiptsToCheckCount} payment receipts to check',
-                onTap: () => setState(() => _f = _Filter.verify),
-              ),
-            if (!_searching)
-              SizedBox(
-                height:
-                    100 + (MediaQuery.textScalerOf(context).scale(14) - 14) * 4,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  children: [
-                    _Stat(
-                      'New orders',
-                      '${s.newCount}',
-                      Icons.notifications_active_rounded,
-                      const Color(0xFFB58900),
-                    ),
-                    _Stat(
-                      'On the road',
-                      '${s.ordersIn([OrderStatus.outForDelivery]).length}',
-                      Icons.local_shipping_rounded,
-                      Brand.blueDeep,
-                    ),
-                    _Stat(
-                      'Sales today',
-                      rs(s.salesToday),
-                      Icons.payments_rounded,
-                      Brand.success,
-                    ),
-                    _Stat(
-                      'Delivered today',
-                      '${s.deliveredTodayCount}',
-                      Icons.check_circle_rounded,
-                      Brand.blueDark,
-                    ),
-                  ],
-                ),
-              ),
-            if (!_searching && s.riders.any((r) => r.active)) _RiderStrip(s),
             if (!_searching)
               SizedBox(
                 height: 46,
@@ -367,89 +472,30 @@ class _OrdersScreenState extends State<OrdersScreen> {
             Expanded(
               child: !s.ordersLoaded
                   ? const Center(child: CircularProgressIndicator())
-                  : list.isEmpty
-                  ? EmptyState(
-                      icon: Icons.inbox_rounded,
-                      title: switch (_f) {
-                        _Filter.fresh => 'No new orders',
-                        _Filter.scheduled => 'No scheduled orders',
-                        _Filter.active => 'Nothing in progress',
-                        _Filter.verify => 'No payments to check',
-                        _Filter.done => 'No delivered orders yet',
-                        _Filter.cancelled => 'No cancelled orders',
-                      },
-                      message: 'New orders appear here the moment a customer places them.',
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      itemCount: list.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 4, bottom: 24),
+                      itemCount:
+                          headers.length + (list.isEmpty ? 1 : list.length),
                       itemBuilder: (_, i) {
-                        final item = list[i];
-                        if (item is String) {
-                          final waiting = item.startsWith(
-                            'Waiting for a rider',
-                          );
-                          final many =
-                              waiting &&
-                              s.activeOrders.where(_isWaiting).length >= 2;
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    item,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      color: context.pal.muted,
-                                    ),
-                                  ),
-                                ),
-                                if (many)
-                                  TextButton(
-                                    onPressed: () => setState(() {
-                                      _selecting = !_selecting;
-                                      _picked.clear();
-                                    }),
-                                    child: Text(
-                                      _selecting ? 'Cancel' : 'Select several',
-                                    ),
-                                  ),
-                              ],
-                            ),
+                        if (i < headers.length) return headers[i];
+                        if (list.isEmpty) {
+                          return EmptyState(
+                            icon: Icons.inbox_rounded,
+                            title: switch (_f) {
+                              _Filter.fresh => 'No new orders',
+                              _Filter.scheduled => 'No scheduled orders',
+                              _Filter.active => 'Nothing in progress',
+                              _Filter.verify => 'No payments to check',
+                              _Filter.done => 'No delivered orders yet',
+                              _Filter.cancelled => 'No cancelled orders',
+                            },
+                            message: 'New orders appear here the moment a customer places them.',
                           );
                         }
-                        final order = item as LpgOrder;
-                        if (_selecting && _isWaiting(order)) {
-                          final on = _picked.contains(order.id);
-                          return InkWell(
-                            borderRadius: BorderRadius.circular(Brand.radius),
-                            onTap: () => setState(
-                              () => on
-                                  ? _picked.remove(order.id)
-                                  : _picked.add(order.id),
-                            ),
-                            child: Row(
-                              children: [
-                                Checkbox(
-                                  value: on,
-                                  onChanged: (_) => setState(
-                                    () => on
-                                        ? _picked.remove(order.id)
-                                        : _picked.add(order.id),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: AbsorbPointer(
-                                    child: OrderTile(order: order),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        return OrderTile(order: order);
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                          child: itemAt(i - headers.length),
+                        );
                       },
                     ),
             ),
@@ -470,7 +516,7 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     width: 150,
     margin: const EdgeInsets.only(right: 10),
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
     decoration: panel(context),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -775,8 +821,8 @@ class _ShopBar extends StatelessWidget {
     final color = open ? Brand.success : Brand.danger;
     final pal = context.pal;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+      margin: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+      padding: const EdgeInsets.fromLTRB(14, 4, 8, 4),
       decoration: BoxDecoration(
         color: pal.card,
         borderRadius: BorderRadius.circular(Brand.radius),
